@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Positions · NiftyEdge Pro Trading Terminal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="css/style.css">
+<script>(function(){try{var t=localStorage.getItem("niftyedge-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+</head>
+<body>
+<div class="app">
+<div class="app-body">
+
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#eafff2" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+    <div class="brand-text"><div class="name">NiftyEdge</div><div class="tagline">Pro Trading Terminal</div></div>
+  </div>
+  <nav class="nav">
+    <a class="nav-item" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+<a class="nav-item" href="cpr-dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 14l2 2 4-4"/></svg>CPR Dashboard</a>
+    <a class="nav-item" href="market-profile.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Market Profile</a>
+    <a class="nav-item" href="volume-profile.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg>Volume Profile</a>
+    <a class="nav-item" href="footprint.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>Footprint (Order Flow)</a>
+    <a class="nav-item" href="options-chain.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Options Chain</a>
+    <a class="nav-item" href="open-interest.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Open Interest</a>
+    <a class="nav-item" href="greeks.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>Greeks</a>
+    <a class="nav-item" href="strategy-signals.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>Strategy Signals</a>
+    <a class="nav-item active" href="positions.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>Positions</a>
+    <a class="nav-item" href="orders.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Orders</a>
+    <a class="nav-item" href="backtester.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Backtester</a>
+    <a class="nav-item" href="reports.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Reports</a>
+    <div class="nav-divider"></div>
+    <a class="nav-item" href="settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</a>
+    <a class="nav-item" href="help.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Help</a>
+  </nav>
+  <div class="sidebar-foot">
+    <div class="api-status"><span class="dot"></span> API Connected</div>
+    <div class="acct-row"><span>Client ID</span><b>XXXXXX</b></div>
+    <div class="acct-row"><span>Account</span><b>XXXX1234</b></div>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <div class="ticker-group">
+      <div class="ticker-item price"><div class="label">Nifty 50</div><div class="value">23,532.45</div><div class="sub up">+182.60 (0.78%) &#9650;</div></div>
+      <div class="ticker-item"><div class="label">India VIX</div><div class="value down">13.85</div><div class="sub down">-0.45 (-3.15%)</div></div>
+    </div>
+    <div class="topbar-right">
+      <div class="market-open"><span class="dot"></span> Market Open</div>
+      <div class="clock" data-clock>10:15:30 AM</div>
+<div class="theme-switch" role="group" aria-label="Theme"><button class="theme-btn" data-set-theme="light" title="Light theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button><button class="theme-btn" data-set-theme="dark" title="Dark theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button><button class="theme-btn" data-set-theme="terminal" title="Terminal theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></button></div>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="page-head">
+      <div>
+        <div class="page-title">Positions</div>
+        <div class="page-sub">Open &amp; closed positions &middot; Account XXXX1234</div>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-danger">Square Off All</button>
+      </div>
+    </div>
+
+    <div class="grid g-5 mb-8">
+      <div class="card"><div class="stat-block"><div class="k">Day's P&amp;L</div><div class="v text-green">+&#8377;18,450</div><div class="d text-green">+0.78%</div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">Open Positions P&amp;L</div><div class="v text-green">+&#8377;622.50</div><div class="d text-green">+1.48%</div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">Margin Used</div><div class="v">&#8377;3,24,560</div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">Available Margin</div><div class="v">&#8377;6,75,440</div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">Exposure</div><div class="v">32%</div><div class="meter mt-8"><span style="width:32%; background:var(--amber);"></span></div></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title accent">Open Positions (3)</span>
+        <div class="tabs">
+          <span class="tab active">Options</span>
+          <span class="tab">Futures</span>
+          <span class="tab">Equity</span>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Instrument</th><th>Type</th><th>Qty</th><th>Avg Price</th><th>LTP</th><th>Delta</th><th>Theta</th><th>P&amp;L</th><th>P&amp;L %</th><th></th></tr></thead>
+          <tbody>
+            <tr>
+              <td>NIFTY 24 JUL 23600 CE</td>
+              <td><span class="badge badge-red">SHORT</span></td>
+              <td class="text-red">-75</td>
+              <td>114.25</td>
+              <td>108.40</td>
+              <td class="text-red">-0.35</td>
+              <td class="text-green">+13.90</td>
+              <td class="text-green">+438.75</td>
+              <td class="text-green">+5.12%</td>
+              <td><button class="btn btn-sm">Exit</button></td>
+            </tr>
+            <tr>
+              <td>NIFTY 24 JUL 23500 CE</td>
+              <td><span class="badge badge-red">SHORT</span></td>
+              <td class="text-red">-75</td>
+              <td>67.40</td>
+              <td>69.10</td>
+              <td class="text-red">-0.50</td>
+              <td class="text-green">+16.97</td>
+              <td class="text-red">-127.50</td>
+              <td class="text-red">-3.77%</td>
+              <td><button class="btn btn-sm">Exit</button></td>
+            </tr>
+            <tr>
+              <td>NIFTY 24 JUL 23400 PE</td>
+              <td><span class="badge badge-green">LONG</span></td>
+              <td class="text-green">+75</td>
+              <td>58.30</td>
+              <td>54.15</td>
+              <td class="text-red">-0.36</td>
+              <td class="text-red">-21.64</td>
+              <td class="text-green">+311.25</td>
+              <td class="text-green">+7.31%</td>
+              <td><button class="btn btn-sm">Exit</button></td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr style="border-top:2px solid var(--border);">
+              <td colspan="7" style="text-align:right; font-weight:700; color:var(--text-secondary);">Total</td>
+              <td class="text-green bold">+&#8377;622.50</td>
+              <td class="text-green bold">+1.48%</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div class="card mt-12">
+      <div class="card-header"><span class="card-title accent">Closed Positions (Today)</span></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Instrument</th><th>Type</th><th>Qty</th><th>Entry</th><th>Exit</th><th>Realized P&amp;L</th><th>Time</th></tr></thead>
+          <tbody>
+            <tr><td>NIFTY 24 JUL 23550 CE</td><td><span class="badge badge-red">SHORT</span></td><td>-75</td><td>82.60</td><td>65.40</td><td class="text-green">+1,290.00</td><td>09:42 AM</td></tr>
+            <tr><td>NIFTY 24 JUL 23300 PE</td><td><span class="badge badge-green">LONG</span></td><td>+50</td><td>34.15</td><td>29.80</td><td class="text-red">-217.50</td><td>09:05 AM</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <footer class="statusbar">
+    <div class="items">
+      <span class="item">Nifty 50 <b>23,532.45</b> <span class="up">&#9650; 0.78%</span></span>
+      <span class="item">India VIX <b>13.85</b> <span class="down">&#9660; -3.15%</span></span>
+    </div>
+    <div class="items">
+      <span class="live"><span class="dot"></span> Market Open</span>
+      <span>Data Refresh: <b style="color:var(--text-primary);">10:15:30 AM</b></span>
+    </div>
+  </footer>
+</div>
+</div>
+</div>
+<script src="js/app.js"></script>
+</body>
+</html>

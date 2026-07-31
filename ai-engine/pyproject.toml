@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "niftyedge-ai-engine"
+version = "0.1.0"
+description = "NiftyEdgeAI Analytics Engine — market bias, strategy signals, and backtesting."
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.setuptools.packages.find]
+include = ["niftyedge_ai_engine*"]

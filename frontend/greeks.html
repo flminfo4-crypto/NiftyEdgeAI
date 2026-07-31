@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Greeks · NiftyEdge Pro Trading Terminal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="css/style.css">
+<script>(function(){try{var t=localStorage.getItem("niftyedge-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+</head>
+<body>
+<div class="app">
+<div class="app-body">
+
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#eafff2" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+    <div class="brand-text"><div class="name">NiftyEdge</div><div class="tagline">Pro Trading Terminal</div></div>
+  </div>
+  <nav class="nav">
+    <a class="nav-item" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+<a class="nav-item" href="cpr-dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 14l2 2 4-4"/></svg>CPR Dashboard</a>
+    <a class="nav-item" href="market-profile.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Market Profile</a>
+    <a class="nav-item" href="volume-profile.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg>Volume Profile</a>
+    <a class="nav-item" href="footprint.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>Footprint (Order Flow)</a>
+    <a class="nav-item" href="options-chain.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Options Chain</a>
+    <a class="nav-item" href="open-interest.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Open Interest</a>
+    <a class="nav-item active" href="greeks.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>Greeks</a>
+    <a class="nav-item" href="strategy-signals.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>Strategy Signals</a>
+    <a class="nav-item" href="positions.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>Positions</a>
+    <a class="nav-item" href="orders.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Orders</a>
+    <a class="nav-item" href="backtester.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Backtester</a>
+    <a class="nav-item" href="reports.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Reports</a>
+    <div class="nav-divider"></div>
+    <a class="nav-item" href="settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</a>
+    <a class="nav-item" href="help.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Help</a>
+  </nav>
+  <div class="sidebar-foot">
+    <div class="api-status"><span class="dot"></span> API Connected</div>
+    <div class="acct-row"><span>Client ID</span><b>XXXXXX</b></div>
+    <div class="acct-row"><span>Account</span><b>XXXX1234</b></div>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <div class="ticker-group">
+      <div class="ticker-item price"><div class="label">Nifty 50</div><div class="value">23,532.45</div><div class="sub up">+182.60 (0.78%) &#9650;</div></div>
+      <div class="ticker-item"><div class="label">India VIX</div><div class="value down">13.85</div><div class="sub down">-0.45 (-3.15%)</div></div>
+      <div class="ticker-item"><div class="label">ATM IV</div><div class="value">13.4%</div></div>
+    </div>
+    <div class="topbar-right">
+      <div class="market-open"><span class="dot"></span> Market Open</div>
+      <div class="clock" data-clock>10:15:30 AM</div>
+<div class="theme-switch" role="group" aria-label="Theme"><button class="theme-btn" data-set-theme="light" title="Light theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button><button class="theme-btn" data-set-theme="dark" title="Dark theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button><button class="theme-btn" data-set-theme="terminal" title="Terminal theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></button></div>
+      <div class="expiry-select"><label>Expiry</label><select class="select"><option>24 JUL 2024 (W)</option></select></div>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="page-head">
+      <div>
+        <div class="page-title">Greeks</div>
+        <div class="page-sub">Option Greeks by strike &middot; NIFTY 50 &middot; 24 JUL 2024 Weekly</div>
+      </div>
+      <div class="page-actions">
+        <button class="btn">Export</button>
+      </div>
+    </div>
+
+    <div class="grid g-5 mb-8">
+      <div class="card"><div class="stat-block"><div class="k">Net Delta</div><div class="v text-red">-0.32</div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">Net Gamma</div><div class="v text-red">-4.15</div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">Net Theta</div><div class="v text-green">+220.45</div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">Net Vega</div><div class="v text-amber">+18.30</div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">Net Rho</div><div class="v">+1.85</div></div></div>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table" style="font-size:11.5px;">
+          <thead>
+            <tr>
+              <th colspan="5" style="text-align:center; color:var(--green); border-bottom:1px solid var(--border);">CALLS</th>
+              <th style="text-align:center; background:var(--bg-card-alt);">STRIKE</th>
+              <th colspan="5" style="text-align:center; color:var(--red); border-bottom:1px solid var(--border);">PUTS</th>
+            </tr>
+            <tr>
+              <th>Delta</th><th>Gamma</th><th>Theta</th><th>Vega</th><th>Rho</th>
+              <th style="background:var(--bg-card-alt); text-align:center;">&#8377;</th>
+              <th>Delta</th><th>Gamma</th><th>Theta</th><th>Vega</th><th>Rho</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="text-green">0.78</td><td>0.0016</td><td class="text-red">-20.78</td><td>18.98</td><td>1.15</td><td style="background:var(--bg-card-alt); text-align:center; font-weight:700;">23,300</td><td class="text-red">-0.22</td><td>0.0016</td><td class="text-red">-17.77</td><td>18.98</td><td class="text-red">-2.78</td></tr>
+            <tr><td class="text-green">0.68</td><td>0.0016</td><td class="text-red">-20.64</td><td>19.51</td><td>1.11</td><td style="background:var(--bg-card-alt); text-align:center; font-weight:700;">23,350</td><td class="text-red">-0.32</td><td>0.0016</td><td class="text-red">-18.74</td><td>19.51</td><td class="text-red">-2.85</td></tr>
+            <tr><td class="text-green">0.64</td><td>0.0017</td><td class="text-red">-21.53</td><td>20.12</td><td>1.33</td><td style="background:var(--bg-card-alt); text-align:center; font-weight:700;">23,400</td><td class="text-red">-0.36</td><td>0.0017</td><td class="text-red">-20.47</td><td>20.12</td><td class="text-red">-2.23</td></tr>
+            <tr><td class="text-green">0.57</td><td>0.0018</td><td class="text-red">-22.49</td><td>20.93</td><td>1.96</td><td style="background:var(--bg-card-alt); text-align:center; font-weight:700;">23,450</td><td class="text-red">-0.43</td><td>0.0018</td><td class="text-red">-21.64</td><td>20.93</td><td class="text-red">-2.28</td></tr>
+            <tr class="atm"><td class="text-green" style="font-weight:700;">0.50</td><td style="font-weight:700;">0.0019</td><td class="text-red" style="font-weight:700;">-22.63</td><td style="font-weight:700;">21.95</td><td style="font-weight:700;">2.13</td><td style="background:rgba(245,166,35,.18); text-align:center; font-weight:800; color:var(--amber);">23,500 &#9642;</td><td class="text-red" style="font-weight:700;">-0.50</td><td style="font-weight:700;">0.0019</td><td class="text-red" style="font-weight:700;">-20.57</td><td style="font-weight:700;">21.95</td><td class="text-red" style="font-weight:700;">-1.95</td></tr>
+            <tr><td class="text-green">0.43</td><td>0.0018</td><td class="text-red">-21.61</td><td>20.85</td><td>2.39</td><td style="background:var(--bg-card-alt); text-align:center; font-weight:700;">23,550</td><td class="text-red">-0.57</td><td>0.0018</td><td class="text-red">-20.06</td><td>20.85</td><td class="text-red">-1.98</td></tr>
+            <tr><td class="text-green">0.35</td><td>0.0016</td><td class="text-red">-20.58</td><td>20.55</td><td>2.59</td><td style="background:var(--bg-card-alt); text-align:center; font-weight:700;">23,600</td><td class="text-red">-0.65</td><td>0.0016</td><td class="text-red">-19.55</td><td>20.55</td><td class="text-red">-1.70</td></tr>
+            <tr><td class="text-green">0.30</td><td>0.0016</td><td class="text-red">-20.36</td><td>19.70</td><td>2.46</td><td style="background:var(--bg-card-alt); text-align:center; font-weight:700;">23,650</td><td class="text-red">-0.70</td><td>0.0016</td><td class="text-red">-19.86</td><td>19.70</td><td class="text-red">-1.64</td></tr>
+            <tr><td class="text-green">0.25</td><td>0.0016</td><td class="text-red">-20.66</td><td>18.89</td><td>3.05</td><td style="background:var(--bg-card-alt); text-align:center; font-weight:700;">23,700</td><td class="text-red">-0.75</td><td>0.0016</td><td class="text-red">-18.08</td><td>18.89</td><td class="text-red">-1.14</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="mt-8" style="font-size:10px; color:var(--text-muted);">Per-contract Greeks (lot size 25) &middot; Theta shown per day &middot; Vega &amp; Rho per 1% change &middot; Amber row = ATM</div>
+    </div>
+
+    <div class="grid g-3 mt-12">
+      <div class="card">
+        <div class="card-title mb-8">Gamma Exposure (GEX)</div>
+        <svg viewBox="0 0 260 80" style="width:100%; height:70px;" preserveAspectRatio="none">
+          <path d="M0 60 L30 50 L60 35 L90 20 L120 10 L150 18 L180 32 L210 48 L240 58 L260 65" fill="none" stroke="#a855f7" stroke-width="1.8"/>
+          <line x1="120" y1="0" x2="120" y2="80" stroke="#f5a623" stroke-width="1" stroke-dasharray="3 3"/>
+        </svg>
+        <div class="mt-8" style="font-size:11px; color:var(--text-muted);">Peak gamma near 23,500 (dashed) &mdash; expect pinning / mean reversion close to this strike into expiry.</div>
+      </div>
+      <div class="card">
+        <div class="card-title mb-8">Theta Decay (Today)</div>
+        <div class="stat-row"><span class="k">Portfolio Theta / day</span><span class="v text-green">+&#8377;220.45</span></div>
+        <div class="stat-row"><span class="k">Decay accelerating</span><span class="v text-amber">2 DTE</span></div>
+        <div class="stat-row"><span class="k">Weekend decay factored</span><span class="badge badge-green">Yes</span></div>
+      </div>
+      <div class="card">
+        <div class="card-title mb-8">Vega Risk</div>
+        <div class="stat-row"><span class="k">Net Vega</span><span class="v text-amber">+18.30</span></div>
+        <div class="stat-row"><span class="k">IV Rank</span><span class="v">62.3</span></div>
+        <div class="stat-row"><span class="k">1% IV drop &Delta;P&amp;L</span><span class="v text-red">-&#8377;18.30</span></div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="statusbar">
+    <div class="items">
+      <span class="item">Nifty 50 <b>23,532.45</b> <span class="up">&#9650; 0.78%</span></span>
+      <span class="item">India VIX <b>13.85</b> <span class="down">&#9660; -3.15%</span></span>
+    </div>
+    <div class="items">
+      <span class="live"><span class="dot"></span> Market Open</span>
+      <span>Data Refresh: <b style="color:var(--text-primary);">10:15:30 AM</b></span>
+    </div>
+  </footer>
+</div>
+</div>
+</div>
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "niftyedge-broker-plugins"
+version = "0.1.0"
+description = "Broker Adapter Layer for NiftyEdgeAI — common interface (core) + implementations (mock, and eventually dhan/fyers/angel-one)."
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.setuptools]
+package-dir = {"broker_plugins" = "."}
+packages = ["broker_plugins", "broker_plugins.core", "broker_plugins.mock", "broker_plugins.dhan"]

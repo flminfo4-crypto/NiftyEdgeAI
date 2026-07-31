@@ -1,0 +1,17 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.6
+python-dotenv>=1.0
+httpx>=0.27
+pytest>=8.0
+
+# Installed from within the repo (editable) — see backend/README.md "Run instructions".
+# -e ../ai-engine
+# -e ../broker-plugins
+
+# Not yet wired up (see docs/Architecture/Architecture.md) — uncomment once the
+# backend moves off the in-memory store and connects to real Postgres/Redis:
+# sqlalchemy>=2.0
+# alembic>=1.13
+# asyncpg>=0.29
+# redis>=5.0

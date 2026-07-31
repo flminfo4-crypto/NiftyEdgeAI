@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CPR Dashboard · NiftyEdge Pro Trading Terminal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  :root{
+    --page-bg: #eef1f5;
+    --card-bg: #ffffff;
+    --tile-bg: #f4f6f8;
+    --level-bg: #eef4ff;
+    --level-border: #c7dcff;
+    --border: #e6e9ee;
+    --text-primary: #10151f;
+    --text-secondary: #5b6472;
+    --text-muted: #88909a;
+    --blue: #2f6fed;
+    --green: #16a34a;
+    --green-bg: #e7f6ec;
+    --red: #e0393e;
+    --red-bg: #fdeceb;
+    --amber: #b8860b;
+  }
+  *,*::before,*::after{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--page-bg);
+    font-family: "Inter","Segoe UI",-apple-system,BlinkMacSystemFont,sans-serif;
+    color: var(--text-primary);
+    padding: 28px 16px 60px;
+  }
+  .mono{ font-family:"SFMono-Regular",Consolas,"Roboto Mono",monospace; font-variant-numeric:tabular-nums; }
+
+  .backbar{
+    max-width:900px; margin:0 auto 14px; display:flex; align-items:center; justify-content:space-between;
+  }
+  .backbar a{
+    color:var(--text-secondary); text-decoration:none; font-size:12.5px; font-weight:600;
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  .backbar a:hover{ color:var(--blue); }
+  .backbar .exportbtn{
+    background:var(--text-primary); color:#fff; border:none; padding:8px 14px; border-radius:8px;
+    font-size:12px; font-weight:600; cursor:pointer;
+  }
+
+  .sheet{
+    max-width:900px; margin:0 auto; background:var(--card-bg); border-radius:20px;
+    padding:26px 30px 30px; box-shadow:0 1px 3px rgba(16,21,31,0.06), 0 12px 32px rgba(16,21,31,0.05);
+  }
+
+  /* header */
+  .head{
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--level-bg); border:1px solid var(--level-border);
+    border-radius:14px; padding:18px 22px; margin-bottom:18px;
+  }
+  .head h1{ margin:0; font-size:24px; font-weight:800; letter-spacing:-.3px; }
+  .head .ts{ margin-top:4px; font-size:12.5px; color:var(--text-secondary); font-weight:500; }
+  .head .logo{ text-align:right; }
+  .head .logo .brand{ font-size:19px; font-weight:800; color:var(--blue); letter-spacing:.2px; }
+  .head .logo .brand span{ color:var(--green); }
+  .head .logo .sub{ font-size:9.5px; letter-spacing:1.5px; color:var(--text-secondary); font-weight:700; margin-top:1px; }
+
+  hr.sep{ border:none; border-top:1px solid var(--border); margin:20px 0; }
+
+  /* top stat strip (5 tiles) */
+  .strip{ display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:18px; }
+  .tile{ background:var(--tile-bg); border-radius:12px; padding:14px 16px; }
+  .tile .k{ font-size:10.5px; letter-spacing:.4px; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-bottom:8px; }
+  .tile .v{ font-size:21px; font-weight:800; letter-spacing:-.3px; }
+  .tile .v.sm{ font-size:19px; }
+  .tile .d{ font-size:11.5px; font-weight:700; margin-top:4px; }
+  .up{ color:var(--green); } .down{ color:var(--red); } .blue{ color:var(--blue); }
+  .tile .split{ display:flex; gap:14px; margin-top:2px; }
+  .tile .split .lab{ font-size:9.5px; font-weight:800; letter-spacing:.3px; color:var(--text-muted); margin-right:4px; }
+
+  .badge{ display:inline-block; padding:2px 10px; border-radius:999px; font-size:11px; font-weight:700; }
+  .badge-green{ background:var(--green-bg); color:var(--green); }
+  .badge-blue{ background:var(--level-bg); color:var(--blue); }
+  .badge-neutral{ background:#eef1f5; color:var(--text-secondary); }
+
+  /* CPR levels block */
+  .levels-panel{ background:var(--tile-bg); border-radius:14px; padding:20px 22px 18px; margin-bottom:18px; }
+  .levels-title{ font-size:11.5px; font-weight:800; letter-spacing:.5px; color:var(--text-muted); text-transform:uppercase; margin-bottom:14px; }
+  .levels-row3{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:16px; }
+  .levelbox{ background:var(--level-bg); border:1px solid var(--level-border); border-radius:12px; padding:14px 0; text-align:center; }
+  .levelbox .lab{ font-size:11px; font-weight:800; letter-spacing:.5px; color:var(--blue); text-transform:uppercase; margin-bottom:6px; }
+  .levelbox .val{ font-size:27px; font-weight:800; letter-spacing:-.4px; }
+
+  .keylevels{ display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap; padding-top:4px; }
+  .keylevels .kl{ text-align:center; flex:1; min-width:80px; }
+  .keylevels .kl .lab{ font-size:10px; font-weight:800; letter-spacing:.4px; margin-bottom:4px; }
+  .keylevels .kl .val{ font-size:16px; font-weight:800; }
+  .keylevels .kl.r .lab{ color:var(--green); }
+  .keylevels .kl.s .lab{ color:var(--red); }
+  .keylevels .center-label{ font-size:10px; font-weight:800; letter-spacing:.4px; color:var(--text-muted); text-transform:uppercase; padding:0 10px; }
+
+  /* setup view */
+  .setup{ background:var(--level-bg); border:1px solid var(--level-border); border-radius:14px; padding:18px 22px; margin-bottom:24px; }
+  .setup .eyebrow{ font-size:11px; font-weight:800; letter-spacing:.5px; color:var(--blue); text-transform:uppercase; margin-bottom:8px; }
+  .setup h2{ margin:0 0 8px; font-size:18px; font-weight:800; letter-spacing:-.2px; }
+  .setup p{ margin:0; font-size:13px; line-height:1.65; color:var(--text-secondary); }
+
+  /* bottom row: gift nifty etc */
+  .strip5{ display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin:22px 0 20px; }
+
+  .cols2{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .colcard .coltitle{ font-size:11.5px; font-weight:800; letter-spacing:.5px; color:var(--text-muted); text-transform:uppercase; margin-bottom:12px; }
+  .listrow{ display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border); }
+  .listrow:last-child{ border-bottom:none; }
+  .listrow .name{ font-weight:700; font-size:13.5px; }
+  .listrow .right{ display:flex; align-items:center; gap:12px; }
+  .listrow .val{ font-size:13.5px; font-weight:700; color:var(--text-secondary); }
+
+  .foot{ margin-top:26px; padding-top:16px; border-top:1px solid var(--border); text-align:center; font-size:11px; color:var(--text-muted); }
+
+  @media (max-width:760px){
+    .strip, .strip5, .levels-row3, .cols2{ grid-template-columns:repeat(2,1fr); }
+  }
+</style>
+</head>
+<body>
+
+  <div class="backbar">
+    <a href="index.html">&larr; Back to Terminal</a>
+    <button class="exportbtn">Export / Share Image</button>
+  </div>
+
+  <div class="sheet">
+
+    <!-- HEADER -->
+    <div class="head">
+      <div>
+        <h1>CPR Indicator | Pre-Market Analysis</h1>
+        <div class="ts">25 Jul 2026 &nbsp;&bull;&nbsp; 08:24 IST</div>
+      </div>
+      <div class="logo">
+        <div class="brand">Nifty<span>Edge</span></div>
+        <div class="sub">PRO TRADING TERMINAL</div>
+      </div>
+    </div>
+
+    <!-- NIFTY 50 STRIP -->
+    <div class="strip">
+      <div class="tile">
+        <div class="k">Nifty 50</div>
+        <div class="v mono" data-cpr="NIFTY50-spot">23,532.45</div>
+        <div class="d up" data-cpr="NIFTY50-change">+0.00 (+0.00%)</div>
+      </div>
+      <div class="tile">
+        <div class="k">CPR Width</div>
+        <div class="v blue" data-cpr="NIFTY50-width-regime">Medium</div>
+        <div class="d" style="color:var(--text-muted); font-weight:600;" data-cpr="NIFTY50-width-pct">0.18%</div>
+      </div>
+      <div class="tile">
+        <div class="k">CPR Relationship</div>
+        <div class="v up" style="font-size:19px;" data-cpr="NIFTY50-relationship">Ascending</div>
+      </div>
+      <div class="tile">
+        <div class="k">Day Range</div>
+        <div class="v mono"><span data-cpr="NIFTY50-day-range">215.40</span> <span style="font-size:12px; font-weight:600; color:var(--text-muted);">pts</span></div>
+      </div>
+      <div class="tile">
+        <div class="k">OI Walls</div>
+        <div class="split">
+          <div><span class="lab" style="color:var(--red);">CE</span><span class="v sm mono down">23,700</span></div>
+        </div>
+        <div class="split" style="margin-top:6px;">
+          <div><span class="lab" style="color:var(--green);">PE</span><span class="v sm mono up">23,400</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NIFTY CPR LEVELS -->
+    <div class="levels-panel">
+      <div class="levels-title">Today's CPR Levels</div>
+      <div class="levels-row3">
+        <div class="levelbox"><div class="lab">TC</div><div class="val mono" data-cpr="NIFTY50-tc">23,578.65</div></div>
+        <div class="levelbox"><div class="lab">Pivot</div><div class="val mono" data-cpr="NIFTY50-pivot">23,557.33</div></div>
+        <div class="levelbox"><div class="lab">BC</div><div class="val mono" data-cpr="NIFTY50-bc">23,536.00</div></div>
+      </div>
+      <div class="keylevels">
+        <div class="kl r"><div class="lab">R2</div><div class="val mono" data-cpr="NIFTY50-r2">23,772.75</div></div>
+        <div class="kl r"><div class="lab">R1</div><div class="val mono" data-cpr="NIFTY50-r1">23,685.90</div></div>
+        <div class="kl r"><div class="lab" style="color:var(--red);">PDH</div><div class="val mono" data-cpr="NIFTY50-pdh">23,644.20</div></div>
+        <div class="center-label">Key<br>Levels</div>
+        <div class="kl s"><div class="lab" style="color:var(--red);">PDL</div><div class="val mono" data-cpr="NIFTY50-pdl">23,428.80</div></div>
+        <div class="kl s"><div class="lab">S1</div><div class="val mono" data-cpr="NIFTY50-s1">23,470.45</div></div>
+        <div class="kl s"><div class="lab">S2</div><div class="val mono" data-cpr="NIFTY50-s2">23,341.90</div></div>
+      </div>
+    </div>
+
+    <!-- NIFTY SETUP -->
+    <div class="setup">
+      <div class="eyebrow">Nifty 50 &mdash; Setup &amp; Market View</div>
+      <h2 data-cpr="NIFTY50-setup-headline">Medium ascending CPR &mdash; Bullish tilt, look for continuation above TC</h2>
+      <p data-cpr="NIFTY50-setup-body">A mildly higher start looks likely today. A break above TC 23,578.65 can push it to R1 23,685.90. As long as it stays above PDL 23,428.80, bulls stay in control. A close back below BC 23,536.00 would flip the bias neutral-to-cautious into the session.</p>
+    </div>
+
+    <hr class="sep">
+
+    <!-- SENSEX STRIP -->
+    <div class="strip">
+      <div class="tile">
+        <div class="k">Sensex</div>
+        <div class="v mono" data-cpr="SENSEX-spot">77,259.01</div>
+        <div class="d up" data-cpr="SENSEX-change">+0.00 (+0.00%)</div>
+      </div>
+      <div class="tile">
+        <div class="k">CPR Width</div>
+        <div class="v blue" data-cpr="SENSEX-width-regime">Medium</div>
+        <div class="d" style="color:var(--text-muted); font-weight:600;" data-cpr="SENSEX-width-pct">0.16%</div>
+      </div>
+      <div class="tile">
+        <div class="k">CPR Relationship</div>
+        <div class="v up" style="font-size:19px;" data-cpr="SENSEX-relationship">Ascending</div>
+      </div>
+      <div class="tile">
+        <div class="k">Day Range</div>
+        <div class="v mono"><span data-cpr="SENSEX-day-range">560.70</span> <span style="font-size:12px; font-weight:600; color:var(--text-muted);">pts</span></div>
+      </div>
+      <div class="tile">
+        <div class="k">OI Walls</div>
+        <div class="split">
+          <div><span class="lab" style="color:var(--red);">CE</span><span class="v sm mono down">77,500</span></div>
+        </div>
+        <div class="split" style="margin-top:6px;">
+          <div><span class="lab" style="color:var(--green);">PE</span><span class="v sm mono up">77,000</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SENSEX CPR LEVELS -->
+    <div class="levels-panel">
+      <div class="levels-title">Sensex CPR Levels</div>
+      <div class="levels-row3">
+        <div class="levelbox"><div class="lab">TC</div><div class="val mono" data-cpr="SENSEX-tc">77,386.66</div></div>
+        <div class="levelbox"><div class="lab">Pivot</div><div class="val mono" data-cpr="SENSEX-pivot">77,323.33</div></div>
+        <div class="levelbox"><div class="lab">BC</div><div class="val mono" data-cpr="SENSEX-bc">77,260.00</div></div>
+      </div>
+      <div class="keylevels">
+        <div class="kl r"><div class="lab">R2</div><div class="val mono" data-cpr="SENSEX-r2">77,883.33</div></div>
+        <div class="kl r"><div class="lab">R1</div><div class="val mono" data-cpr="SENSEX-r1">77,666.66</div></div>
+        <div class="kl r"><div class="lab" style="color:var(--red);">PDH</div><div class="val mono" data-cpr="SENSEX-pdh">77,540.85</div></div>
+        <div class="center-label">Key<br>Levels</div>
+        <div class="kl s"><div class="lab" style="color:var(--red);">PDL</div><div class="val mono" data-cpr="SENSEX-pdl">76,980.15</div></div>
+        <div class="kl s"><div class="lab">S1</div><div class="val mono" data-cpr="SENSEX-s1">77,106.66</div></div>
+        <div class="kl s"><div class="lab">S2</div><div class="val mono" data-cpr="SENSEX-s2">76,763.33</div></div>
+      </div>
+    </div>
+
+    <!-- SENSEX SETUP -->
+    <div class="setup">
+      <div class="eyebrow">Sensex &mdash; Setup &amp; Market View</div>
+      <h2 data-cpr="SENSEX-setup-headline">Medium ascending CPR &mdash; Bullish tilt, look for continuation above TC</h2>
+      <p data-cpr="SENSEX-setup-body">A mildly higher start looks likely today. A break above TC 77,386.66 can push it to R1 77,666.66. As long as it stays above PDL 76,980.15, bulls stay in control. Watch for a wider range today given the 560-point prior session swing.</p>
+    </div>
+
+    <!-- MISC STRIP -->
+    <div class="strip5">
+      <div class="tile">
+        <div class="k">Gift Nifty</div>
+        <div class="v mono" style="font-size:18px;">23,558.00</div>
+        <div class="d up">+25.55 (+0.11%)</div>
+      </div>
+      <div class="tile">
+        <div class="k">India VIX</div>
+        <div class="v mono" style="font-size:18px;">13.85</div>
+      </div>
+      <div class="tile">
+        <div class="k">PCR</div>
+        <div class="v mono" style="font-size:18px;">1.05</div>
+        <div style="margin-top:4px;"><span class="badge badge-neutral">Neutral</span></div>
+      </div>
+      <div class="tile">
+        <div class="k">Nifty Straddle</div>
+        <div class="v mono" style="font-size:18px;">168.40</div>
+        <div class="d" style="color:var(--text-muted); font-weight:600;">&plusmn;168 pts</div>
+      </div>
+      <div class="tile">
+        <div class="k">Sensex Straddle</div>
+        <div class="v mono" style="font-size:18px;">920.50</div>
+        <div class="d" style="color:var(--text-muted); font-weight:600;">&plusmn;921 pts</div>
+      </div>
+    </div>
+
+    <!-- TOP NARROW CPR -->
+    <div class="cols2">
+      <div class="colcard">
+        <div class="coltitle">Top Narrow CPR Stocks</div>
+        <div class="listrow"><span class="name">COALINDIA</span><div class="right"><span class="val mono">412.30</span><span class="badge badge-green">Narrow</span></div></div>
+        <div class="listrow"><span class="name">BPCL</span><div class="right"><span class="val mono">298.75</span><span class="badge badge-green">Narrow</span></div></div>
+        <div class="listrow"><span class="name">ITC</span><div class="right"><span class="val mono">441.20</span><span class="badge badge-green">Narrow</span></div></div>
+      </div>
+      <div class="colcard">
+        <div class="coltitle">Top Narrow CPR Sectors</div>
+        <div class="listrow"><span class="name">Nifty PSU Bank</span><div class="right"><span class="val mono">7,845.30</span><span class="badge badge-blue">Medium</span></div></div>
+        <div class="listrow"><span class="name">Nifty Metal</span><div class="right"><span class="val mono">9,120.45</span><span class="badge badge-blue">Medium</span></div></div>
+        <div class="listrow"><span class="name">Nifty Energy</span><div class="right"><span class="val mono">41,230.60</span><span class="badge badge-blue">Medium</span></div></div>
+      </div>
+    </div>
+
+    <div class="foot">
+      Educational content only &nbsp;&bull;&nbsp; Not investment advice &nbsp;&bull;&nbsp; Markets carry risk &nbsp;&bull;&nbsp; Not SEBI-registered investment advisor &nbsp;&bull;&nbsp; www.niftyedge.app
+    </div>
+
+  </div>
+
+<script>
+/* Live CPR data from the NiftyEdgeAI backend (GET /market/cpr, GET /market/quote).
+   Levels are computed server-side by ai-engine/pivots.py from the active broker
+   adapter's prior-session OHLC (Dhan when BROKER_ADAPTER=dhan, mock otherwise).
+   If the backend is unreachable, the page keeps its static example numbers. */
+(function () {
+  var API_BASES = window.NIFTYEDGE_API_BASES || [
+    window.NIFTYEDGE_API_BASE,
+    "http://localhost:8000/api/v1",
+    "http://52.66.168.49:8000/api/v1",
+  ].filter(Boolean);
+  var API_BASE = null;
+  var FETCH_TIMEOUT_MS = 4000;
+
+  function fetchWithTimeout(url) {
+    var c = new AbortController();
+    var t = setTimeout(function () { c.abort(); }, FETCH_TIMEOUT_MS);
+    return fetch(url, { signal: c.signal }).then(
+      function (r) { clearTimeout(t); return r; },
+      function (e) { clearTimeout(t); throw e; }
+    );
+  }
+
+  function pickBase(i) {
+    i = i || 0;
+    if (API_BASE) return Promise.resolve(API_BASE);
+    if (i >= API_BASES.length) return Promise.reject(new Error("no backend reachable"));
+    return fetchWithTimeout(API_BASES[i] + "/system/status")
+      .then(function (r) {
+        if (!r.ok) throw new Error("bad status");
+        API_BASE = API_BASES[i];
+        return API_BASE;
+      })
+      .catch(function () { return pickBase(i + 1); });
+  }
+
+  function fetchJSON(path) {
+    return pickBase().then(function (base) {
+      return fetchWithTimeout(base + path).then(function (r) {
+        if (!r.ok) throw new Error(path + " -> " + r.status);
+        return r.json();
+      });
+    });
+  }
+
+  function fmt(n) {
+    return Number(n).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function set(sym, field, text) {
+    var el = document.querySelector('[data-cpr="' + sym + "-" + field + '"]');
+    if (el) el.textContent = text;
+  }
+
+  var REGIME_LABEL = { NARROW: "Narrow", NORMAL: "Medium", WIDE: "Wide" };
+  var REL_LABEL = {
+    HIGHER_VALUE: "Ascending", OVERLAPPING_HIGHER_VALUE: "Overlap Higher",
+    LOWER_VALUE: "Descending", OVERLAPPING_LOWER_VALUE: "Overlap Lower",
+    UNCHANGED_VALUE: "Unchanged", OUTSIDE_VALUE: "Outside", INSIDE_VALUE: "Inside"
+  };
+
+  function applyCpr(sym, d) {
+    set(sym, "tc", fmt(d.cpr.tc));
+    set(sym, "pivot", fmt(d.cpr.pivot));
+    set(sym, "bc", fmt(d.cpr.bc));
+    set(sym, "r1", fmt(d.floor.r1));
+    set(sym, "r2", fmt(d.floor.r2));
+    set(sym, "s1", fmt(d.floor.s1));
+    set(sym, "s2", fmt(d.floor.s2));
+    set(sym, "pdh", fmt(d.pdh));
+    set(sym, "pdl", fmt(d.pdl));
+    set(sym, "day-range", fmt(d.pdh - d.pdl));
+    set(sym, "width-regime", REGIME_LABEL[d.width.regime] || d.width.regime);
+    set(sym, "width-pct", d.cpr.widthPct.toFixed(2) + "%");
+
+    var relEl = document.querySelector('[data-cpr="' + sym + '-relationship"]');
+    if (relEl && d.twoDay) {
+      relEl.textContent = REL_LABEL[d.twoDay.relationship] || d.twoDay.relationship;
+      relEl.classList.remove("up", "down");
+      relEl.classList.add(d.twoDay.direction === "BULLISH" ? "up" : d.twoDay.direction === "BEARISH" ? "down" : "up");
+    }
+
+    // Generated setup narrative from the computed values
+    var name = sym === "NIFTY50" ? "Nifty" : "Sensex";
+    var regime = (REGIME_LABEL[d.width.regime] || "").toLowerCase();
+    if (d.twoDay) {
+      var bull = d.twoDay.direction === "BULLISH";
+      var bear = d.twoDay.direction === "BEARISH";
+      var tilt = bull ? "Bullish tilt, look for continuation above TC"
+               : bear ? "Bearish tilt, rallies into the CPR are selling zones"
+               : "Neutral — trade the break of the range";
+      set(sym, "setup-headline", (regime.charAt(0).toUpperCase() + regime.slice(1)) + " " +
+        (REL_LABEL[d.twoDay.relationship] || "").toLowerCase() + " CPR — " + tilt);
+      var body;
+      if (bull) {
+        body = "A break above TC " + fmt(d.cpr.tc) + " can push " + name + " toward R1 " + fmt(d.floor.r1) +
+               ". As long as it holds above PDL " + fmt(d.pdl) + ", buyers stay in control. A close back below BC " +
+               fmt(d.cpr.bc) + " flips the bias cautious.";
+      } else if (bear) {
+        body = "Rallies into the CPR (" + fmt(d.cpr.bc) + "–" + fmt(d.cpr.tc) + ") are selling opportunities while " +
+               name + " trades below PDH " + fmt(d.pdh) + ". A break below S1 " + fmt(d.floor.s1) +
+               " opens S2 " + fmt(d.floor.s2) + ". Above TC, the bearish view is invalidated.";
+      } else {
+        body = "The CPR relationship is neutral — wait for a decisive break beyond " + fmt(d.pdh) + " (PDH) or " +
+               fmt(d.pdl) + " (PDL) before committing. " +
+               (d.width.regime === "NARROW" ? "The narrow CPR warns a trending move may follow the break." : d.width.forecast);
+      }
+      set(sym, "setup-body", body + (d.source === "mock" ? " (Mock data — backend not connected to a live broker.)" : ""));
+    }
+  }
+
+  function applyQuote(sym, q) {
+    set(sym, "spot", fmt(q.ltp));
+    var el = document.querySelector('[data-cpr="' + sym + '-change"]');
+    if (el) {
+      var sign = q.change >= 0 ? "+" : "";
+      el.textContent = sign + q.change.toFixed(2) + " (" + sign + q.changePct.toFixed(2) + "%)";
+      el.classList.remove("up", "down");
+      el.classList.add(q.change >= 0 ? "up" : "down");
+    }
+  }
+
+  ["NIFTY50", "SENSEX"].forEach(function (sym) {
+    fetchJSON("/market/cpr?underlying=" + sym).then(function (d) { applyCpr(sym, d); }).catch(function () {});
+    fetchJSON("/market/quote?symbols=" + sym).then(function (qs) {
+      if (qs && qs.length) applyQuote(sym, qs[0]);
+    }).catch(function () {});
+  });
+})();
+</script>
+</body>
+</html>

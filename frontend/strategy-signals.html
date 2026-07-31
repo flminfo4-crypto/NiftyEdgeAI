@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Strategy Signals · NiftyEdge Pro Trading Terminal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="css/style.css">
+<script>(function(){try{var t=localStorage.getItem("niftyedge-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+</head>
+<body>
+<div class="app">
+<div class="app-body">
+
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#eafff2" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+    <div class="brand-text"><div class="name">NiftyEdge</div><div class="tagline">Pro Trading Terminal</div></div>
+  </div>
+  <nav class="nav">
+    <a class="nav-item" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+<a class="nav-item" href="cpr-dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 14l2 2 4-4"/></svg>CPR Dashboard</a>
+    <a class="nav-item" href="market-profile.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Market Profile</a>
+    <a class="nav-item" href="volume-profile.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg>Volume Profile</a>
+    <a class="nav-item" href="footprint.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>Footprint (Order Flow)</a>
+    <a class="nav-item" href="options-chain.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Options Chain</a>
+    <a class="nav-item" href="open-interest.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Open Interest</a>
+    <a class="nav-item" href="greeks.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>Greeks</a>
+    <a class="nav-item active" href="strategy-signals.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>Strategy Signals</a>
+    <a class="nav-item" href="positions.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>Positions</a>
+    <a class="nav-item" href="orders.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Orders</a>
+    <a class="nav-item" href="backtester.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Backtester</a>
+    <a class="nav-item" href="reports.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Reports</a>
+    <div class="nav-divider"></div>
+    <a class="nav-item" href="settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</a>
+    <a class="nav-item" href="help.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Help</a>
+  </nav>
+  <div class="sidebar-foot">
+    <div class="api-status"><span class="dot"></span> API Connected</div>
+    <div class="acct-row"><span>Client ID</span><b>XXXXXX</b></div>
+    <div class="acct-row"><span>Account</span><b>XXXX1234</b></div>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <div class="ticker-group">
+      <div class="ticker-item price"><div class="label">Nifty 50</div><div class="value">23,532.45</div><div class="sub up">+182.60 (0.78%) &#9650;</div></div>
+      <div class="ticker-item"><div class="label">India VIX</div><div class="value down">13.85</div><div class="sub down">-0.45 (-3.15%)</div></div>
+    </div>
+    <div class="topbar-right">
+      <div class="market-open"><span class="dot"></span> Market Open</div>
+      <div class="clock" data-clock>10:15:30 AM</div>
+<div class="theme-switch" role="group" aria-label="Theme"><button class="theme-btn" data-set-theme="light" title="Light theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button><button class="theme-btn" data-set-theme="dark" title="Dark theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button><button class="theme-btn" data-set-theme="terminal" title="Terminal theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></button></div>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="page-head">
+      <div>
+        <div class="page-title">Strategy Signals</div>
+        <div class="page-sub">AI-generated trade ideas &middot; NIFTY 50 &amp; Options &middot; Live feed</div>
+      </div>
+      <div class="page-actions">
+        <div class="tabs">
+          <span class="tab active">All</span>
+          <span class="tab">Active</span>
+          <span class="tab">Closed</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid g-4 mb-8">
+      <div class="card"><div class="stat-block"><div class="k">Active Signals</div><div class="v">2</div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">Today's Hit Rate</div><div class="v text-green">75%</div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">30-Day Hit Rate</div><div class="v text-green">76.6%</div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">Avg R:R</div><div class="v">1 : 2.1</div></div></div>
+    </div>
+
+    <div class="grid" style="grid-template-columns: 1fr 300px;">
+      <div class="flex-col gap-14">
+
+        <div class="card" style="border-color:rgba(239,68,68,.3);">
+          <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-10">
+              <span class="badge badge-red">ACTIVE</span>
+              <span class="card-title">SELL CALL (CE WRITING) &middot; 23,600 CE</span>
+            </div>
+            <span style="font-size:10.5px; color:var(--text-muted);">Today, 10:15:30 AM</span>
+          </div>
+          <div class="flex items-center gap-10">
+            <div style="width:38px;height:38px;border-radius:50%;background:var(--red-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+            </div>
+            <div style="flex:1; font-size:15px; font-weight:800; color:var(--red);">BEARISH BELOW VAH 23,601</div>
+            <div class="confidence-ring" style="background:conic-gradient(#ef4444 82%, var(--border-soft) 0);"><div style="width:34px;height:34px;border-radius:50%;background:var(--bg-card);display:flex;align-items:center;justify-content:center;">82%</div></div>
+          </div>
+          <div class="flex gap-8 mt-8" style="flex-wrap:wrap;">
+            <span class="badge badge-gray">Price below VAH &amp; POC</span>
+            <span class="badge badge-gray">CE Writing 23,600&ndash;23,700</span>
+            <span class="badge badge-gray">Negative Delta/Gamma</span>
+            <span class="badge badge-gray">IV Rank 62</span>
+          </div>
+          <div class="divider"></div>
+          <div class="grid g-3">
+            <div class="stat-block"><div class="k">Entry Zone</div><div class="v sm">23,580&ndash;23,620</div></div>
+            <div class="stat-block"><div class="k">Target</div><div class="v sm text-green">23,300</div></div>
+            <div class="stat-block"><div class="k">Stop Loss</div><div class="v sm text-red">23,710</div></div>
+          </div>
+        </div>
+
+        <div class="card" style="border-color:rgba(34,197,94,.3);">
+          <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-10">
+              <span class="badge badge-green">ACTIVE</span>
+              <span class="card-title">BUY PUT (PE BUYING) &middot; 23,400 PE</span>
+            </div>
+            <span style="font-size:10.5px; color:var(--text-muted);">Today, 10:15:30 AM</span>
+          </div>
+          <div class="flex items-center gap-10">
+            <div style="width:38px;height:38px;border-radius:50%;background:var(--green-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>
+            </div>
+            <div style="flex:1; font-size:15px; font-weight:800; color:var(--green);">BREAKDOWN CONTINUATION IF 23,400 BREAKS</div>
+            <div class="confidence-ring" style="background:conic-gradient(#22c55e 48%, var(--border-soft) 0);"><div style="width:34px;height:34px;border-radius:50%;background:var(--bg-card);display:flex;align-items:center;justify-content:center;">48%</div></div>
+          </div>
+          <div class="flex gap-8 mt-8" style="flex-wrap:wrap;">
+            <span class="badge badge-gray">Support cluster 23,400</span>
+            <span class="badge badge-gray">Low conviction</span>
+          </div>
+          <div class="divider"></div>
+          <div class="grid g-3">
+            <div class="stat-block"><div class="k">Entry Zone</div><div class="v sm">Below 23,400</div></div>
+            <div class="stat-block"><div class="k">Target</div><div class="v sm text-green">23,250</div></div>
+            <div class="stat-block"><div class="k">Stop Loss</div><div class="v sm text-red">23,460</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title accent">Signal History</span></div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>Time</th><th>Signal</th><th>Confidence</th><th>Entry</th><th>Target</th><th>SL</th><th>Result</th><th>P&amp;L</th></tr></thead>
+              <tbody>
+                <tr><td>09:20 AM</td><td>SELL CALL 23550 CE</td><td>78%</td><td>23,540</td><td>23,420</td><td>23,610</td><td><span class="badge badge-green">Target Hit</span></td><td class="text-green">+&#8377;3,120</td></tr>
+                <tr><td>Yesterday</td><td>BUY PUT 23600 PE</td><td>71%</td><td>23,610</td><td>23,480</td><td>23,660</td><td><span class="badge badge-green">Target Hit</span></td><td class="text-green">+&#8377;2,640</td></tr>
+                <tr><td>Yesterday</td><td>SELL PUT 23300 PE</td><td>65%</td><td>23,320</td><td>23,410</td><td>23,260</td><td><span class="badge badge-red">SL Hit</span></td><td class="text-red">-&#8377;1,480</td></tr>
+                <tr><td>2 days ago</td><td>IRON CONDOR 23300/23700</td><td>69%</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="badge badge-green">Expired ITM Range</span></td><td class="text-green">+&#8377;4,210</td></tr>
+                <tr><td>3 days ago</td><td>SELL CALL 23650 CE</td><td>74%</td><td>23,660</td><td>23,520</td><td>23,730</td><td><span class="badge badge-green">Target Hit</span></td><td class="text-green">+&#8377;2,910</td></tr>
+                <tr><td>4 days ago</td><td>BUY CALL 23450 CE</td><td>58%</td><td>23,460</td><td>23,590</td><td>23,390</td><td><span class="badge badge-red">SL Hit</span></td><td class="text-red">-&#8377;2,050</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex-col gap-14">
+        <div class="card">
+          <div class="card-title mb-8">Performance by Strategy</div>
+          <div class="stat-row"><span class="k">CE Writing</span><span class="v text-green">81% hit</span></div>
+          <div class="stat-row"><span class="k">PE Writing</span><span class="v text-green">73% hit</span></div>
+          <div class="stat-row"><span class="k">Directional Buying</span><span class="v text-amber">58% hit</span></div>
+          <div class="stat-row"><span class="k">Iron Condor</span><span class="v text-green">84% hit</span></div>
+          <div class="stat-row"><span class="k">Straddle/Strangle</span><span class="v text-amber">62% hit</span></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title mb-8">Confidence Calibration</div>
+          <svg viewBox="0 0 260 90" style="width:100%; height:80px;" preserveAspectRatio="none">
+            <line x1="0" y1="90" x2="260" y2="0" stroke="#5c6478" stroke-width="1" stroke-dasharray="3 3"/>
+            <path d="M0 88 L40 70 L80 60 L120 45 L160 34 L200 20 L260 6" fill="none" stroke="#22c55e" stroke-width="1.8"/>
+          </svg>
+          <div class="mt-8" style="font-size:11px; color:var(--text-secondary); line-height:1.6;">
+            Realized hit rate tracks close to model confidence &mdash; signals above 70% confidence have hit target 4 out of 5 times over the last 30 sessions.
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title mb-8">Model Notes</div>
+          <ul class="flex-col gap-8" style="font-size:12px; color:var(--text-secondary);">
+            <li>Model favors premium-selling setups in low-to-moderate IV rank regimes (40&ndash;70).</li>
+            <li>Directional buy signals require breakout confirmation with volume &amp; delta expansion.</li>
+            <li>Signals suppressed automatically 15 minutes before expiry-day settlement window.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="statusbar">
+    <div class="items">
+      <span class="item">Nifty 50 <b>23,532.45</b> <span class="up">&#9650; 0.78%</span></span>
+      <span class="item">India VIX <b>13.85</b> <span class="down">&#9660; -3.15%</span></span>
+    </div>
+    <div class="items">
+      <span class="live"><span class="dot"></span> Market Open</span>
+      <span>Data Refresh: <b style="color:var(--text-primary);">10:15:30 AM</b></span>
+    </div>
+  </footer>
+</div>
+</div>
+</div>
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Open Interest · NiftyEdge Pro Trading Terminal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="css/style.css">
+<script>(function(){try{var t=localStorage.getItem("niftyedge-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+</head>
+<body>
+<div class="app">
+<div class="app-body">
+
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#eafff2" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+    <div class="brand-text"><div class="name">NiftyEdge</div><div class="tagline">Pro Trading Terminal</div></div>
+  </div>
+  <nav class="nav">
+    <a class="nav-item" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+<a class="nav-item" href="cpr-dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 14l2 2 4-4"/></svg>CPR Dashboard</a>
+    <a class="nav-item" href="market-profile.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Market Profile</a>
+    <a class="nav-item" href="volume-profile.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg>Volume Profile</a>
+    <a class="nav-item" href="footprint.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>Footprint (Order Flow)</a>
+    <a class="nav-item" href="options-chain.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Options Chain</a>
+    <a class="nav-item active" href="open-interest.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Open Interest</a>
+    <a class="nav-item" href="greeks.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>Greeks</a>
+    <a class="nav-item" href="strategy-signals.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>Strategy Signals</a>
+    <a class="nav-item" href="positions.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>Positions</a>
+    <a class="nav-item" href="orders.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Orders</a>
+    <a class="nav-item" href="backtester.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Backtester</a>
+    <a class="nav-item" href="reports.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Reports</a>
+    <div class="nav-divider"></div>
+    <a class="nav-item" href="settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</a>
+    <a class="nav-item" href="help.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Help</a>
+  </nav>
+  <div class="sidebar-foot">
+    <div class="api-status"><span class="dot"></span> API Connected</div>
+    <div class="acct-row"><span>Client ID</span><b>XXXXXX</b></div>
+    <div class="acct-row"><span>Account</span><b>XXXX1234</b></div>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <div class="ticker-group">
+      <div class="ticker-item price"><div class="label">Nifty 50</div><div class="value">23,532.45</div><div class="sub up">+182.60 (0.78%) &#9650;</div></div>
+      <div class="ticker-item"><div class="label">India VIX</div><div class="value down">13.85</div><div class="sub down">-0.45 (-3.15%)</div></div>
+      <div class="ticker-item"><div class="label">PCR (OI)</div><div class="value">1.15</div><div class="sub up">Bullish</div></div>
+    </div>
+    <div class="topbar-right">
+      <div class="market-open"><span class="dot"></span> Market Open</div>
+      <div class="clock" data-clock>10:15:30 AM</div>
+<div class="theme-switch" role="group" aria-label="Theme"><button class="theme-btn" data-set-theme="light" title="Light theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button><button class="theme-btn" data-set-theme="dark" title="Dark theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button><button class="theme-btn" data-set-theme="terminal" title="Terminal theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></button></div>
+      <div class="expiry-select">
+        <label>Expiry</label>
+        <select class="select"><option>24 JUL 2024 (W)</option></select>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="page-head">
+      <div>
+        <div class="page-title">Open Interest</div>
+        <div class="page-sub">OI buildup classification &amp; strike-wise distribution &middot; NIFTY 50 &middot; 24 JUL 2024</div>
+      </div>
+      <div class="page-actions">
+        <button class="btn">Refresh</button>
+      </div>
+    </div>
+
+    <div class="grid g-4 mb-8">
+      <div class="card"><div class="stat-block"><div class="k">Max Pain</div><div class="v">23,500</div><div class="d text-muted">Spot 32 pts away</div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">Total Call OI</div><div class="v">237.7L</div><div class="d text-green">+1.9L</div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">Total Put OI</div><div class="v">274.8L</div><div class="d text-green">+3.4L</div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">PCR (OI)</div><div class="v">1.15</div><div class="d text-green">Mildly Bullish</div></div></div>
+    </div>
+
+    <div class="grid" style="grid-template-columns: 1fr 320px;">
+      <div class="flex-col gap-14">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title accent">OI by Strike</span>
+            <div class="flex gap-14" style="font-size:11px;">
+              <span><span class="legend-dot" style="background:var(--red);"></span>Call OI</span>
+              <span><span class="legend-dot" style="background:var(--green);"></span>Put OI</span>
+            </div>
+          </div>
+          <div class="wall-row"><div class="wall-strike">23,300</div><div class="wall-bar-track"><div class="wall-bar" style="width:41%; background:var(--red);"></div></div><div class="wall-val text-red">13.0L</div></div>
+          <div class="wall-row"><div class="wall-strike">23,350</div><div class="wall-bar-track"><div class="wall-bar" style="width:48%; background:var(--red);"></div></div><div class="wall-val text-red">15.2L</div></div>
+          <div class="wall-row"><div class="wall-strike">23,400</div><div class="wall-bar-track"><div class="wall-bar" style="width:78%; background:var(--red);"></div></div><div class="wall-val text-red">24.6L</div></div>
+          <div class="wall-row"><div class="wall-strike">23,450</div><div class="wall-bar-track"><div class="wall-bar" style="width:44%; background:var(--red);"></div></div><div class="wall-val text-red">13.8L</div></div>
+          <div class="wall-row"><div class="wall-strike">23,500</div><div class="wall-bar-track"><div class="wall-bar" style="width:100%; background:var(--amber);"></div></div><div class="wall-val text-amber">33.4L</div></div>
+          <div class="wall-row"><div class="wall-strike">23,550</div><div class="wall-bar-track"><div class="wall-bar" style="width:39%; background:var(--red);"></div></div><div class="wall-val text-red">12.2L</div></div>
+          <div class="wall-row"><div class="wall-strike">23,600</div><div class="wall-bar-track"><div class="wall-bar" style="width:55%; background:var(--red);"></div></div><div class="wall-val text-red">17.4L</div></div>
+          <div class="wall-row"><div class="wall-strike">23,650</div><div class="wall-bar-track"><div class="wall-bar" style="width:52%; background:var(--red);"></div></div><div class="wall-val text-red">16.6L</div></div>
+          <div class="wall-row"><div class="wall-strike">23,700</div><div class="wall-bar-track"><div class="wall-bar" style="width:17%; background:var(--red);"></div></div><div class="wall-val text-red">5.2L</div></div>
+          <div class="divider"></div>
+          <div class="wall-row"><div class="wall-strike">23,300</div><div class="wall-bar-track"><div class="wall-bar" style="width:84%; background:var(--green);"></div></div><div class="wall-val text-green">26.6L</div></div>
+          <div class="wall-row"><div class="wall-strike">23,350</div><div class="wall-bar-track"><div class="wall-bar" style="width:55%; background:var(--green);"></div></div><div class="wall-val text-green">17.5L</div></div>
+          <div class="wall-row"><div class="wall-strike">23,400</div><div class="wall-bar-track"><div class="wall-bar" style="width:60%; background:var(--green);"></div></div><div class="wall-val text-green">19.1L</div></div>
+          <div class="wall-row"><div class="wall-strike">23,450</div><div class="wall-bar-track"><div class="wall-bar" style="width:100%; background:var(--amber);"></div></div><div class="wall-val text-amber">40.3L</div></div>
+          <div class="wall-row"><div class="wall-strike">23,500</div><div class="wall-bar-track"><div class="wall-bar" style="width:96%; background:var(--green);"></div></div><div class="wall-val text-green">38.8L</div></div>
+          <div class="wall-row"><div class="wall-strike">23,550</div><div class="wall-bar-track"><div class="wall-bar" style="width:51%; background:var(--green);"></div></div><div class="wall-val text-green">20.6L</div></div>
+          <div class="wall-row"><div class="wall-strike">23,600</div><div class="wall-bar-track"><div class="wall-bar" style="width:13%; background:var(--green);"></div></div><div class="wall-val text-green">5.3L</div></div>
+          <div class="wall-row"><div class="wall-strike">23,650</div><div class="wall-bar-track"><div class="wall-bar" style="width:49%; background:var(--green);"></div></div><div class="wall-val text-green">19.9L</div></div>
+          <div class="wall-row"><div class="wall-strike">23,700</div><div class="wall-bar-track"><div class="wall-bar" style="width:30%; background:var(--green);"></div></div><div class="wall-val text-green">12.0L</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title accent">OI Buildup Classification</span></div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>Strike</th><th>Call OI Chg</th><th>Call LTP Chg</th><th>Call Signal</th><th>Put OI Chg</th><th>Put LTP Chg</th><th>Put Signal</th></tr></thead>
+              <tbody>
+                <tr><td>23,300</td><td class="text-green">+2.2L</td><td class="text-green">+4.9%</td><td><span class="badge badge-green">Long Buildup</span></td><td class="text-green">+5.7L</td><td class="text-red">-3.4%</td><td><span class="badge badge-red">Short Buildup</span></td></tr>
+                <tr><td>23,350</td><td class="text-green">+4.1L</td><td class="text-green">+3.3%</td><td><span class="badge badge-green">Long Buildup</span></td><td class="text-green">+3.3L</td><td class="text-red">-6.2%</td><td><span class="badge badge-red">Short Buildup</span></td></tr>
+                <tr><td>23,400</td><td class="text-red">-1.8L</td><td class="text-red">-1.9%</td><td><span class="badge badge-amber">Long Unwinding</span></td><td class="text-green">+4.0L</td><td class="text-red">-4.0%</td><td><span class="badge badge-red">Short Buildup</span></td></tr>
+                <tr><td>23,450</td><td class="text-green">+2.0L</td><td class="text-red">-2.9%</td><td><span class="badge badge-red">Short Buildup</span></td><td class="text-green">+4.8L</td><td class="text-green">+7.1%</td><td><span class="badge badge-green">Long Buildup</span></td></tr>
+                <tr class="atm"><td>23,500</td><td class="text-green">+1.2L</td><td class="text-green">+8.0%</td><td><span class="badge badge-green">Long Buildup</span></td><td class="text-red">-1.5L</td><td class="text-green">+5.0%</td><td><span class="badge badge-blue">Short Covering</span></td></tr>
+                <tr><td>23,550</td><td class="text-green">+5.0L</td><td class="text-red">-5.6%</td><td><span class="badge badge-red">Short Buildup</span></td><td class="text-green">+3.6L</td><td class="text-green">+0.9%</td><td><span class="badge badge-green">Long Buildup</span></td></tr>
+                <tr><td>23,600</td><td class="text-green">+5.6L</td><td class="text-red">-4.6%</td><td><span class="badge badge-red">Short Buildup</span></td><td class="text-green">+2.3L</td><td class="text-green">+6.1%</td><td><span class="badge badge-green">Long Buildup</span></td></tr>
+                <tr><td>23,650</td><td class="text-green">+3.1L</td><td class="text-red">-3.1%</td><td><span class="badge badge-red">Short Buildup</span></td><td class="text-red">-1.3L</td><td class="text-green">+7.0%</td><td><span class="badge badge-blue">Short Covering</span></td></tr>
+                <tr><td>23,700</td><td class="text-green">+1.8L</td><td class="text-green">+7.9%</td><td><span class="badge badge-green">Long Buildup</span></td><td class="text-red">-0.9L</td><td class="text-green">+5.0%</td><td><span class="badge badge-blue">Short Covering</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex-col gap-14">
+        <div class="card">
+          <div class="card-title mb-8">Buildup Legend</div>
+          <ul class="flex-col gap-8" style="font-size:12px;">
+            <li class="flex justify-between"><span class="badge badge-green">Long Buildup</span><span class="text-muted">Price&#8593; + OI&#8593;</span></li>
+            <li class="flex justify-between"><span class="badge badge-red">Short Buildup</span><span class="text-muted">Price&#8595; + OI&#8593;</span></li>
+            <li class="flex justify-between"><span class="badge badge-blue">Short Covering</span><span class="text-muted">Price&#8593; + OI&#8595;</span></li>
+            <li class="flex justify-between"><span class="badge badge-amber">Long Unwinding</span><span class="text-muted">Price&#8595; + OI&#8595;</span></li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div class="card-title mb-8">PCR Trend (Intraday)</div>
+          <svg viewBox="0 0 260 70" style="width:100%; height:64px;" preserveAspectRatio="none">
+            <path d="M0 40 L26 44 L52 38 L78 46 L104 34 L130 30 L156 36 L182 24 L208 20 L234 16 L260 12" fill="none" stroke="#3b82f6" stroke-width="1.8"/>
+          </svg>
+          <div class="flex justify-between mt-8" style="font-size:10.5px; color:var(--text-muted);"><span>09:15</span><span>11:00</span><span>13:00</span><span>Now</span></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title mb-8">Max Pain by Expiry</div>
+          <div class="stat-row"><span class="k">24 JUL (W)</span><span class="v">23,500</span></div>
+          <div class="stat-row"><span class="k">31 JUL (W)</span><span class="v">23,450</span></div>
+          <div class="stat-row"><span class="k">28 AUG (M)</span><span class="v">23,400</span></div>
+          <div class="mt-8" style="font-size:11.5px; color:var(--text-secondary); line-height:1.6;">
+            Max pain clustering near 23,450&ndash;23,500 across expiries suggests option writers favor pinning price in this zone into expiry.
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="statusbar">
+    <div class="items">
+      <span class="item">Nifty 50 <b>23,532.45</b> <span class="up">&#9650; 0.78%</span></span>
+      <span class="item">India VIX <b>13.85</b> <span class="down">&#9660; -3.15%</span></span>
+      <span class="item">PCR <b>1.15</b></span>
+    </div>
+    <div class="items">
+      <span class="live"><span class="dot"></span> Market Open</span>
+      <span>Data Refresh: <b style="color:var(--text-primary);">10:15:30 AM</b></span>
+    </div>
+  </footer>
+</div>
+</div>
+</div>
+<script src="js/app.js"></script>
+</body>
+</html>

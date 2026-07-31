@@ -1,0 +1,5 @@
+Metadata-Version: 2.4
+Name: niftyedge-ai-engine
+Version: 0.1.0
+Summary: NiftyEdgeAI Analytics Engine — market bias, strategy signals, and backtesting.
+Requires-Python: >=3.10

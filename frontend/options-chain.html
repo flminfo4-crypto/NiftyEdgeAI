@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Options Chain · NiftyEdge Pro Trading Terminal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="css/style.css">
+<script>(function(){try{var t=localStorage.getItem("niftyedge-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+</head>
+<body>
+<div class="app">
+<div class="app-body">
+
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#eafff2" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+    <div class="brand-text"><div class="name">NiftyEdge</div><div class="tagline">Pro Trading Terminal</div></div>
+  </div>
+  <nav class="nav">
+    <a class="nav-item" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+<a class="nav-item" href="cpr-dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 14l2 2 4-4"/></svg>CPR Dashboard</a>
+    <a class="nav-item" href="market-profile.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Market Profile</a>
+    <a class="nav-item" href="volume-profile.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg>Volume Profile</a>
+    <a class="nav-item" href="footprint.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>Footprint (Order Flow)</a>
+    <a class="nav-item active" href="options-chain.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Options Chain</a>
+    <a class="nav-item" href="open-interest.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Open Interest</a>
+    <a class="nav-item" href="greeks.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>Greeks</a>
+    <a class="nav-item" href="strategy-signals.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>Strategy Signals</a>
+    <a class="nav-item" href="positions.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>Positions</a>
+    <a class="nav-item" href="orders.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Orders</a>
+    <a class="nav-item" href="backtester.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Backtester</a>
+    <a class="nav-item" href="reports.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Reports</a>
+    <div class="nav-divider"></div>
+    <a class="nav-item" href="settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</a>
+    <a class="nav-item" href="help.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Help</a>
+  </nav>
+  <div class="sidebar-foot">
+    <div class="api-status"><span class="dot"></span> API Connected</div>
+    <div class="acct-row"><span>Client ID</span><b>XXXXXX</b></div>
+    <div class="acct-row"><span>Account</span><b>XXXX1234</b></div>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <div class="ticker-group">
+      <div class="ticker-item price"><div class="label">Nifty 50</div><div class="value">23,532.45</div><div class="sub up">+182.60 (0.78%) &#9650;</div></div>
+      <div class="ticker-item"><div class="label">India VIX</div><div class="value down">13.85</div><div class="sub down">-0.45 (-3.15%)</div></div>
+      <div class="ticker-item"><div class="label">PCR (OI)</div><div class="value">1.15</div><div class="sub up">Bullish</div></div>
+      <div class="ticker-item"><div class="label">ATM IV</div><div class="value">13.4%</div></div>
+    </div>
+    <div class="topbar-right">
+      <div class="market-open"><span class="dot"></span> Market Open</div>
+      <div class="clock" data-clock>10:15:30 AM</div>
+<div class="theme-switch" role="group" aria-label="Theme"><button class="theme-btn" data-set-theme="light" title="Light theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button><button class="theme-btn" data-set-theme="dark" title="Dark theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button><button class="theme-btn" data-set-theme="terminal" title="Terminal theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></button></div>
+      <div class="expiry-select">
+        <label>Expiry</label>
+        <select class="select"><option>24 JUL 2024 (W)</option><option>31 JUL 2024 (W)</option><option>28 AUG 2024 (M)</option></select>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="page-head">
+      <div>
+        <div class="page-title">Options Chain</div>
+        <div class="page-sub">NIFTY 50 &middot; 24 JUL 2024 Weekly Expiry &middot; 17 strikes</div>
+      </div>
+      <div class="page-actions">
+        <select class="select"><option>&plusmn;8 strikes</option><option>&plusmn;15 strikes</option><option>All</option></select>
+        <button class="btn">Export CSV</button>
+      </div>
+    </div>
+
+    <div class="grid g-5 mb-8">
+      <div class="card"><div class="stat-block"><div class="k">PCR (OI)</div><div class="v">1.15</div><div class="d text-green">Mildly Bullish</div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">Max Pain</div><div class="v">23,500</div><div class="d text-muted">32 pts from LTP</div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">Total Call OI</div><div class="v">237.7L</div><div class="d text-red">+1.9L today</div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">Total Put OI</div><div class="v">274.8L</div><div class="d text-green">+3.4L today</div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">ATM Straddle</div><div class="v">&#8377;116.36</div><div class="d text-muted">0.77% of spot</div></div></div>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table" style="font-size:11.5px;">
+          <thead>
+            <tr>
+              <th colspan="5" style="text-align:center; color:var(--green); border-bottom:1px solid var(--border);">CALLS</th>
+              <th style="text-align:center; background:var(--bg-card-alt);">STRIKE</th>
+              <th colspan="5" style="text-align:center; color:var(--red); border-bottom:1px solid var(--border);">PUTS</th>
+            </tr>
+            <tr>
+              <th>OI (L)</th><th>Chg OI</th><th>Vol (L)</th><th>IV%</th><th>LTP</th>
+              <th style="background:var(--bg-card-alt); text-align:center;">&#8377;</th>
+              <th>LTP</th><th>IV%</th><th>Vol (L)</th><th>Chg OI</th><th>OI (L)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>5.6</td><td class="text-green">+3.5</td><td>2.3</td><td>13.0</td><td>402.34</td><td style="background:var(--bg-card-alt); text-align:center; font-weight:700;">23,100</td><td>0.05</td><td>13.1</td><td>8.1</td><td class="text-green">+4.8</td><td>18.5</td></tr>
+            <tr><td>10.1</td><td class="text-green">+0.4</td><td>8.1</td><td>12.8</td><td>353.97</td><td style="background:var(--bg-card-alt); text-align:center; font-weight:700;">23,150</td><td>11.21</td><td>13.1</td><td>5.7</td><td class="text-green">+1.5</td><td>8.5</td></tr>
+            <tr><td>15.2</td><td class="text-green">+4.6</td><td>13.2</td><td>13.0</td><td>314.87</td><td style="background:var(--bg-card-alt); text-align:center; font-weight:700;">23,200</td><td>17.55</td><td>13.7</td><td>18.9</td><td class="text-green">+4.0</td><td>24.3</td></tr>
+            <tr><td>12.2</td><td class="text-green">+0.9</td><td>6.0</td><td>13.6</td><td>277.36</td><td style="background:var(--bg-card-alt); text-align:center; font-weight:700;">23,250</td><td>24.41</td><td>13.6</td><td>5.9</td><td class="text-green">+1.4</td><td>15.8</td></tr>
+            <tr><td>13.0</td><td class="text-red">-0.9</td><td>7.4</td><td>12.8</td><td>227.53</td><td style="background:var(--bg-card-alt); text-align:center; font-weight:700;">23,300</td><td>29.59</td><td>13.2</td><td>10.8</td><td class="text-green">+3.4</td><td>26.6</td></tr>
+            <tr><td>15.2</td><td class="text-red">-1.0</td><td>6.7</td><td>12.8</td><td>183.23</td><td style="background:var(--bg-card-alt); text-align:center; font-weight:700;">23,350</td><td>39.01</td><td>13.0</td><td>7.7</td><td class="text-green">+1.9</td><td>17.5</td></tr>
+            <tr><td>24.6</td><td class="text-green">+3.8</td><td>8.0</td><td>13.5</td><td>146.39</td><td style="background:var(--bg-card-alt); text-align:center; font-weight:700;">23,400</td><td>41.60</td><td>13.5</td><td>7.4</td><td class="text-green">+5.5</td><td>19.1</td></tr>
+            <tr><td>13.8</td><td class="text-green">+5.1</td><td>5.8</td><td>12.9</td><td>98.87</td><td style="background:var(--bg-card-alt); text-align:center; font-weight:700;">23,450</td><td>57.21</td><td>13.3</td><td>32.7</td><td class="text-green">+4.4</td><td>40.3</td></tr>
+            <tr class="atm"><td style="font-weight:700;">33.4</td><td class="text-red">-0.3</td><td style="font-weight:700;">21.7</td><td>12.8</td><td style="font-weight:700;">58.41</td><td style="background:rgba(245,166,35,.18); text-align:center; font-weight:800; color:var(--amber);">23,500 &#9642;</td><td style="font-weight:700;">57.95</td><td>13.3</td><td style="font-weight:700;">25.4</td><td class="text-green">+2.9</td><td style="font-weight:700;">38.8</td></tr>
+            <tr><td>12.2</td><td class="text-red">-1.1</td><td>4.2</td><td>13.1</td><td>47.89</td><td style="background:var(--bg-card-alt); text-align:center; font-weight:700;">23,550</td><td>101.90</td><td>13.1</td><td>14.1</td><td class="text-red">-0.2</td><td>20.6</td></tr>
+            <tr class="highlight"><td>17.4</td><td class="text-red">-2.0</td><td>6.5</td><td>12.8</td><td>40.77</td><td style="background:var(--bg-card-alt); text-align:center; font-weight:700;">23,600</td><td>144.70</td><td>13.2</td><td>2.5</td><td class="text-green">+6.0</td><td>5.3</td></tr>
+            <tr><td>16.6</td><td class="text-red">-2.0</td><td>9.9</td><td>13.2</td><td>39.20</td><td style="background:var(--bg-card-alt); text-align:center; font-weight:700;">23,650</td><td>185.47</td><td>13.1</td><td>17.5</td><td class="text-green">+0.7</td><td>19.9</td></tr>
+            <tr><td>5.2</td><td class="text-green">+5.3</td><td>2.4</td><td>13.6</td><td>30.88</td><td style="background:var(--bg-card-alt); text-align:center; font-weight:700;">23,700</td><td>228.56</td><td>12.9</td><td>8.5</td><td class="text-green">+3.9</td><td>12.0</td></tr>
+            <tr><td>10.7</td><td class="text-red">-0.4</td><td>3.5</td><td>12.8</td><td>23.50</td><td style="background:var(--bg-card-alt); text-align:center; font-weight:700;">23,750</td><td>267.54</td><td>13.6</td><td>4.0</td><td class="text-green">+0.8</td><td>7.4</td></tr>
+            <tr><td>23.5</td><td class="text-green">+1.8</td><td>11.7</td><td>13.2</td><td>18.64</td><td style="background:var(--bg-card-alt); text-align:center; font-weight:700;">23,800</td><td>311.12</td><td>12.9</td><td>2.5</td><td class="text-green">+2.4</td><td>5.3</td></tr>
+            <tr><td>23.1</td><td class="text-green">+0.4</td><td>7.4</td><td>13.2</td><td>11.26</td><td style="background:var(--bg-card-alt); text-align:center; font-weight:700;">23,850</td><td>362.40</td><td>13.3</td><td>2.0</td><td class="text-green">+1.1</td><td>5.4</td></tr>
+            <tr><td>4.2</td><td class="text-red">-1.0</td><td>2.1</td><td>13.5</td><td>0.05</td><td style="background:var(--bg-card-alt); text-align:center; font-weight:700;">23,900</td><td>397.48</td><td>13.0</td><td>7.9</td><td class="text-green">+4.4</td><td>9.5</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="flex justify-between mt-8" style="font-size:10px; color:var(--text-muted);">
+        <span>OI &amp; Volume in Lakhs &middot; Highlighted row = 23,600 CE writing wall &middot; Amber row = ATM</span>
+        <span>Last updated 10:15:30 AM</span>
+      </div>
+    </div>
+  </main>
+
+  <footer class="statusbar">
+    <div class="items">
+      <span class="item">Nifty 50 <b>23,532.45</b> <span class="up">&#9650; 0.78%</span></span>
+      <span class="item">India VIX <b>13.85</b> <span class="down">&#9660; -3.15%</span></span>
+      <span class="item">PCR <b>1.15</b></span>
+    </div>
+    <div class="items">
+      <span class="live"><span class="dot"></span> Market Open</span>
+      <span>Data Refresh: <b style="color:var(--text-primary);">10:15:30 AM</b></span>
+    </div>
+  </footer>
+</div>
+</div>
+</div>
+<script src="js/app.js"></script>
+</body>
+</html>
