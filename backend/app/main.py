@@ -11,7 +11,7 @@ market data, and no real orders are ever placed. Interactive docs at /docs.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import backtests, market, orders, positions, signals, system
+from app.api import backtests, market, orders, positions, reports, signals, system
 from app.config import settings
 
 app = FastAPI(
@@ -41,6 +41,7 @@ app.include_router(positions.router, prefix=settings.api_prefix)
 app.include_router(orders.router, prefix=settings.api_prefix)
 app.include_router(backtests.router, prefix=settings.api_prefix)
 app.include_router(system.router, prefix=settings.api_prefix)
+app.include_router(reports.router, prefix=settings.api_prefix)
 
 
 @app.get("/")

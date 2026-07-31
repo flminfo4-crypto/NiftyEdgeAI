@@ -57,6 +57,8 @@ def get_backtest_trades(job_id: str, page: int = 1, page_size: int = 20):
                 "label": t.label,
                 "pnl": t.pnl,
                 "result": t.result,
+                "entryPrice": t.entry_price,
+                "exitPrice": t.exit_price,
             }
             for t in items
         ],

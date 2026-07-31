@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException
 
-from app.models.schemas import MarginsOut, PositionOut
-from app.services import order_service
+from app.config import settings
+from app.models.schemas import ClosedPositionOut, GreeksSummaryOut, MarginsOut, PositionOut
+from app.services import analytics, market_data, order_service
 
 router = APIRouter(prefix="/positions", tags=["positions"])
 
@@ -46,3 +47,15 @@ def exit_position(instrument: str):
 def exit_all():
     positions = order_service.list_open_positions()
     return {"count": len(positions), "status": "SQUARED_OFF"}
+
+
+@router.get("/closed", response_model=list[ClosedPositionOut])
+def closed_positions():
+    return order_service.get_closed_positions()
+
+
+@router.get("/greeks", response_model=GreeksSummaryOut)
+def position_greeks(underlying: str = "NIFTY50", expiry: str = settings.default_expiry):
+    positions = order_service.list_open_positions()
+    chain = market_data.get_option_chain(underlying, expiry)
+    return analytics.portfolio_greeks_detail(positions, chain)

@@ -35,7 +35,7 @@
     <a class="nav-item" href="help.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Help</a>
   </nav>
   <div class="sidebar-foot">
-    <div class="api-status"><span class="dot"></span> API Connected</div>
+    <div class="api-status" data-live="api-status"><span class="dot"></span> API Connected</div>
     <div class="acct-row"><span>Client ID</span><b>XXXXXX</b></div>
     <div class="acct-row"><span>Account</span><b>XXXX1234</b></div>
   </div>
@@ -44,11 +44,11 @@
 <div class="main">
   <header class="topbar">
     <div class="ticker-group">
-      <div class="ticker-item price"><div class="label">Nifty 50</div><div class="value">23,532.45</div><div class="sub up">+182.60 (0.78%) &#9650;</div></div>
-      <div class="ticker-item"><div class="label">India VIX</div><div class="value down">13.85</div><div class="sub down">-0.45 (-3.15%)</div></div>
+      <div class="ticker-item price"><div class="label">Nifty 50</div><div class="value" data-live="nifty-ltp">23,532.45</div><div class="sub up" data-live="nifty-change">+182.60 (0.78%) &#9650;</div></div>
+      <div class="ticker-item"><div class="label">India VIX</div><div class="value down" data-live="vix-ltp">13.85</div><div class="sub down" data-live="vix-change">-0.45 (-3.15%)</div></div>
     </div>
     <div class="topbar-right">
-      <div class="market-open"><span class="dot"></span> Market Open</div>
+      <div class="market-open" data-live="market-open-badge"><span class="dot"></span> Market Open</div>
       <div class="clock" data-clock>10:15:30 AM</div>
 <div class="theme-switch" role="group" aria-label="Theme"><button class="theme-btn" data-set-theme="light" title="Light theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button><button class="theme-btn" data-set-theme="dark" title="Dark theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button><button class="theme-btn" data-set-theme="terminal" title="Terminal theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></button></div>
     </div>
@@ -66,17 +66,17 @@
     </div>
 
     <div class="grid g-4 mb-8">
-      <div class="card"><div class="stat-block"><div class="k">Net P&amp;L (MTD)</div><div class="v text-green">+&#8377;62,140</div></div></div>
-      <div class="card"><div class="stat-block"><div class="k">Realized P&amp;L</div><div class="v text-green">+&#8377;58,910</div></div></div>
-      <div class="card"><div class="stat-block"><div class="k">Unrealized P&amp;L</div><div class="v text-green">+&#8377;3,230</div></div></div>
-      <div class="card"><div class="stat-block"><div class="k">Charges &amp; Taxes</div><div class="v text-red">-&#8377;4,860</div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">Net P&amp;L (MTD)</div><div class="v text-green" data-live="rep-net-pnl">+&#8377;62,140</div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">Realized P&amp;L</div><div class="v text-green" data-live="rep-realized-pnl">+&#8377;58,910</div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">Unrealized P&amp;L</div><div class="v text-green" data-live="rep-unrealized-pnl">+&#8377;3,230</div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">Charges &amp; Taxes</div><div class="v text-red" data-live="rep-charges-total">-&#8377;4,860</div></div></div>
     </div>
 
     <div class="grid" style="grid-template-columns: 1fr 320px;">
       <div class="flex-col gap-14">
         <div class="card">
           <div class="card-title mb-8">Daily P&amp;L (This Month)</div>
-          <div class="barchart">
+          <div class="barchart" data-live="rep-daily-pnl-chart">
             <div class="bar" style="height:40%; background:var(--green);"></div>
             <div class="bar" style="height:62%; background:var(--green);"></div>
             <div class="bar" style="height:22%; background:var(--red);"></div>
@@ -143,39 +143,41 @@
       <div class="flex-col gap-14">
         <div class="card">
           <div class="card-title mb-8">Charges Breakdown (MTD)</div>
-          <div class="stat-row"><span class="k">Brokerage</span><span class="v">&#8377;1,840</span></div>
-          <div class="stat-row"><span class="k">STT</span><span class="v">&#8377;1,620</span></div>
-          <div class="stat-row"><span class="k">Exchange Charges</span><span class="v">&#8377;410</span></div>
-          <div class="stat-row"><span class="k">GST</span><span class="v">&#8377;540</span></div>
-          <div class="stat-row"><span class="k">SEBI + Stamp Duty</span><span class="v">&#8377;450</span></div>
+          <div class="stat-row"><span class="k">Brokerage</span><span class="v" data-live="rep-charge-brokerage">&#8377;1,840</span></div>
+          <div class="stat-row"><span class="k">STT</span><span class="v" data-live="rep-charge-stt">&#8377;1,620</span></div>
+          <div class="stat-row"><span class="k">Exchange Charges</span><span class="v" data-live="rep-charge-exchange">&#8377;410</span></div>
+          <div class="stat-row"><span class="k">GST</span><span class="v" data-live="rep-charge-gst">&#8377;540</span></div>
+          <div class="stat-row"><span class="k">SEBI + Stamp Duty</span><span class="v" data-live="rep-charge-sebi">&#8377;450</span></div>
           <div class="divider"></div>
-          <div class="stat-row"><span class="k bold">Total</span><span class="v bold text-red">&#8377;4,860</span></div>
+          <div class="stat-row"><span class="k bold">Total</span><span class="v bold text-red" data-live="rep-charge-grand-total">&#8377;4,860</span></div>
         </div>
 
         <div class="card">
           <div class="card-title mb-8">Win / Loss Split</div>
-          <div class="stat-row"><span class="k">Winning Days</span><span class="v text-green">15</span></div>
-          <div class="stat-row"><span class="k">Losing Days</span><span class="v text-red">5</span></div>
-          <div class="meter mt-8"><span style="width:75%; background:var(--green);"></span></div>
-          <div class="mt-8" style="font-size:11px; color:var(--text-muted);">75% winning days this month</div>
+          <div class="stat-row"><span class="k">Winning Days</span><span class="v text-green" data-live="rep-winning-days">15</span></div>
+          <div class="stat-row"><span class="k">Losing Days</span><span class="v text-red" data-live="rep-losing-days">5</span></div>
+          <div class="meter mt-8"><span data-live="rep-winloss-meter" style="width:75%; background:var(--green);"></span></div>
+          <div class="mt-8" style="font-size:11px; color:var(--text-muted);" data-live="rep-winloss-pct">75% winning days this month</div>
         </div>
       </div>
     </div>
   </main>
 
   <footer class="statusbar">
-    <div class="items">
+    <div class="items" data-live="footer-tickers">
       <span class="item">Nifty 50 <b>23,532.45</b> <span class="up">&#9650; 0.78%</span></span>
       <span class="item">India VIX <b>13.85</b> <span class="down">&#9660; -3.15%</span></span>
     </div>
     <div class="items">
-      <span class="live"><span class="dot"></span> Market Open</span>
-      <span>Data Refresh: <b style="color:var(--text-primary);">10:15:30 AM</b></span>
+      <span class="live" data-live="footer-market-open"><span class="dot"></span> Market Open</span>
+      <span>Data Refresh: <b data-live="last-refresh" style="color:var(--text-primary);">10:15:30 AM</b></span>
     </div>
   </footer>
 </div>
 </div>
 </div>
 <script src="js/app.js"></script>
+<script src="js/ne-common.js"></script>
+<script src="js/reports-page.js"></script>
 </body>
 </html>

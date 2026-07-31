@@ -2,12 +2,13 @@
  * Wires settings.html to the live backend: real broker connection info (masked
  * client ID, never the access token) and the risk limits actually enforced by
  * risk_engine.py. Data & Refresh / Notification toggles stay static — they're
- * preferences with no persistence backend yet. Loads once (no auto-refresh).
+ * preferences with no persistence backend yet. Refreshes every 2s.
  */
 (function () {
   var NE = window.NE;
 
-  Promise.all([
+  function load() {
+    Promise.all([
     NE.fetchJSON("/market/quote?symbols=NIFTY50,INDIAVIX"),
     NE.fetchJSON("/system/broker-info"),
     NE.fetchJSON("/system/risk-limits"),
@@ -39,4 +40,8 @@
       NE.stampRefresh();
     })
     .catch(function () { NE.markStatus(false); });
+  }
+
+  load();
+  setInterval(load, 2000);
 })();

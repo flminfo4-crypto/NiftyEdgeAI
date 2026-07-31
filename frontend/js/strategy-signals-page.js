@@ -2,13 +2,15 @@
  * Wires strategy-signals.html to the live backend: active signals, real
  * signal-attribution history, and real hit-rate/R:R/calibration stats from
  * signal_ledger (recorded when each signal fires, reconciled against real
- * price action since). Loads once (no auto-refresh).
+ * price action since). Refreshes every 2s — signal_ledger.record_signal()
+ * debounces repeat signals itself, so this doesn't spam the ledger.
  */
 (function () {
   var NE = window.NE;
   var resultBadge = { "Target Hit": "badge-green", "SL Hit": "badge-red", "Open": "badge-amber", "Expired": "badge-gray" };
 
-  Promise.all([
+  function load() {
+    Promise.all([
     NE.fetchJSON("/market/quote?symbols=NIFTY50,INDIAVIX"),
     NE.fetchJSON("/signals/active"),
     NE.fetchJSON("/signals/history"),
@@ -108,4 +110,8 @@
       NE.stampRefresh();
     })
     .catch(function () { NE.markStatus(false); });
+  }
+
+  load();
+  setInterval(load, 2000);
 })();

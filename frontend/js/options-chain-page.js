@@ -1,7 +1,8 @@
 /**
- * Wires options-chain.html to the live backend. Loads once (no auto-refresh) —
- * both to match the rest of the app and because Dhan caps option-chain
- * requests at 1/3s per underlying+expiry.
+ * Wires options-chain.html to the live backend. Refreshes every 2s — the
+ * backend caches/serializes option-chain fetches per underlying+expiry
+ * (see app/services/market_data.py) so this stays well under Dhan's 1
+ * request / 3s cap regardless of how many clients are polling.
  */
 (function () {
   var NE = window.NE;
@@ -66,49 +67,54 @@
       if (!expiry) { showLoadError(); return; }
       var expiryLabel = new Date(expiry).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase();
 
-      Promise.all([
-        NE.fetchJSON("/market/quote?symbols=NIFTY50,INDIAVIX"),
-        NE.fetchJSON("/market/oi-summary?underlying=" + UNDERLYING + "&expiry=" + expiry),
-        NE.fetchJSON("/market/option-chain?underlying=" + UNDERLYING + "&expiry=" + expiry),
-      ])
-        .then(function (results) {
-          var quotes = results[0], oi = results[1], chain = results[2];
-          currentChain = chain;
+      function load() {
+        Promise.all([
+          NE.fetchJSON("/market/quote?symbols=NIFTY50,INDIAVIX"),
+          NE.fetchJSON("/market/oi-summary?underlying=" + UNDERLYING + "&expiry=" + expiry),
+          NE.fetchJSON("/market/option-chain?underlying=" + UNDERLYING + "&expiry=" + expiry),
+        ])
+          .then(function (results) {
+            var quotes = results[0], oi = results[1], chain = results[2];
+            currentChain = chain;
 
-          NE.applyHeaderTicker(quotes);
-          NE.applyFooterTicker(quotes);
+            NE.applyHeaderTicker(quotes);
+            NE.applyFooterTicker(quotes);
 
-          NE.setText("pcr-value", oi.pcr.toFixed(2));
-          NE.setText("oc-pcr", oi.pcr.toFixed(2));
-          var bullish = oi.pcr > 1.1, bearish = oi.pcr < 0.9;
-          var label = bullish ? "Bullish" : bearish ? "Bearish" : "Neutral";
-          NE.setText("pcr-label", label);
-          NE.setText("oc-pcr-label", label);
+            NE.setText("pcr-value", oi.pcr.toFixed(2));
+            NE.setText("oc-pcr", oi.pcr.toFixed(2));
+            var bullish = oi.pcr > 1.1, bearish = oi.pcr < 0.9;
+            var label = bullish ? "Bullish" : bearish ? "Bearish" : "Neutral";
+            NE.setText("pcr-label", label);
+            NE.setText("oc-pcr-label", label);
 
-          NE.setText("oc-max-pain", NE.fmtNum(oi.maxPain, 0));
-          NE.setText("oc-max-pain-dist", Math.abs(oi.maxPain - chain.spotPrice).toFixed(0) + " pts from LTP");
+            NE.setText("oc-max-pain", NE.fmtNum(oi.maxPain, 0));
+            NE.setText("oc-max-pain-dist", Math.abs(oi.maxPain - chain.spotPrice).toFixed(0) + " pts from LTP");
 
-          var totalCeOi = chain.rows.reduce(function (s, r) { return s + r.ceOi; }, 0);
-          var totalPeOi = chain.rows.reduce(function (s, r) { return s + r.peOi; }, 0);
-          NE.setText("oc-total-ce-oi", (totalCeOi / 1e5).toFixed(1) + "L");
-          NE.setText("oc-total-pe-oi", (totalPeOi / 1e5).toFixed(1) + "L");
+            var totalCeOi = chain.rows.reduce(function (s, r) { return s + r.ceOi; }, 0);
+            var totalPeOi = chain.rows.reduce(function (s, r) { return s + r.peOi; }, 0);
+            NE.setText("oc-total-ce-oi", (totalCeOi / 1e5).toFixed(1) + "L");
+            NE.setText("oc-total-pe-oi", (totalPeOi / 1e5).toFixed(1) + "L");
 
-          var atm = chain.rows.reduce(function (best, r) {
-            return Math.abs(r.strike - chain.spotPrice) < Math.abs(best.strike - chain.spotPrice) ? r : best;
-          }, chain.rows[0]);
-          if (atm) {
-            var straddle = atm.ceLtp + atm.peLtp;
-            NE.setText("straddle-price", "₹" + straddle.toFixed(2));
-            NE.setText("oc-straddle-pct", ((straddle / chain.spotPrice) * 100).toFixed(2) + "% of spot");
-            NE.setText("atm-iv", (((atm.ceIv + atm.peIv) / 2).toFixed(1)) + "%");
-          }
+            var atm = chain.rows.reduce(function (best, r) {
+              return Math.abs(r.strike - chain.spotPrice) < Math.abs(best.strike - chain.spotPrice) ? r : best;
+            }, chain.rows[0]);
+            if (atm) {
+              var straddle = atm.ceLtp + atm.peLtp;
+              NE.setText("straddle-price", "₹" + straddle.toFixed(2));
+              NE.setText("oc-straddle-pct", ((straddle / chain.spotPrice) * 100).toFixed(2) + "% of spot");
+              NE.setText("atm-iv", (((atm.ceIv + atm.peIv) / 2).toFixed(1)) + "%");
+            }
 
-          NE.setText("oc-page-sub", "NIFTY 50 · " + expiryLabel + " Expiry · " + chain.rows.length + " strikes");
-          renderTable();
-          NE.markStatus(true);
-          NE.stampRefresh();
-        })
-        .catch(showLoadError);
+            NE.setText("oc-page-sub", "NIFTY 50 · " + expiryLabel + " Expiry · " + chain.rows.length + " strikes");
+            renderTable();
+            NE.markStatus(true);
+            NE.stampRefresh();
+          })
+          .catch(showLoadError);
+      }
+
+      load();
+      setInterval(load, 2000);
     })
     .catch(showLoadError);
 })();

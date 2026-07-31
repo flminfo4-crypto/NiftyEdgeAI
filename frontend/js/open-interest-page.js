@@ -1,7 +1,8 @@
 /**
- * Wires open-interest.html to the live backend. Loads once (no auto-refresh) —
- * Dhan caps option-chain requests at 1/3s per underlying+expiry, and all the
- * calls below share one cached fetch per expiry on the backend side.
+ * Wires open-interest.html to the live backend. Refreshes every 2s — all the
+ * calls below share one cached/serialized option-chain fetch per expiry on
+ * the backend side (see app/services/market_data.py), staying under Dhan's
+ * 1 request / 3s cap.
  */
 (function () {
   var NE = window.NE;
@@ -32,7 +33,8 @@
       var expiryLabel = new Date(expiry).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase();
       NE.setText("oi-buildup-note-expiry", expiryLabel);
 
-      Promise.all([
+      function load() {
+        Promise.all([
         NE.fetchJSON("/market/quote?symbols=NIFTY50,INDIAVIX"),
         NE.fetchJSON("/market/oi-summary?underlying=" + UNDERLYING + "&expiry=" + expiry),
         NE.fetchJSON("/market/option-chain?underlying=" + UNDERLYING + "&expiry=" + expiry),
@@ -99,6 +101,10 @@
           NE.stampRefresh();
         })
         .catch(function () { NE.markStatus(false); });
+      }
+
+      load();
+      setInterval(load, 2000);
     })
     .catch(function () { NE.markStatus(false); });
 })();

@@ -35,7 +35,7 @@
     <a class="nav-item" href="help.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Help</a>
   </nav>
   <div class="sidebar-foot">
-    <div class="api-status"><span class="dot"></span> API Connected</div>
+    <div class="api-status" data-live="api-status"><span class="dot"></span> API Connected</div>
     <div class="acct-row"><span>Client ID</span><b>XXXXXX</b></div>
     <div class="acct-row"><span>Account</span><b>XXXX1234</b></div>
   </div>
@@ -44,11 +44,11 @@
 <div class="main">
   <header class="topbar">
     <div class="ticker-group">
-      <div class="ticker-item price"><div class="label">Nifty 50</div><div class="value">23,532.45</div><div class="sub up">+182.60 (0.78%) &#9650;</div></div>
-      <div class="ticker-item"><div class="label">India VIX</div><div class="value down">13.85</div><div class="sub down">-0.45 (-3.15%)</div></div>
+      <div class="ticker-item price"><div class="label">Nifty 50</div><div class="value" data-live="nifty-ltp">23,532.45</div><div class="sub up" data-live="nifty-change">+182.60 (0.78%) &#9650;</div></div>
+      <div class="ticker-item"><div class="label">India VIX</div><div class="value down" data-live="vix-ltp">13.85</div><div class="sub down" data-live="vix-change">-0.45 (-3.15%)</div></div>
     </div>
     <div class="topbar-right">
-      <div class="market-open"><span class="dot"></span> Market Open</div>
+      <div class="market-open" data-live="market-open-badge"><span class="dot"></span> Market Open</div>
       <div class="clock" data-clock>10:15:30 AM</div>
 <div class="theme-switch" role="group" aria-label="Theme"><button class="theme-btn" data-set-theme="light" title="Light theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button><button class="theme-btn" data-set-theme="dark" title="Dark theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button><button class="theme-btn" data-set-theme="terminal" title="Terminal theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></button></div>
     </div>
@@ -71,9 +71,9 @@
 
     <div class="grid g-4 mb-8">
       <div class="card"><div class="stat-block"><div class="k">Active Signals</div><div class="v">2</div></div></div>
-      <div class="card"><div class="stat-block"><div class="k">Today's Hit Rate</div><div class="v text-green">75%</div></div></div>
-      <div class="card"><div class="stat-block"><div class="k">30-Day Hit Rate</div><div class="v text-green">76.6%</div></div></div>
-      <div class="card"><div class="stat-block"><div class="k">Avg R:R</div><div class="v">1 : 2.1</div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">Today's Hit Rate</div><div class="v text-green" data-live="stat-today-hit-rate">75%</div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">30-Day Hit Rate</div><div class="v text-green" data-live="stat-30d-hit-rate">76.6%</div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">Avg R:R</div><div class="v" data-live="stat-avg-rr">1 : 2.1</div></div></div>
     </div>
 
     <div class="grid" style="grid-template-columns: 1fr 300px;">
@@ -83,18 +83,18 @@
           <div class="flex items-center justify-between mb-8">
             <div class="flex items-center gap-10">
               <span class="badge badge-red">ACTIVE</span>
-              <span class="card-title">SELL CALL (CE WRITING) &middot; 23,600 CE</span>
+              <span class="card-title" data-live="signal-primary-action">SELL CALL (CE WRITING) &middot; 23,600 CE</span>
             </div>
-            <span style="font-size:10.5px; color:var(--text-muted);">Today, 10:15:30 AM</span>
+            <span style="font-size:10.5px; color:var(--text-muted);" data-live="signal-primary-time-2">Today, 10:15:30 AM</span>
           </div>
           <div class="flex items-center gap-10">
             <div style="width:38px;height:38px;border-radius:50%;background:var(--red-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
             </div>
-            <div style="flex:1; font-size:15px; font-weight:800; color:var(--red);">BEARISH BELOW VAH 23,601</div>
-            <div class="confidence-ring" style="background:conic-gradient(#ef4444 82%, var(--border-soft) 0);"><div style="width:34px;height:34px;border-radius:50%;background:var(--bg-card);display:flex;align-items:center;justify-content:center;">82%</div></div>
+            <div style="flex:1; font-size:15px; font-weight:800; color:var(--red);" data-live="bias-headline">BEARISH BELOW VAH 23,601</div>
+            <div class="confidence-ring" data-live="signal-primary-ring" style="background:conic-gradient(#ef4444 82%, var(--border-soft) 0);"><div style="width:34px;height:34px;border-radius:50%;background:var(--bg-card);display:flex;align-items:center;justify-content:center;" data-live="signal-primary-confidence">82%</div></div>
           </div>
-          <div class="flex gap-8 mt-8" style="flex-wrap:wrap;">
+          <div class="flex gap-8 mt-8" style="flex-wrap:wrap;" data-live="signal-primary-reasoning-badges">
             <span class="badge badge-gray">Price below VAH &amp; POC</span>
             <span class="badge badge-gray">CE Writing 23,600&ndash;23,700</span>
             <span class="badge badge-gray">Negative Delta/Gamma</span>
@@ -102,9 +102,9 @@
           </div>
           <div class="divider"></div>
           <div class="grid g-3">
-            <div class="stat-block"><div class="k">Entry Zone</div><div class="v sm">23,580&ndash;23,620</div></div>
-            <div class="stat-block"><div class="k">Target</div><div class="v sm text-green">23,300</div></div>
-            <div class="stat-block"><div class="k">Stop Loss</div><div class="v sm text-red">23,710</div></div>
+            <div class="stat-block"><div class="k">Entry Zone</div><div class="v sm" data-live="signal-primary-entry">23,580&ndash;23,620</div></div>
+            <div class="stat-block"><div class="k">Target</div><div class="v sm text-green" data-live="signal-primary-target">23,300</div></div>
+            <div class="stat-block"><div class="k">Stop Loss</div><div class="v sm text-red" data-live="signal-primary-sl">23,710</div></div>
           </div>
         </div>
 
@@ -112,7 +112,7 @@
           <div class="flex items-center justify-between mb-8">
             <div class="flex items-center gap-10">
               <span class="badge badge-green">ACTIVE</span>
-              <span class="card-title">BUY PUT (PE BUYING) &middot; 23,400 PE</span>
+              <span class="card-title" data-live="signal-alt-action">BUY PUT (PE BUYING) &middot; 23,400 PE</span>
             </div>
             <span style="font-size:10.5px; color:var(--text-muted);">Today, 10:15:30 AM</span>
           </div>
@@ -121,15 +121,15 @@
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>
             </div>
             <div style="flex:1; font-size:15px; font-weight:800; color:var(--green);">BREAKDOWN CONTINUATION IF 23,400 BREAKS</div>
-            <div class="confidence-ring" style="background:conic-gradient(#22c55e 48%, var(--border-soft) 0);"><div style="width:34px;height:34px;border-radius:50%;background:var(--bg-card);display:flex;align-items:center;justify-content:center;">48%</div></div>
+            <div class="confidence-ring" data-live="signal-alt-ring" style="background:conic-gradient(#22c55e 48%, var(--border-soft) 0);"><div style="width:34px;height:34px;border-radius:50%;background:var(--bg-card);display:flex;align-items:center;justify-content:center;" data-live="signal-alt-confidence">48%</div></div>
           </div>
-          <div class="flex gap-8 mt-8" style="flex-wrap:wrap;">
+          <div class="flex gap-8 mt-8" style="flex-wrap:wrap;" data-live="signal-alt-reasoning-badges">
             <span class="badge badge-gray">Support cluster 23,400</span>
             <span class="badge badge-gray">Low conviction</span>
           </div>
           <div class="divider"></div>
           <div class="grid g-3">
-            <div class="stat-block"><div class="k">Entry Zone</div><div class="v sm">Below 23,400</div></div>
+            <div class="stat-block"><div class="k">Entry Zone</div><div class="v sm" data-live="signal-alt-entry">Below 23,400</div></div>
             <div class="stat-block"><div class="k">Target</div><div class="v sm text-green">23,250</div></div>
             <div class="stat-block"><div class="k">Stop Loss</div><div class="v sm text-red">23,460</div></div>
           </div>
@@ -140,7 +140,7 @@
           <div class="table-wrap">
             <table class="table">
               <thead><tr><th>Time</th><th>Signal</th><th>Confidence</th><th>Entry</th><th>Target</th><th>SL</th><th>Result</th><th>P&amp;L</th></tr></thead>
-              <tbody>
+              <tbody data-live="signal-history-tbody">
                 <tr><td>09:20 AM</td><td>SELL CALL 23550 CE</td><td>78%</td><td>23,540</td><td>23,420</td><td>23,610</td><td><span class="badge badge-green">Target Hit</span></td><td class="text-green">+&#8377;3,120</td></tr>
                 <tr><td>Yesterday</td><td>BUY PUT 23600 PE</td><td>71%</td><td>23,610</td><td>23,480</td><td>23,660</td><td><span class="badge badge-green">Target Hit</span></td><td class="text-green">+&#8377;2,640</td></tr>
                 <tr><td>Yesterday</td><td>SELL PUT 23300 PE</td><td>65%</td><td>23,320</td><td>23,410</td><td>23,260</td><td><span class="badge badge-red">SL Hit</span></td><td class="text-red">-&#8377;1,480</td></tr>
@@ -156,20 +156,22 @@
       <div class="flex-col gap-14">
         <div class="card">
           <div class="card-title mb-8">Performance by Strategy</div>
+          <div data-live="strategy-performance-rows">
           <div class="stat-row"><span class="k">CE Writing</span><span class="v text-green">81% hit</span></div>
           <div class="stat-row"><span class="k">PE Writing</span><span class="v text-green">73% hit</span></div>
           <div class="stat-row"><span class="k">Directional Buying</span><span class="v text-amber">58% hit</span></div>
           <div class="stat-row"><span class="k">Iron Condor</span><span class="v text-green">84% hit</span></div>
           <div class="stat-row"><span class="k">Straddle/Strangle</span><span class="v text-amber">62% hit</span></div>
+          </div>
         </div>
 
         <div class="card">
           <div class="card-title mb-8">Confidence Calibration</div>
           <svg viewBox="0 0 260 90" style="width:100%; height:80px;" preserveAspectRatio="none">
             <line x1="0" y1="90" x2="260" y2="0" stroke="#5c6478" stroke-width="1" stroke-dasharray="3 3"/>
-            <path d="M0 88 L40 70 L80 60 L120 45 L160 34 L200 20 L260 6" fill="none" stroke="#22c55e" stroke-width="1.8"/>
+            <polyline data-live="calibration-polyline" points="0,88 40,70 80,60 120,45 160,34 200,20 260,6" fill="none" stroke="#22c55e" stroke-width="1.8"/>
           </svg>
-          <div class="mt-8" style="font-size:11px; color:var(--text-secondary); line-height:1.6;">
+          <div class="mt-8" style="font-size:11px; color:var(--text-secondary); line-height:1.6;" data-live="calibration-note">
             Realized hit rate tracks close to model confidence &mdash; signals above 70% confidence have hit target 4 out of 5 times over the last 30 sessions.
           </div>
         </div>
@@ -187,18 +189,20 @@
   </main>
 
   <footer class="statusbar">
-    <div class="items">
+    <div class="items" data-live="footer-tickers">
       <span class="item">Nifty 50 <b>23,532.45</b> <span class="up">&#9650; 0.78%</span></span>
       <span class="item">India VIX <b>13.85</b> <span class="down">&#9660; -3.15%</span></span>
     </div>
     <div class="items">
-      <span class="live"><span class="dot"></span> Market Open</span>
-      <span>Data Refresh: <b style="color:var(--text-primary);">10:15:30 AM</b></span>
+      <span class="live" data-live="footer-market-open"><span class="dot"></span> Market Open</span>
+      <span>Data Refresh: <b data-live="last-refresh" style="color:var(--text-primary);">10:15:30 AM</b></span>
     </div>
   </footer>
 </div>
 </div>
 </div>
 <script src="js/app.js"></script>
+<script src="js/ne-common.js"></script>
+<script src="js/strategy-signals-page.js"></script>
 </body>
 </html>

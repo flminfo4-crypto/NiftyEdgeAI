@@ -40,6 +40,16 @@ class OptionChainRowOut(CamelModel):
     pe_volume: float
     pe_iv: float
     pe_ltp: float
+    ce_delta: float = 0.0
+    ce_gamma: float = 0.0
+    ce_theta: float = 0.0
+    ce_vega: float = 0.0
+    ce_rho: float = 0.0
+    pe_delta: float = 0.0
+    pe_gamma: float = 0.0
+    pe_theta: float = 0.0
+    pe_vega: float = 0.0
+    pe_rho: float = 0.0
 
 
 class OptionChainOut(CamelModel):
@@ -57,6 +67,86 @@ class CandleOut(CamelModel):
     low: float
     close: float
     volume: float
+
+
+class OiSummaryOut(CamelModel):
+    pcr: float
+    max_pain: float
+
+
+class OiBuildupRowOut(CamelModel):
+    strike: float
+    ce_oi_change: float
+    ce_ltp_change_pct: float
+    ce_signal: str
+    pe_oi_change: float
+    pe_ltp_change_pct: float
+    pe_signal: str
+
+
+class VolumeProfileRowOut(CamelModel):
+    price: float
+    volume: float
+
+
+class VolumeProfileOut(CamelModel):
+    rows: list[VolumeProfileRowOut]
+    vah: float
+    val: float
+    poc: float
+    total_volume: float
+
+
+class MarketProfileOut(CamelModel):
+    vah: float
+    val: float
+    poc: float
+
+
+class CprDashboardOut(CamelModel):
+    ltp: float
+    change: float
+    change_pct: float
+    cpr_width_label: str
+    cpr_width_pct: float
+    cpr_relationship: str
+    day_range: float
+    tc: float
+    pivot: float
+    bc: float
+    r1: float
+    r2: float
+    s1: float
+    s2: float
+    pdh: float
+    pdl: float
+
+
+class MarketBreadthOut(CamelModel):
+    advancing: int
+    declining: int
+    unchanged: int
+    new_highs: int
+    new_lows: int
+    universe_size: int
+    universe_label: str
+
+
+class IvRankOut(CamelModel):
+    iv_rank: float
+    iv_percentile: float
+    current_iv: float
+    history: list[float]
+
+
+class CvdPointOut(CamelModel):
+    ts: str
+    cvd: float
+
+
+class CvdOut(CamelModel):
+    points: list[CvdPointOut]
+    cumulative: float
 
 
 # -- AI bias & signals ----------------------------------------------------------
@@ -105,6 +195,28 @@ class ActiveSignalsOut(CamelModel):
     alternative: SignalOut
 
 
+class StrategyStatOut(CamelModel):
+    strategy: str
+    hit_rate_pct: float
+    sample_size: int
+
+
+class ConfidenceCalibrationOut(CamelModel):
+    confidence_range: str
+    hit_rate_pct: float
+    sample_size: int
+
+
+class SignalStatsOut(CamelModel):
+    today_hit_rate_pct: float
+    hit_rate_pct: float
+    avg_risk_reward: float
+    resolved_count: int
+    open_count: int
+    by_strategy: list[StrategyStatOut]
+    confidence_calibration: list[ConfidenceCalibrationOut]
+
+
 # -- positions & orders --------------------------------------------------------
 
 class PositionOut(CamelModel):
@@ -120,6 +232,41 @@ class PositionOut(CamelModel):
 class MarginsOut(CamelModel):
     used: float
     available: float
+
+
+class ClosedPositionOut(CamelModel):
+    instrument: str
+    side: Literal["BUY", "SELL"]
+    quantity: int
+    entry_price: float
+    exit_price: float
+    pnl: float
+    closed_at: datetime
+
+
+class PositionGreeksRowOut(CamelModel):
+    instrument: str
+    side: Literal["LONG", "SHORT"]
+    quantity_lots: int
+    delta: float
+    gamma: float
+    theta: float
+    vega: float
+    rho: float
+    position_delta: float
+    position_gamma: float
+    position_theta: float
+    position_vega: float
+    position_rho: float
+
+
+class GreeksSummaryOut(CamelModel):
+    positions: list[PositionGreeksRowOut]
+    net_delta: float
+    net_gamma: float
+    net_theta: float
+    net_vega: float
+    net_rho: float
 
 
 class OrderRequestIn(CamelModel):
@@ -259,6 +406,81 @@ class CprLevelsOut(CamelModel):
     pdc: float
 
 
+class CprClusterOut(CamelModel):
+    lower: float
+    upper: float
+
+
+class CprTradePlanOut(CamelModel):
+    bias: Literal["Bullish", "Bearish", "Range-Bound", "No-Trade"]
+    side: Optional[Literal["LONG", "SHORT"]] = None
+    entry_trigger: str
+    stop_loss: Optional[float] = None
+    target1: Optional[float] = None
+    target2: Optional[float] = None
+
+
+class TopNarrowStockOut(CamelModel):
+    symbol: str
+    width_pct: float
+    regime: Literal["NARROW", "NORMAL", "WIDE"]
+    close: float
+
+
+class TopNarrowStocksOut(CamelModel):
+    source: Literal["mock", "broker"] = "mock"
+    stocks: list[TopNarrowStockOut]
+
+
+class CprAnalysisOut(CamelModel):
+    underlying: str
+    session_date: str
+    source: Literal["mock", "broker"] = "mock"
+    floor: FloorPivotsOut
+    cpr: CprOut
+    camarilla: CamarillaOut
+    width: WidthForecastOut
+    two_day: Optional[TwoDayRelationshipOut] = None
+    pdh: float
+    pdl: float
+    pdc: float
+    current_ltp: Optional[float] = None
+    percentile_regime: Optional[Literal["NARROW", "NORMAL", "WIDE"]] = None
+    percentile_rank: Optional[float] = None
+    p20_threshold: Optional[float] = None
+    p70_threshold: Optional[float] = None
+    consecutive_narrow_flag: bool = False
+    support_cluster: CprClusterOut
+    resistance_cluster: CprClusterOut
+    trade_plan: CprTradePlanOut
+
+
+# -- reports ---------------------------------------------------------------------
+
+class ChargesOut(CamelModel):
+    brokerage: float
+    stt: float
+    exchange_charges: float
+    gst: float
+    sebi_stamp_duty: float
+    total: float
+
+
+class DailyPnlOut(CamelModel):
+    date: str
+    pnl: float
+
+
+class ReportSummaryOut(CamelModel):
+    net_pnl: float
+    realized_pnl: float
+    unrealized_pnl: float
+    charges: ChargesOut
+    winning_days: int
+    losing_days: int
+    daily_pnl: list[DailyPnlOut]
+
+
 # -- system ------------------------------------------------------------------------
 
 class SystemStatusOut(CamelModel):
@@ -268,3 +490,16 @@ class SystemStatusOut(CamelModel):
     broker_api: str
     broker_adapter: str
     as_of: datetime
+
+
+class BrokerInfoOut(CamelModel):
+    broker_label: str
+    client_id_masked: Optional[str] = None
+    connected: bool
+    last_sync_at: datetime
+
+
+class RiskLimitsOut(CamelModel):
+    max_daily_loss: float
+    max_lots_per_order: int
+    max_exposure_pct: float

@@ -119,6 +119,52 @@ def classify_width(c: CPR, narrow_pct: float = NARROW_WIDTH_PCT, wide_pct: float
 
 
 # ---------------------------------------------------------------------------
+# Percentile-based width regime — an alternative to classify_width()'s fixed
+# calibration knobs. Ranks today's real CPR width against a real trailing
+# window of the underlying's own recent CPR widths (bottom 20th percentile =
+# narrow, top 30th percentile = wide), so the classification adapts to the
+# underlying's current volatility regime instead of a static % threshold.
+# Requires real history — see pivot_service._trailing_width_history for how
+# the caller builds `trailing_width_pcts` from real daily candles.
+# ---------------------------------------------------------------------------
+
+NARROW_PERCENTILE = 0.20
+WIDE_PERCENTILE = 0.70
+
+
+@dataclass
+class PercentileWidthForecast:
+    regime: WidthRegime
+    percentile_rank: float
+    p20_threshold: float
+    p70_threshold: float
+
+
+def classify_width_percentile(
+    current_width_pct: float, trailing_width_pcts: list[float],
+    narrow_percentile: float = NARROW_PERCENTILE, wide_percentile: float = WIDE_PERCENTILE,
+) -> Optional[PercentileWidthForecast]:
+    if not trailing_width_pcts:
+        return None
+    sorted_widths = sorted(trailing_width_pcts)
+    n = len(sorted_widths)
+    below = sum(1 for w in sorted_widths if w < current_width_pct)
+    percentile_rank = below / n * 100
+    p20 = sorted_widths[min(int(n * narrow_percentile), n - 1)]
+    p70 = sorted_widths[min(int(n * wide_percentile), n - 1)]
+    if current_width_pct <= p20:
+        regime: WidthRegime = "NARROW"
+    elif current_width_pct >= p70:
+        regime = "WIDE"
+    else:
+        regime = "NORMAL"
+    return PercentileWidthForecast(
+        regime=regime, percentile_rank=round(percentile_rank, 1),
+        p20_threshold=round(p20, 4), p70_threshold=round(p70, 4),
+    )
+
+
+# ---------------------------------------------------------------------------
 # Two-day CPR relationships [Ochoa 2010, Ch. 6, ~p.168; bias table analogous
 # to the value-area relationships of Ch. 4]. Seven classifications, each with
 # a directional bias used as an input factor by bias.py.

@@ -155,6 +155,7 @@ window.NE = (function () {
     applyHeaderTicker: applyHeaderTicker,
     applyFooterTicker: applyFooterTicker,
     applyMarginsAndExposure: applyMarginsAndExposure,
+    applyMarketOpenBadges: applyMarketOpenBadges,
     markStatus: markStatus,
     stampRefresh: stampRefresh,
   };
