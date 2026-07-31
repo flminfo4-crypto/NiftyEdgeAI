@@ -1,0 +1,2 @@
+# NiftyEdgeAI
+live market status
