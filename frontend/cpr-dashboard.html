@@ -103,6 +103,28 @@
   .setup h2{ margin:0 0 8px; font-size:18px; font-weight:800; letter-spacing:-.2px; }
   .setup p{ margin:0; font-size:13px; line-height:1.65; color:var(--text-secondary); }
 
+  /* CPR trade plan (percentile model) */
+  .badge-red{ background:var(--red-bg); color:var(--red); }
+  .tp-panel{ background:var(--tile-bg); border-radius:14px; padding:20px 22px 18px; margin-bottom:24px; }
+  .tp-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:8px; }
+  .tp-badges{ display:flex; gap:8px; flex-wrap:wrap; }
+  .tp-clusters{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px; }
+  .tp-cluster{ background:var(--card-bg); border:1px solid var(--border); border-radius:12px; padding:12px 14px; }
+  .tp-cluster .lab{ font-size:10.5px; font-weight:800; letter-spacing:.4px; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px; }
+  .tp-cluster .val{ font-size:15px; font-weight:800; }
+  .tp-notrade-banner{ background:var(--red-bg); border:1px solid #f3c6c4; color:var(--red); border-radius:10px; padding:10px 14px; font-size:12.5px; font-weight:700; margin-bottom:14px; }
+  .tp-bias-row{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .tp-bias{ font-size:20px; font-weight:800; }
+  .tp-bias.bullish{ color:var(--green); }
+  .tp-bias.bearish{ color:var(--red); }
+  .tp-bias.neutral{ color:var(--text-secondary); }
+  .tp-bias.notrade{ color:var(--amber); }
+  .tp-trigger{ margin:0 0 14px; font-size:13px; line-height:1.65; color:var(--text-secondary); }
+  .tp-levels{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  .tp-levels .box{ background:var(--card-bg); border:1px solid var(--border); border-radius:12px; padding:12px 0; text-align:center; }
+  .tp-levels .box .lab{ font-size:10px; font-weight:800; letter-spacing:.4px; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px; }
+  .tp-levels .box .val{ font-size:17px; font-weight:800; }
+
   /* bottom row: gift nifty etc */
   .strip5{ display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin:22px 0 20px; }
 
@@ -199,6 +221,32 @@
       <p data-cpr="NIFTY50-setup-body">A mildly higher start looks likely today. A break above TC 23,578.65 can push it to R1 23,685.90. As long as it stays above PDL 23,428.80, bulls stay in control. A close back below BC 23,536.00 would flip the bias neutral-to-cautious into the session.</p>
     </div>
 
+    <!-- NIFTY TRADE PLAN -->
+    <div class="tp-panel">
+      <div class="tp-header">
+        <div class="levels-title" style="margin-bottom:0;" data-cpr="NIFTY50-tp-header-title">Nifty 50 &mdash; CPR Trade Plan (Percentile Model)</div>
+        <div class="tp-badges">
+          <span class="badge badge-neutral" data-cpr="NIFTY50-tp-regime-badge">Regime: &mdash;</span>
+          <span class="badge badge-green" data-cpr="NIFTY50-tp-narrow-badge" style="display:none;">Consecutive Narrow &mdash; Breakout Watch</span>
+        </div>
+      </div>
+      <div class="tp-clusters">
+        <div class="tp-cluster"><div class="lab" style="color:var(--red);">Support Cluster (S1 / PDL)</div><div class="val mono" data-cpr="NIFTY50-tp-support">&mdash;</div></div>
+        <div class="tp-cluster"><div class="lab" style="color:var(--green);">Resistance Cluster (R1 / PDH)</div><div class="val mono" data-cpr="NIFTY50-tp-resistance">&mdash;</div></div>
+      </div>
+      <div class="tp-notrade-banner" data-cpr="NIFTY50-tp-notrade-banner" style="display:none;">No-Trade Zone &mdash; price is locked inside a Wide CPR. Wait for a decisive break.</div>
+      <div class="tp-bias-row">
+        <span class="tp-bias neutral" data-cpr="NIFTY50-tp-bias">&mdash;</span>
+        <span class="badge badge-green" data-cpr="NIFTY50-tp-side" style="display:none;">&mdash;</span>
+      </div>
+      <p class="tp-trigger" data-cpr="NIFTY50-tp-trigger">Awaiting live data&hellip;</p>
+      <div class="tp-levels" data-cpr="NIFTY50-tp-levels-wrap" style="display:none;">
+        <div class="box"><div class="lab">Stop Loss</div><div class="val mono" data-cpr="NIFTY50-tp-sl">&mdash;</div></div>
+        <div class="box"><div class="lab">Target 1</div><div class="val mono" data-cpr="NIFTY50-tp-t1">&mdash;</div></div>
+        <div class="box"><div class="lab">Target 2</div><div class="val mono" data-cpr="NIFTY50-tp-t2">&mdash;</div></div>
+      </div>
+    </div>
+
     <hr class="sep">
 
     <!-- SENSEX STRIP -->
@@ -258,6 +306,32 @@
       <p data-cpr="SENSEX-setup-body">A mildly higher start looks likely today. A break above TC 77,386.66 can push it to R1 77,666.66. As long as it stays above PDL 76,980.15, bulls stay in control. Watch for a wider range today given the 560-point prior session swing.</p>
     </div>
 
+    <!-- SENSEX TRADE PLAN -->
+    <div class="tp-panel">
+      <div class="tp-header">
+        <div class="levels-title" style="margin-bottom:0;" data-cpr="SENSEX-tp-header-title">Sensex &mdash; CPR Trade Plan (Percentile Model)</div>
+        <div class="tp-badges">
+          <span class="badge badge-neutral" data-cpr="SENSEX-tp-regime-badge">Regime: &mdash;</span>
+          <span class="badge badge-green" data-cpr="SENSEX-tp-narrow-badge" style="display:none;">Consecutive Narrow &mdash; Breakout Watch</span>
+        </div>
+      </div>
+      <div class="tp-clusters">
+        <div class="tp-cluster"><div class="lab" style="color:var(--red);">Support Cluster (S1 / PDL)</div><div class="val mono" data-cpr="SENSEX-tp-support">&mdash;</div></div>
+        <div class="tp-cluster"><div class="lab" style="color:var(--green);">Resistance Cluster (R1 / PDH)</div><div class="val mono" data-cpr="SENSEX-tp-resistance">&mdash;</div></div>
+      </div>
+      <div class="tp-notrade-banner" data-cpr="SENSEX-tp-notrade-banner" style="display:none;">No-Trade Zone &mdash; price is locked inside a Wide CPR. Wait for a decisive break.</div>
+      <div class="tp-bias-row">
+        <span class="tp-bias neutral" data-cpr="SENSEX-tp-bias">&mdash;</span>
+        <span class="badge badge-green" data-cpr="SENSEX-tp-side" style="display:none;">&mdash;</span>
+      </div>
+      <p class="tp-trigger" data-cpr="SENSEX-tp-trigger">Awaiting live data&hellip;</p>
+      <div class="tp-levels" data-cpr="SENSEX-tp-levels-wrap" style="display:none;">
+        <div class="box"><div class="lab">Stop Loss</div><div class="val mono" data-cpr="SENSEX-tp-sl">&mdash;</div></div>
+        <div class="box"><div class="lab">Target 1</div><div class="val mono" data-cpr="SENSEX-tp-t1">&mdash;</div></div>
+        <div class="box"><div class="lab">Target 2</div><div class="val mono" data-cpr="SENSEX-tp-t2">&mdash;</div></div>
+      </div>
+    </div>
+
     <!-- MISC STRIP -->
     <div class="strip5">
       <div class="tile">
@@ -290,9 +364,11 @@
     <div class="cols2">
       <div class="colcard">
         <div class="coltitle">Top Narrow CPR Stocks</div>
-        <div class="listrow"><span class="name">COALINDIA</span><div class="right"><span class="val mono">412.30</span><span class="badge badge-green">Narrow</span></div></div>
-        <div class="listrow"><span class="name">BPCL</span><div class="right"><span class="val mono">298.75</span><span class="badge badge-green">Narrow</span></div></div>
-        <div class="listrow"><span class="name">ITC</span><div class="right"><span class="val mono">441.20</span><span class="badge badge-green">Narrow</span></div></div>
+        <div data-cpr="top-narrow-stocks-list">
+          <div class="listrow"><span class="name">COALINDIA</span><div class="right"><span class="val mono">412.30</span><span class="badge badge-green">Narrow</span></div></div>
+          <div class="listrow"><span class="name">BPCL</span><div class="right"><span class="val mono">298.75</span><span class="badge badge-green">Narrow</span></div></div>
+          <div class="listrow"><span class="name">ITC</span><div class="right"><span class="val mono">441.20</span><span class="badge badge-green">Narrow</span></div></div>
+        </div>
       </div>
       <div class="colcard">
         <div class="coltitle">Top Narrow CPR Sectors</div>
@@ -419,6 +495,96 @@
     }
   }
 
+  var BIAS_CLASS = { Bullish: "bullish", Bearish: "bearish", "Range-Bound": "neutral", "No-Trade": "notrade" };
+  var REGIME_BADGE_CLASS = { NARROW: "badge-green", NORMAL: "badge-blue", WIDE: "badge-neutral" };
+  var NAME_LABEL = { NIFTY50: "Nifty 50", SENSEX: "Sensex" };
+  var TYPE_WIDTH_LABEL = { NARROW: "Narrow", NORMAL: "Normal", WIDE: "Wide" };
+  var TYPE_REL_LABEL = {
+    HIGHER_VALUE: "Ascending", OVERLAPPING_HIGHER_VALUE: "Ascending (Overlap)",
+    LOWER_VALUE: "Descending", OVERLAPPING_LOWER_VALUE: "Descending (Overlap)",
+    UNCHANGED_VALUE: "Unchanged", OUTSIDE_VALUE: "Outside", INSIDE_VALUE: "Inside"
+  };
+
+  function applyTradePlan(sym, d) {
+    var headerTitle = document.querySelector('[data-cpr="' + sym + '-tp-header-title"]');
+    if (headerTitle) {
+      var name = NAME_LABEL[sym] || sym;
+      if (d.percentileRegime && d.twoDay) {
+        headerTitle.textContent = name + " — CPR Type: " + TYPE_WIDTH_LABEL[d.percentileRegime] + " " + TYPE_REL_LABEL[d.twoDay.relationship];
+      } else {
+        headerTitle.textContent = name + " — CPR Trade Plan (Percentile Model)";
+      }
+    }
+
+    var regimeBadge = document.querySelector('[data-cpr="' + sym + '-tp-regime-badge"]');
+    if (regimeBadge) {
+      if (d.percentileRegime) {
+        regimeBadge.textContent = "Regime: " + (REGIME_LABEL[d.percentileRegime] || d.percentileRegime) +
+          " (" + d.percentileRank.toFixed(0) + "th pct of last 20 sessions)";
+        regimeBadge.className = "badge " + (REGIME_BADGE_CLASS[d.percentileRegime] || "badge-neutral");
+      } else {
+        regimeBadge.textContent = "Percentile regime needs live broker history";
+        regimeBadge.className = "badge badge-neutral";
+      }
+    }
+
+    var narrowBadge = document.querySelector('[data-cpr="' + sym + '-tp-narrow-badge"]');
+    if (narrowBadge) narrowBadge.style.display = d.consecutiveNarrowFlag ? "" : "none";
+
+    if (d.supportCluster) set(sym, "tp-support", fmt(d.supportCluster.lower) + " – " + fmt(d.supportCluster.upper));
+    if (d.resistanceCluster) set(sym, "tp-resistance", fmt(d.resistanceCluster.lower) + " – " + fmt(d.resistanceCluster.upper));
+
+    var plan = d.tradePlan || {};
+    var biasEl = document.querySelector('[data-cpr="' + sym + '-tp-bias"]');
+    if (biasEl) {
+      biasEl.textContent = plan.bias || "—";
+      biasEl.className = "tp-bias " + (BIAS_CLASS[plan.bias] || "neutral");
+    }
+    var sideEl = document.querySelector('[data-cpr="' + sym + '-tp-side"]');
+    if (sideEl) {
+      if (plan.side) {
+        sideEl.style.display = "";
+        sideEl.textContent = plan.side;
+        sideEl.className = "badge " + (plan.side === "LONG" ? "badge-green" : "badge-red");
+      } else {
+        sideEl.style.display = "none";
+      }
+    }
+    set(sym, "tp-trigger", plan.entryTrigger || "");
+
+    var levelsWrap = document.querySelector('[data-cpr="' + sym + '-tp-levels-wrap"]');
+    if (levelsWrap) {
+      if (plan.stopLoss != null) {
+        levelsWrap.style.display = "";
+        set(sym, "tp-sl", fmt(plan.stopLoss));
+        set(sym, "tp-t1", fmt(plan.target1));
+        set(sym, "tp-t2", fmt(plan.target2));
+      } else {
+        levelsWrap.style.display = "none";
+      }
+    }
+
+    var banner = document.querySelector('[data-cpr="' + sym + '-tp-notrade-banner"]');
+    if (banner) banner.style.display = plan.bias === "No-Trade" ? "" : "none";
+  }
+
+  var STOCK_REGIME_LABEL = { NARROW: "Narrow", NORMAL: "Normal", WIDE: "Wide" };
+  var STOCK_REGIME_BADGE = { NARROW: "badge-green", NORMAL: "badge-blue", WIDE: "badge-neutral" };
+
+  function applyTopNarrowStocks(d) {
+    var wrap = document.querySelector('[data-cpr="top-narrow-stocks-list"]');
+    if (!wrap || !d.stocks) return;
+    if (!d.stocks.length) return; // keep static fallback rows rather than showing an empty panel
+    wrap.innerHTML = d.stocks.map(function (s) {
+      var badgeClass = STOCK_REGIME_BADGE[s.regime] || "badge-neutral";
+      var label = STOCK_REGIME_LABEL[s.regime] || s.regime;
+      return '<div class="listrow"><span class="name">' + s.symbol + '</span><div class="right"><span class="val mono">' +
+        fmt(s.close) + '</span><span class="badge ' + badgeClass + '">' + label + '</span></div></div>';
+    }).join("") + '<div style="font-size:10.5px; color:var(--text-muted); margin-top:8px;">' +
+      (d.source === "mock" ? "Mock data — backend not connected to a live broker." : "Prices are prior-session close (used for the CPR calc), not live LTP.") +
+      '</div>';
+  }
+
   function applyQuote(sym, q) {
     set(sym, "spot", fmt(q.ltp));
     var el = document.querySelector('[data-cpr="' + sym + '-change"]');
@@ -430,12 +596,27 @@
     }
   }
 
-  ["NIFTY50", "SENSEX"].forEach(function (sym) {
-    fetchJSON("/market/cpr?underlying=" + sym).then(function (d) { applyCpr(sym, d); }).catch(function () {});
-    fetchJSON("/market/quote?symbols=" + sym).then(function (qs) {
-      if (qs && qs.length) applyQuote(sym, qs[0]);
-    }).catch(function () {});
-  });
+  function load() {
+    ["NIFTY50", "SENSEX"].forEach(function (sym) {
+      fetchJSON("/market/cpr?underlying=" + sym).then(function (d) { applyCpr(sym, d); }).catch(function () {});
+      fetchJSON("/market/quote?symbols=" + sym).then(function (qs) {
+        if (qs && qs.length) applyQuote(sym, qs[0]);
+      }).catch(function () {});
+      fetchJSON("/market/cpr-analysis?underlying=" + sym).then(function (d) { applyTradePlan(sym, d); }).catch(function () {});
+    });
+  }
+
+  function loadTopNarrowStocks() {
+    fetchJSON("/market/top-narrow-stocks").then(applyTopNarrowStocks).catch(function () {});
+  }
+
+  load();
+  setInterval(load, 2000);
+  // Own slow interval, not the 2s one — the ranking is prior-day-OHLC based
+  // and doesn't need 2s freshness, and it deliberately makes no live quote
+  // call (see pivot_service.get_top_narrow_stocks for why).
+  loadTopNarrowStocks();
+  setInterval(loadTopNarrowStocks, 20000);
 })();
 </script>
 </body>

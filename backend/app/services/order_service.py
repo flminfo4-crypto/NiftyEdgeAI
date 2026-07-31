@@ -12,12 +12,12 @@ until the backend is wired to a real database (see backend/README.md).
 """
 
 import itertools
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from broker_plugins.core.interface import BrokerPosition, OrderRequest, OrderResult
+from broker_plugins.core.interface import BrokerPosition, OrderRequest, OrderResult, TradeHistoryEntry
 
-from app.services import risk_engine
+from app.services import analytics, risk_engine
 from app.services.broker import get_broker
 
 _order_id_seq = itertools.count(8_841_200)
@@ -118,3 +118,72 @@ def position_pnl(position: BrokerPosition) -> tuple[float, float]:
     pnl = (position.ltp - position.avg_price) * position.quantity_lots * direction
     pnl_pct = (pnl / (position.avg_price * position.quantity_lots)) * 100 if position.avg_price else 0.0
     return round(pnl, 2), round(pnl_pct, 2)
+
+
+# -- trade history / closed positions / reports --------------------------------------
+#
+# No broker adapter implements a real trade-history/contract-note call yet, so
+# "trades" here means this app's own EXECUTED orders (_orders above) — real once
+# real orders are placed through this app, empty/zero until then. That's a
+# disclosed limitation (same as _orders itself), not fabricated data.
+
+
+def _estimate_charges(side: str, turnover: float) -> dict:
+    """Approximate NSE F&O (index options) charge model — flat brokerage capped
+    at Rs20/order, STT only on the sell side, standard exchange/GST/stamp-duty
+    rates. Not a real DhanHQ contract note (no such API is wired up); same
+    "documented approximation" spirit as risk_engine.estimate_margin."""
+    brokerage = min(20.0, turnover * 0.0003)
+    exchange_charges = round(turnover * 0.0003503, 2)
+    stt = round(turnover * 0.0005, 2) if side == "SELL" else 0.0
+    sebi_stamp_duty = round(turnover * 0.00003, 2) if side == "BUY" else round(turnover * 0.000001, 2)
+    gst = round((brokerage + exchange_charges) * 0.18, 2)
+    return {
+        "brokerage": round(brokerage, 2),
+        "stt": stt,
+        "exchange_charges": exchange_charges,
+        "gst": gst,
+        "sebi_stamp_duty": sebi_stamp_duty,
+    }
+
+
+def get_trade_history() -> list[TradeHistoryEntry]:
+    entries = []
+    for o in _orders.values():
+        if o["status"] != "EXECUTED":
+            continue
+        price = o["filled_price"] or o["price"] or 0.0
+        turnover = price * o["quantity_lots"]
+        entries.append(TradeHistoryEntry(
+            instrument=o["instrument"], side=o["side"], quantity=o["quantity_lots"],
+            traded_price=price, traded_at=o["placed_at"], **_estimate_charges(o["side"], turnover),
+        ))
+    return entries
+
+
+def get_closed_positions() -> list[dict]:
+    return analytics.match_closed_trades(get_trade_history())
+
+
+def get_report_summary(from_date: str, to_date: str) -> dict:
+    frm = datetime.fromisoformat(from_date).replace(tzinfo=timezone.utc)
+    to = datetime.fromisoformat(to_date).replace(tzinfo=timezone.utc) + timedelta(days=1)
+    trades = [t for t in get_trade_history() if frm <= t.traded_at < to]
+    closed = analytics.match_closed_trades(trades)
+    realized_pnl = round(sum(c["pnl"] for c in closed), 2)
+
+    unrealized_pnl = round(sum(position_pnl(p)[0] for p in list_open_positions()), 2)
+
+    daily_pnl = analytics.daily_realized_pnl(closed)
+    winning_days = sum(1 for d in daily_pnl if d["pnl"] > 0)
+    losing_days = sum(1 for d in daily_pnl if d["pnl"] < 0)
+
+    return {
+        "net_pnl": round(realized_pnl + unrealized_pnl, 2),
+        "realized_pnl": realized_pnl,
+        "unrealized_pnl": unrealized_pnl,
+        "charges": analytics.sum_charges(trades),
+        "winning_days": winning_days,
+        "losing_days": losing_days,
+        "daily_pnl": daily_pnl,
+    }

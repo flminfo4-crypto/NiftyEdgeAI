@@ -1,6 +1,7 @@
 /**
- * Wires greeks.html to the live backend. Loads once (no auto-refresh) — same
- * option-chain rate-limit reasoning as options-chain.html / open-interest.html.
+ * Wires greeks.html to the live backend. Refreshes every 2s — same backend-
+ * side option-chain caching as options-chain.html / open-interest.html keeps
+ * this under Dhan's rate limit.
  */
 (function () {
   var NE = window.NE;
@@ -40,7 +41,8 @@
       if (!expiry) { NE.markStatus(false); return; }
       var expiryLabel = new Date(expiry).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase();
 
-      Promise.all([
+      function load() {
+        Promise.all([
         NE.fetchJSON("/market/quote?symbols=NIFTY50,INDIAVIX"),
         NE.fetchJSON("/market/option-chain?underlying=" + UNDERLYING + "&expiry=" + expiry),
         NE.fetchJSON("/positions/greeks?underlying=" + UNDERLYING + "&expiry=" + expiry),
@@ -102,6 +104,10 @@
           NE.stampRefresh();
         })
         .catch(function () { NE.markStatus(false); });
+      }
+
+      load();
+      setInterval(load, 2000);
     })
     .catch(function () { NE.markStatus(false); });
 })();

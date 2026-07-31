@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
-from app.models.schemas import ActiveSignalsOut, BiasOut, SignalHistoryRowOut
-from app.services import signal_service
+from app.models.schemas import ActiveSignalsOut, BiasOut, SignalHistoryRowOut, SignalStatsOut
+from app.services import signal_ledger, signal_service
 
 router = APIRouter(prefix="/signals", tags=["signals"])
 
@@ -19,3 +19,8 @@ def get_active(underlying: str = "NIFTY50"):
 @router.get("/history", response_model=list[SignalHistoryRowOut])
 def get_history():
     return signal_service.get_signal_history()
+
+
+@router.get("/stats", response_model=SignalStatsOut)
+def get_stats(days: int = 30):
+    return signal_ledger.get_stats(days)

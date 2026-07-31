@@ -35,7 +35,7 @@
     <a class="nav-item" href="help.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Help</a>
   </nav>
   <div class="sidebar-foot">
-    <div class="api-status"><span class="dot"></span> API Connected</div>
+    <div class="api-status" data-live="api-status"><span class="dot"></span> API Connected</div>
     <div class="acct-row"><span>Client ID</span><b>XXXXXX</b></div>
     <div class="acct-row"><span>Account</span><b>XXXX1234</b></div>
   </div>
@@ -44,11 +44,11 @@
 <div class="main">
   <header class="topbar">
     <div class="ticker-group">
-      <div class="ticker-item price"><div class="label">Nifty 50</div><div class="value">23,532.45</div><div class="sub up">+182.60 (0.78%) &#9650;</div></div>
-      <div class="ticker-item"><div class="label">India VIX</div><div class="value down">13.85</div><div class="sub down">-0.45 (-3.15%)</div></div>
+      <div class="ticker-item price"><div class="label">Nifty 50</div><div class="value" data-live="nifty-ltp">23,532.45</div><div class="sub up" data-live="nifty-change">+182.60 (0.78%) &#9650;</div></div>
+      <div class="ticker-item"><div class="label">India VIX</div><div class="value down" data-live="vix-ltp">13.85</div><div class="sub down" data-live="vix-change">-0.45 (-3.15%)</div></div>
     </div>
     <div class="topbar-right">
-      <div class="market-open"><span class="dot"></span> Market Open</div>
+      <div class="market-open" data-live="market-open-badge"><span class="dot"></span> Market Open</div>
       <div class="clock" data-clock>10:15:30 AM</div>
 <div class="theme-switch" role="group" aria-label="Theme"><button class="theme-btn" data-set-theme="light" title="Light theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button><button class="theme-btn" data-set-theme="dark" title="Dark theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button><button class="theme-btn" data-set-theme="terminal" title="Terminal theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></button></div>
     </div>
@@ -66,16 +66,16 @@
     </div>
 
     <div class="grid g-5 mb-8">
-      <div class="card"><div class="stat-block"><div class="k">Day's P&amp;L</div><div class="v text-green">+&#8377;18,450</div><div class="d text-green">+0.78%</div></div></div>
-      <div class="card"><div class="stat-block"><div class="k">Open Positions P&amp;L</div><div class="v text-green">+&#8377;622.50</div><div class="d text-green">+1.48%</div></div></div>
-      <div class="card"><div class="stat-block"><div class="k">Margin Used</div><div class="v">&#8377;3,24,560</div></div></div>
-      <div class="card"><div class="stat-block"><div class="k">Available Margin</div><div class="v">&#8377;6,75,440</div></div></div>
-      <div class="card"><div class="stat-block"><div class="k">Exposure</div><div class="v">32%</div><div class="meter mt-8"><span style="width:32%; background:var(--amber);"></span></div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">Day's P&amp;L</div><div class="v text-green" data-live="pos-day-pnl">+&#8377;18,450</div><div class="d text-green" data-live="pos-day-pnl-pct">+0.78%</div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">Open Positions P&amp;L</div><div class="v text-green" data-live="positions-total-pnl">+&#8377;622.50</div><div class="d text-green" data-live="pos-open-pnl-pct">+1.48%</div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">Margin Used</div><div class="v" data-live="margin-used">&#8377;3,24,560</div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">Available Margin</div><div class="v" data-live="margin-available">&#8377;6,75,440</div></div></div>
+      <div class="card"><div class="stat-block"><div class="k">Exposure</div><div class="v" data-live="risk-exposure-pct">32%</div><div class="meter mt-8"><span data-live="risk-exposure-meter" style="width:32%; background:var(--amber);"></span></div></div></div>
     </div>
 
     <div class="card">
       <div class="card-header">
-        <span class="card-title accent">Open Positions (3)</span>
+        <span class="card-title accent" data-live="open-positions-title">Open Positions (3)</span>
         <div class="tabs">
           <span class="tab active">Options</span>
           <span class="tab">Futures</span>
@@ -85,7 +85,7 @@
       <div class="table-wrap">
         <table class="table">
           <thead><tr><th>Instrument</th><th>Type</th><th>Qty</th><th>Avg Price</th><th>LTP</th><th>Delta</th><th>Theta</th><th>P&amp;L</th><th>P&amp;L %</th><th></th></tr></thead>
-          <tbody>
+          <tbody data-live="open-positions-tbody">
             <tr>
               <td>NIFTY 24 JUL 23600 CE</td>
               <td><span class="badge badge-red">SHORT</span></td>
@@ -126,8 +126,8 @@
           <tfoot>
             <tr style="border-top:2px solid var(--border);">
               <td colspan="7" style="text-align:right; font-weight:700; color:var(--text-secondary);">Total</td>
-              <td class="text-green bold">+&#8377;622.50</td>
-              <td class="text-green bold">+1.48%</td>
+              <td class="text-green bold" data-live="positions-total-pnl">+&#8377;622.50</td>
+              <td class="text-green bold" data-live="pos-open-pnl-pct">+1.48%</td>
               <td></td>
             </tr>
           </tfoot>
@@ -140,7 +140,7 @@
       <div class="table-wrap">
         <table class="table">
           <thead><tr><th>Instrument</th><th>Type</th><th>Qty</th><th>Entry</th><th>Exit</th><th>Realized P&amp;L</th><th>Time</th></tr></thead>
-          <tbody>
+          <tbody data-live="closed-positions-tbody">
             <tr><td>NIFTY 24 JUL 23550 CE</td><td><span class="badge badge-red">SHORT</span></td><td>-75</td><td>82.60</td><td>65.40</td><td class="text-green">+1,290.00</td><td>09:42 AM</td></tr>
             <tr><td>NIFTY 24 JUL 23300 PE</td><td><span class="badge badge-green">LONG</span></td><td>+50</td><td>34.15</td><td>29.80</td><td class="text-red">-217.50</td><td>09:05 AM</td></tr>
           </tbody>
@@ -150,18 +150,20 @@
   </main>
 
   <footer class="statusbar">
-    <div class="items">
+    <div class="items" data-live="footer-tickers">
       <span class="item">Nifty 50 <b>23,532.45</b> <span class="up">&#9650; 0.78%</span></span>
       <span class="item">India VIX <b>13.85</b> <span class="down">&#9660; -3.15%</span></span>
     </div>
     <div class="items">
-      <span class="live"><span class="dot"></span> Market Open</span>
-      <span>Data Refresh: <b style="color:var(--text-primary);">10:15:30 AM</b></span>
+      <span class="live" data-live="footer-market-open"><span class="dot"></span> Market Open</span>
+      <span>Data Refresh: <b data-live="last-refresh" style="color:var(--text-primary);">10:15:30 AM</b></span>
     </div>
   </footer>
 </div>
 </div>
 </div>
 <script src="js/app.js"></script>
+<script src="js/ne-common.js"></script>
+<script src="js/positions-page.js"></script>
 </body>
 </html>

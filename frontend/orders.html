@@ -35,7 +35,7 @@
     <a class="nav-item" href="help.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Help</a>
   </nav>
   <div class="sidebar-foot">
-    <div class="api-status"><span class="dot"></span> API Connected</div>
+    <div class="api-status" data-live="api-status"><span class="dot"></span> API Connected</div>
     <div class="acct-row"><span>Client ID</span><b>XXXXXX</b></div>
     <div class="acct-row"><span>Account</span><b>XXXX1234</b></div>
   </div>
@@ -44,11 +44,11 @@
 <div class="main">
   <header class="topbar">
     <div class="ticker-group">
-      <div class="ticker-item price"><div class="label">Nifty 50</div><div class="value">23,532.45</div><div class="sub up">+182.60 (0.78%) &#9650;</div></div>
-      <div class="ticker-item"><div class="label">India VIX</div><div class="value down">13.85</div><div class="sub down">-0.45 (-3.15%)</div></div>
+      <div class="ticker-item price"><div class="label">Nifty 50</div><div class="value" data-live="nifty-ltp">23,532.45</div><div class="sub up" data-live="nifty-change">+182.60 (0.78%) &#9650;</div></div>
+      <div class="ticker-item"><div class="label">India VIX</div><div class="value down" data-live="vix-ltp">13.85</div><div class="sub down" data-live="vix-change">-0.45 (-3.15%)</div></div>
     </div>
     <div class="topbar-right">
-      <div class="market-open"><span class="dot"></span> Market Open</div>
+      <div class="market-open" data-live="market-open-badge"><span class="dot"></span> Market Open</div>
       <div class="clock" data-clock>10:15:30 AM</div>
 <div class="theme-switch" role="group" aria-label="Theme"><button class="theme-btn" data-set-theme="light" title="Light theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button><button class="theme-btn" data-set-theme="dark" title="Dark theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button><button class="theme-btn" data-set-theme="terminal" title="Terminal theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></button></div>
     </div>
@@ -62,9 +62,9 @@
       </div>
       <div class="page-actions">
         <div class="tabs">
-          <span class="tab active">Open (2)</span>
-          <span class="tab">Executed (5)</span>
-          <span class="tab">Cancelled (1)</span>
+          <span class="tab active" data-live="orders-tab-open">Open (2)</span>
+          <span class="tab" data-live="orders-tab-executed">Executed (5)</span>
+          <span class="tab" data-live="orders-tab-cancelled">Cancelled (1)</span>
         </div>
       </div>
     </div>
@@ -74,7 +74,7 @@
         <div class="table-wrap">
           <table class="table">
             <thead><tr><th>Time</th><th>Instrument</th><th>Type</th><th>Side</th><th>Qty</th><th>Price</th><th>Trigger</th><th>Status</th><th></th></tr></thead>
-            <tbody>
+            <tbody data-live="orders-tbody">
               <tr>
                 <td>10:14:52 AM</td><td>NIFTY 24 JUL 23600 CE</td><td>LIMIT</td><td><span class="badge badge-red">SELL</span></td><td>75</td><td>109.00</td><td>&mdash;</td><td><span class="badge badge-amber">Pending</span></td><td><button class="btn btn-sm">Cancel</button></td>
               </tr>
@@ -121,33 +121,35 @@
             <div class="form-group"><label>Price</label><input class="form-control" value="58.40" /></div>
           </div>
           <div class="stat-row"><span class="k">Margin Required</span><span class="v">&#8377;42,180</span></div>
-          <div class="stat-row"><span class="k">Available</span><span class="v">&#8377;6,75,440</span></div>
+          <div class="stat-row"><span class="k">Available</span><span class="v" data-live="margin-available">&#8377;6,75,440</span></div>
           <button class="btn btn-primary w-full mt-8" style="justify-content:center;">Place Buy Order</button>
         </div>
 
         <div class="card">
           <div class="card-title mb-8">Quick Stats</div>
-          <div class="stat-row"><span class="k">Orders Today</span><span class="v">8</span></div>
-          <div class="stat-row"><span class="k">Fill Rate</span><span class="v text-green">87.5%</span></div>
-          <div class="stat-row"><span class="k">Avg Slippage</span><span class="v text-amber">0.4 pts</span></div>
+          <div class="stat-row"><span class="k">Orders Today</span><span class="v" data-live="orders-today-count">8</span></div>
+          <div class="stat-row"><span class="k">Fill Rate</span><span class="v text-green" data-live="orders-fill-rate">87.5%</span></div>
+          <div class="stat-row"><span class="k">Avg Slippage</span><span class="v text-amber" data-live="orders-avg-slippage">0.4 pts</span></div>
         </div>
       </div>
     </div>
   </main>
 
   <footer class="statusbar">
-    <div class="items">
+    <div class="items" data-live="footer-tickers">
       <span class="item">Nifty 50 <b>23,532.45</b> <span class="up">&#9650; 0.78%</span></span>
       <span class="item">India VIX <b>13.85</b> <span class="down">&#9660; -3.15%</span></span>
     </div>
     <div class="items">
-      <span class="live"><span class="dot"></span> Market Open</span>
-      <span>Data Refresh: <b style="color:var(--text-primary);">10:15:30 AM</b></span>
+      <span class="live" data-live="footer-market-open"><span class="dot"></span> Market Open</span>
+      <span>Data Refresh: <b data-live="last-refresh" style="color:var(--text-primary);">10:15:30 AM</b></span>
     </div>
   </footer>
 </div>
 </div>
 </div>
 <script src="js/app.js"></script>
+<script src="js/ne-common.js"></script>
+<script src="js/orders-page.js"></script>
 </body>
 </html>

@@ -1,14 +1,15 @@
 /**
  * Wires volume-profile.html to the live backend. Unlike market-profile.html's
  * TPO grid (a time-weighted proxy), this is a real volume-by-price histogram —
- * NIFTY50's candles carry a real `volume` field. Loads once (no auto-refresh).
+ * NIFTY50's candles carry a real `volume` field. Refreshes every 2s.
  */
 (function () {
   var NE = window.NE;
   var UNDERLYING = "NIFTY50";
   var DISPLAY_WINDOW = 15; // buckets each side of POC
 
-  Promise.all([
+  function load() {
+    Promise.all([
     NE.fetchJSON("/market/quote?symbols=NIFTY50,INDIAVIX"),
     NE.fetchJSON("/market/volume-profile?underlying=" + UNDERLYING),
   ])
@@ -75,4 +76,8 @@
       NE.stampRefresh();
     })
     .catch(function () { NE.markStatus(false); });
+  }
+
+  load();
+  setInterval(load, 2000);
 })();

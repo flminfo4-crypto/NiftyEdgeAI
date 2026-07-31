@@ -18,6 +18,7 @@ from broker_plugins.core.interface import (
     BrokerPosition,
     Candle,
     Margins,
+    MarketBreadth,
     OptionChainRow,
     OptionChainSnapshot,
     OrderRequest,
@@ -35,6 +36,14 @@ _QUOTES = {
     "FINNIFTY": {"ltp": 22744.90, "change": 176.20, "change_pct": 0.78},
     "SENSEX": {"ltp": 77259.01, "change": 605.40, "change_pct": 0.79},
     "INDIAVIX": {"ltp": 13.85, "change": -0.45, "change_pct": -3.15},
+    "COALINDIA": {"ltp": 412.30, "change": 3.15, "change_pct": 0.77},
+    "BPCL": {"ltp": 298.75, "change": -1.40, "change_pct": -0.47},
+    "ITC": {"ltp": 441.20, "change": 2.05, "change_pct": 0.47},
+    "ONGC": {"ltp": 258.90, "change": 1.10, "change_pct": 0.43},
+    "NTPC": {"ltp": 362.15, "change": -0.85, "change_pct": -0.23},
+    "HINDALCO": {"ltp": 645.30, "change": 4.20, "change_pct": 0.66},
+    "TATASTEEL": {"ltp": 168.45, "change": 0.90, "change_pct": 0.54},
+    "WIPRO": {"ltp": 542.10, "change": -2.35, "change_pct": -0.43},
 }
 
 _OPTION_CHAIN_ROWS = [
@@ -109,6 +118,10 @@ class MockBrokerAdapter(BrokerAdapter):
             )
         return out
 
+    def get_expiry_list(self, underlying: str) -> list[str]:
+        today = datetime.now(timezone.utc).date()
+        return [str(today + timedelta(days=d)) for d in (6, 13, 20, 27)]
+
     def get_option_chain(self, underlying: str, expiry: str) -> OptionChainSnapshot:
         rows = [
             OptionChainRow(
@@ -142,6 +155,15 @@ class MockBrokerAdapter(BrokerAdapter):
             price = c
             t += step
         return candles
+
+    def get_market_breadth(self) -> MarketBreadth:
+        return MarketBreadth(
+            advancing=1276, declining=684, unchanged=40, new_highs=56, new_lows=12,
+            universe_size=2000, universe_label="NSE (mock)",
+        )
+
+    def get_universe_symbols(self) -> list[str]:
+        return ["COALINDIA", "BPCL", "ITC", "ONGC", "NTPC", "HINDALCO", "TATASTEEL", "WIPRO"]
 
     # -- orders -----------------------------------------------------------
     def place_order(self, order: OrderRequest) -> OrderResult:

@@ -1,12 +1,13 @@
 /**
- * Wires orders.html to the live backend. The order book is read-only and
- * safe to wire; the "New Order" form stays static/disabled — see the HTML
- * comment next to it for why (it would submit a real order with real money).
+ * Wires orders.html to the live backend. Refreshes every 2s. The order book
+ * is read-only and safe to wire; the "New Order" form stays static/disabled
+ * (it would submit a real order with real money).
  */
 (function () {
   var NE = window.NE;
 
-  Promise.all([
+  function load() {
+    Promise.all([
     NE.fetchJSON("/market/quote?symbols=NIFTY50,INDIAVIX"),
     NE.fetchJSON("/orders"),
     NE.fetchJSON("/positions/margins"),
@@ -43,15 +44,19 @@
             var statusBadge = { PENDING: "badge-amber", EXECUTED: "badge-green", REJECTED: "badge-red", CANCELLED: "badge-gray" }[o.status] || "badge-gray";
             var when = new Date(o.placedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
             var price = o.filledPrice != null ? o.filledPrice : o.price;
+            var triggerPrice = o.triggerPrice != null ? o.triggerPrice.toFixed(2) : "—";
+            var lastCell = o.status === "PENDING" ? '<button class="btn btn-sm">Cancel</button>' : "—";
             return (
               "<tr><td>" + when + "</td><td>" + o.instrument + "</td><td>" + o.orderType + "</td>" +
               '<td><span class="badge ' + badgeClass + '">' + o.side + "</span></td>" +
               "<td>" + o.quantityLots + "</td><td>" + (price != null ? price.toFixed(2) : "—") + "</td>" +
-              '<td><span class="badge ' + statusBadge + '">' + o.status + "</span></td></tr>"
+              "<td>" + triggerPrice + "</td>" +
+              '<td><span class="badge ' + statusBadge + '">' + o.status + "</span></td>" +
+              "<td>" + lastCell + "</td></tr>"
             );
           }).join("");
         } else {
-          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">No orders placed yet</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--text-muted);">No orders placed yet</td></tr>';
         }
       }
 
@@ -61,4 +66,8 @@
     .catch(function () {
       NE.markStatus(false);
     });
+  }
+
+  load();
+  setInterval(load, 2000);
 })();

@@ -1,13 +1,14 @@
 /**
  * Wires reports.html to the live backend (month-to-date real P&L/charges from
- * actual trade history — empty/zero until real trades exist). Loads once (no
- * auto-refresh). "Available Reports" download list stays static — see the
+ * actual trade history — empty/zero until real trades exist). Refreshes
+ * every 2s. "Available Reports" download list stays static — see the
  * HTML comment next to it (real PDF/XLSX generation is out of scope here).
  */
 (function () {
   var NE = window.NE;
 
-  Promise.all([
+  function load() {
+    Promise.all([
     NE.fetchJSON("/market/quote?symbols=NIFTY50,INDIAVIX"),
     NE.fetchJSON("/reports/summary"),
   ])
@@ -60,4 +61,8 @@
       NE.stampRefresh();
     })
     .catch(function () { NE.markStatus(false); });
+  }
+
+  load();
+  setInterval(load, 2000);
 })();

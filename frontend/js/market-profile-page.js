@@ -1,7 +1,7 @@
 /**
  * Wires market-profile.html to the live backend (VAH/VAL/POC + previous-session
  * comparison). The TPO letter-grid itself stays static — see the HTML comment
- * next to it for why. Loads once (no auto-refresh).
+ * next to it for why. Refreshes every 2s.
  */
 (function () {
   var NE = window.NE;
@@ -14,7 +14,8 @@
     return union ? (overlap / union) * 100 : 0;
   }
 
-  Promise.all([
+  function load() {
+    Promise.all([
     NE.fetchJSON("/market/quote?symbols=NIFTY50,INDIAVIX"),
     NE.fetchJSON("/market/profile?underlying=" + UNDERLYING),
     NE.fetchJSON("/market/profile/previous-day?underlying=" + UNDERLYING),
@@ -56,4 +57,8 @@
       NE.stampRefresh();
     })
     .catch(function () { NE.markStatus(false); });
+  }
+
+  load();
+  setInterval(load, 2000);
 })();

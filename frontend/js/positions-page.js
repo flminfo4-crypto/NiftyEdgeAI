@@ -1,11 +1,12 @@
 /**
- * Wires positions.html to the live backend. Loads once on page open (no
- * auto-refresh) — see js/ne-common.js for the shared fetch/format helpers.
+ * Wires positions.html to the live backend. Refreshes every 2s — see
+ * js/ne-common.js for the shared fetch/format helpers.
  */
 (function () {
   var NE = window.NE;
 
-  Promise.all([
+  function load() {
+    Promise.all([
     NE.fetchJSON("/market/quote?symbols=NIFTY50,INDIAVIX"),
     NE.fetchJSON("/positions/open"),
     NE.fetchJSON("/positions/margins"),
@@ -30,8 +31,10 @@
               '<td class="' + qtyClass + '">' + qtySign + p.quantityLots + "</td>" +
               "<td>" + p.avgPrice.toFixed(2) + "</td>" +
               "<td>" + p.ltp.toFixed(2) + "</td>" +
+              "<td>&mdash;</td><td>&mdash;</td>" +
               '<td class="' + pnlClass + '">' + NE.fmtINRSigned(p.pnl) + "</td>" +
-              '<td class="' + pnlClass + '">' + NE.fmtSigned(p.pnlPct) + "%</td></tr>"
+              '<td class="' + pnlClass + '">' + NE.fmtSigned(p.pnlPct) + "%</td>" +
+              '<td><button class="btn btn-sm">Exit</button></td></tr>'
             );
           }).join("");
         } else {
@@ -90,4 +93,8 @@
     .catch(function () {
       NE.markStatus(false);
     });
+  }
+
+  load();
+  setInterval(load, 2000);
 })();

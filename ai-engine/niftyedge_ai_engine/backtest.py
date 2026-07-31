@@ -1,19 +1,41 @@
 """
 Backtesting engine — powers backtester.html.
 
-No historical options data source is wired up yet (see ai-engine/README.md
-"Open questions" — intraday option-chain history isn't trivially available
-from most Indian brokers), so `run_backtest()` currently runs its real metric
-computations (win rate, profit factor, Sharpe/Sortino, max drawdown) over a
-synthetic-but-plausible trade log calibrated to land close to the numbers
-already shown in the frontend prototype (~80 trades, ~68% win rate, ~80%
-net return). Swap `_mock_trade_log()` for a real replay engine once a
-historical data vendor is chosen — `_compute_metrics()` doesn't change.
+Runs over real historical underlying OHLC (Dhan provides ~5-6 years of daily
+NIFTY50/BANKNIFTY candles — see broker_plugins/dhan/adapter.py). Entry/exit
+rules are driven by real CPR levels computed from real prior-day OHLC (see
+pivots.py — the same calculation backing /market/cpr). There is no historical
+option-chain data source (Dhan only exposes a live snapshot), so option-
+strategy premiums are *modeled* with Black-Scholes using realized volatility
+from the real price series as the IV input (see options_pricing.py) rather
+than fabricated outright — a disclosed approximation, not fake data. Futures
+strategies need no such modeling: their P&L is the real spot move itself.
 """
 
-import random
+import math
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
+from typing import Literal, Optional
+
+from .options_pricing import black_scholes, realized_volatility
+from .pivots import daily_levels
+
+LOT_SIZE = 75  # NIFTY standard lot (see niftyedge_ai_engine equivalents elsewhere)
+STRIKE_STEP = 50
+# Rough all-in cost (brokerage + STT + exchange + GST + stamp duty) as a
+# fraction of premium turnover — same order of magnitude as
+# order_service._estimate_charges on the backend, kept local since ai-engine
+# has no backend dependency.
+COST_FRACTION = 0.0015
+
+
+@dataclass
+class Candle:
+    dt: date
+    open: float
+    high: float
+    low: float
+    close: float
 
 
 @dataclass
@@ -23,6 +45,8 @@ class Trade:
     label: str
     pnl: float
     result: str  # "WIN" | "LOSS"
+    entry_price: float = 0.0
+    exit_price: float = 0.0
 
 
 @dataclass
@@ -43,28 +67,214 @@ class BacktestResult:
     trades: list[Trade] = field(default_factory=list)
 
 
-_LABELS = [
-    "SELL CALL (CE Writing)", "BUY PUT (PE Buying)", "SELL PUT (PE Writing)",
-    "BUY CALL (CE Buying)", "IRON CONDOR",
-]
+_STRATEGY_LABELS = {
+    "ai-bias-ce-writing-below-vah": "SELL CALL (CE Writing)",
+    "mean-reversion-at-val": "BUY CALL (Mean Reversion)",
+    "breakout-above-vah": "BUY CALL (Breakout)",
+    "iron-condor-weekly": "IRON CONDOR",
+}
 
 
-def _mock_trade_log(starting_capital: float, n_trades: int, seed: int) -> list[Trade]:
-    rng = random.Random(seed)
+def _round_strike(spot: float) -> float:
+    return round(spot / STRIKE_STEP) * STRIKE_STEP
+
+
+def _next_thursday(d: date) -> date:
+    offset = (3 - d.weekday()) % 7  # Mon=0 .. Thu=3 .. Sun=6
+    return d + timedelta(days=offset or 7)
+
+
+def _signal(strategy: str, entry_spot: float, levels) -> Optional[str]:
+    """Returns a strike-selection hint ('CALL_OTM_WRITE', 'CALL_ATM_BUY',
+    'CONDOR') or None if today's real CPR levels don't meet the strategy's
+    entry condition."""
+    cpr = levels.cpr_today
+    two_day = levels.two_day
+    bearish_or_flat = two_day is None or two_day.direction != "BULLISH"
+
+    if strategy == "ai-bias-ce-writing-below-vah":
+        if entry_spot < cpr.tc and bearish_or_flat:
+            return "CALL_OTM_WRITE"
+    elif strategy == "mean-reversion-at-val":
+        if entry_spot <= cpr.bc * 1.002:
+            return "CALL_ATM_BUY"
+    elif strategy == "breakout-above-vah":
+        if entry_spot > cpr.tc:
+            return "CALL_ATM_BUY"
+    elif strategy == "iron-condor-weekly":
+        if levels.width.regime in ("NORMAL", "WIDE"):
+            return "CONDOR"
+    return None
+
+
+def _leg_pnl(
+    entry_spot: float, strike: float, option_type: Literal["CE", "PE"], side: Literal["BUY", "SELL"],
+    entry_date: date, expiry: date, path: list[Candle], sigma: float,
+    stop_loss_pct: float, target_pct: float, direction: int,
+) -> tuple[float, float, date]:
+    """Simulates one option leg day-by-day (re-pricing via Black-Scholes on
+    each subsequent real close) until stop/target trips or expiry is reached.
+
+    stop_loss_pct/target_pct are checked against the *underlying's* real move
+    from entry (the standard convention — "1.5% SL" means a 1.5% move in
+    NIFTY, not in the option premium, which is far more volatile day-to-day
+    and would blow through a same-sized threshold almost immediately on the
+    next daily close). `direction` is +1 if the position profits from the
+    underlying rising (long calls) or -1 if it profits from the underlying
+    NOT rising (short calls) — it decides which way a move counts as
+    favorable vs. adverse. Realized P&L still comes from the real premium
+    (via Black-Scholes) at whichever day the exit condition fires.
+    Returns (entry_premium, exit_premium, closed_date)."""
+    entry_t = max((expiry - entry_date).days / 365.0, 1.0 / 365.0)
+    entry_price = black_scholes(entry_spot, strike, entry_t, sigma, option_type).price
+
+    exit_price = entry_price
+    closed = expiry
+    for c in path:
+        if c.dt <= entry_date:
+            continue
+        t = max((expiry - c.dt).days / 365.0, 1.0 / 365.0)
+        px = black_scholes(c.close, strike, t, sigma, option_type).price
+        spot_move_pct = direction * (c.close - entry_spot) / entry_spot * 100
+        exit_price = px
+        closed = c.dt
+        if spot_move_pct >= target_pct or spot_move_pct <= -stop_loss_pct or c.dt >= expiry:
+            break
+    return entry_price, exit_price, closed
+
+
+def _condor_pnl(
+    entry_spot: float, ce_strike: float, pe_strike: float, entry_date: date, expiry: date,
+    path: list[Candle], sigma: float, stop_loss_pct: float, target_pct: float,
+) -> tuple[float, float, date]:
+    """Iron condor is a range bet, not directional, so its stop isn't "the
+    underlying moved against me" in a single direction — it's "the underlying
+    threatened a wing" (an absolute move past stop_loss_pct from entry either
+    way). Target is combined-premium decay (the normal way a credit spread's
+    profit is realized) rather than a further underlying move."""
+    entry_t = max((expiry - entry_date).days / 365.0, 1.0 / 365.0)
+    ce_entry = black_scholes(entry_spot, ce_strike, entry_t, sigma, "CE").price
+    pe_entry = black_scholes(entry_spot, pe_strike, entry_t, sigma, "PE").price
+    entry_premium = ce_entry + pe_entry
+
+    exit_premium = entry_premium
+    closed = expiry
+    for c in path:
+        if c.dt <= entry_date:
+            continue
+        t = max((expiry - c.dt).days / 365.0, 1.0 / 365.0)
+        ce_px = black_scholes(c.close, ce_strike, t, sigma, "CE").price
+        pe_px = black_scholes(c.close, pe_strike, t, sigma, "PE").price
+        exit_premium = ce_px + pe_px
+        closed = c.dt
+        breach_pct = abs(c.close - entry_spot) / entry_spot * 100
+        decay_pct = (entry_premium - exit_premium) / entry_premium * 100
+        if breach_pct >= stop_loss_pct or decay_pct >= target_pct or c.dt >= expiry:
+            break
+    return entry_premium, exit_premium, closed
+
+
+def _simulate_trades(
+    candles: list[Candle], strategy: str, position_size_lots: int,
+    stop_loss_pct: float, target_pct: float, include_costs: bool, starting_capital: float,
+) -> list[Trade]:
     trades: list[Trade] = []
-    t = datetime.now(timezone.utc) - timedelta(days=90)
-    for i in range(n_trades):
-        win = rng.random() < 0.675  # ~68% win rate
-        if win:
-            pnl = rng.uniform(800, 4200)
-            result = "WIN"
-        else:
-            pnl = -rng.uniform(600, 3200)
-            result = "LOSS"
-        opened = t
-        closed = t + timedelta(hours=rng.uniform(1, 30))
-        trades.append(Trade(opened_at=opened, closed_at=closed, label=rng.choice(_LABELS), pnl=round(pnl, 2), result=result))
-        t = closed + timedelta(hours=rng.uniform(2, 20))
+    closes = [c.close for c in candles]
+    last_exit_date: Optional[date] = None
+    equity = starting_capital
+
+    for i in range(2, len(candles) - 1):
+        if equity <= 0:
+            break  # account wiped out — a real trader stops here, not carries on
+        today = candles[i]
+        if last_exit_date and today.dt <= last_exit_date:
+            continue  # one position at a time
+        prior, before = candles[i - 1], candles[i - 2]
+        levels = daily_levels(prior.high, prior.low, prior.close, before.high, before.low, before.close)
+        entry_spot = today.open
+        hint = _signal(strategy, entry_spot, levels)
+        if not hint:
+            continue
+
+        expiry = _next_thursday(today.dt)
+        path = [c for c in candles[i:] if c.dt <= expiry + timedelta(days=1)]
+        sigma = realized_volatility(closes[: i + 1])
+        label = _STRATEGY_LABELS[strategy]
+
+        if hint == "CONDOR":
+            ce_strike = _round_strike(entry_spot) + 200
+            pe_strike = _round_strike(entry_spot) - 200
+            entry_p, exit_p, closed_date = _condor_pnl(
+                entry_spot, ce_strike, pe_strike, today.dt, expiry, path, sigma, stop_loss_pct, target_pct
+            )
+            pnl = (entry_p - exit_p) * LOT_SIZE * position_size_lots
+            turnover = (entry_p + exit_p) * LOT_SIZE * position_size_lots
+        elif hint == "CALL_OTM_WRITE":
+            strike = _round_strike(entry_spot) + 100
+            entry_p, exit_p, closed_date = _leg_pnl(entry_spot, strike, "CE", "SELL", today.dt, expiry, path, sigma, stop_loss_pct, target_pct, direction=-1)
+            pnl = (entry_p - exit_p) * LOT_SIZE * position_size_lots
+            turnover = (entry_p + exit_p) * LOT_SIZE * position_size_lots
+        else:  # CALL_ATM_BUY
+            strike = _round_strike(entry_spot)
+            entry_p, exit_p, closed_date = _leg_pnl(entry_spot, strike, "CE", "BUY", today.dt, expiry, path, sigma, stop_loss_pct, target_pct, direction=1)
+            pnl = (exit_p - entry_p) * LOT_SIZE * position_size_lots
+            turnover = (entry_p + exit_p) * LOT_SIZE * position_size_lots
+
+        if include_costs:
+            pnl -= turnover * COST_FRACTION
+
+        pnl = round(pnl, 2)
+        trades.append(Trade(
+            opened_at=datetime.combine(today.dt, datetime.min.time(), tzinfo=timezone.utc),
+            closed_at=datetime.combine(closed_date, datetime.min.time(), tzinfo=timezone.utc),
+            label=label, pnl=pnl, result="WIN" if pnl > 0 else "LOSS",
+            entry_price=round(entry_p, 2), exit_price=round(exit_p, 2),
+        ))
+        last_exit_date = closed_date
+        equity += pnl
+
+    return trades
+
+
+def _simulate_futures_trades(candles: list[Candle], strategy: str, position_size_lots: int, include_costs: bool, starting_capital: float) -> list[Trade]:
+    """Futures need no premium model — P&L is the real spot move itself."""
+    trades: list[Trade] = []
+    last_exit_date: Optional[date] = None
+    equity = starting_capital
+    for i in range(2, len(candles) - 1):
+        if equity <= 0:
+            break
+        today = candles[i]
+        if last_exit_date and today.dt <= last_exit_date:
+            continue
+        prior, before = candles[i - 1], candles[i - 2]
+        levels = daily_levels(prior.high, prior.low, prior.close, before.high, before.low, before.close)
+        entry_spot = today.open
+        hint = _signal(strategy, entry_spot, levels)
+        if not hint or hint == "CONDOR":
+            continue  # a condor has no directional futures equivalent
+        direction = -1 if hint == "CALL_OTM_WRITE" else 1  # bearish setups short the future, bullish setups go long
+
+        expiry = _next_thursday(today.dt)
+        exit_candle = today
+        for c in candles[i:]:
+            if c.dt <= today.dt:
+                continue
+            exit_candle = c
+            if c.dt >= expiry:
+                break
+        pnl = direction * (exit_candle.close - entry_spot) * LOT_SIZE * position_size_lots
+        if include_costs:
+            pnl -= abs(entry_spot + exit_candle.close) * LOT_SIZE * position_size_lots * COST_FRACTION
+        pnl = round(pnl, 2)
+        trades.append(Trade(
+            opened_at=datetime.combine(today.dt, datetime.min.time(), tzinfo=timezone.utc),
+            closed_at=datetime.combine(exit_candle.dt, datetime.min.time(), tzinfo=timezone.utc),
+            label=("SELL FUTURES" if direction < 0 else "BUY FUTURES"), pnl=pnl, result="WIN" if pnl > 0 else "LOSS",
+            entry_price=round(entry_spot, 2), exit_price=round(exit_candle.close, 2),
+        ))
+        last_exit_date = exit_candle.dt
+        equity += pnl
     return trades
 
 
@@ -128,9 +338,21 @@ def _compute_metrics(starting_capital: float, trades: list[Trade]) -> BacktestRe
 
 
 def run_backtest(
+    candles: list[Candle],
+    strategy: str = "ai-bias-ce-writing-below-vah",
     starting_capital: float = 100_000.0,
-    n_trades: int = 80,
-    seed: int = 19,
+    position_size_lots: int = 3,
+    stop_loss_pct: float = 1.5,
+    target_pct: float = 3.0,
+    include_slippage_and_costs: bool = True,
+    is_futures: bool = False,
 ) -> BacktestResult:
-    trades = _mock_trade_log(starting_capital, n_trades, seed)
+    """`candles` must be real historical daily OHLC for the requested
+    underlying+date range (see backend/app/services/backtest_service.py),
+    sorted ascending, with a couple of extra leading days so the first
+    in-range day still has real prior-day OHLC for its CPR calculation."""
+    if is_futures:
+        trades = _simulate_futures_trades(candles, strategy, position_size_lots, include_slippage_and_costs, starting_capital)
+    else:
+        trades = _simulate_trades(candles, strategy, position_size_lots, stop_loss_pct, target_pct, include_slippage_and_costs, starting_capital)
     return _compute_metrics(starting_capital, trades)

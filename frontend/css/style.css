@@ -276,13 +276,13 @@ table{ border-collapse: collapse; width: 100%; }
 
 /* ---------- Topbar (ticker) ---------- */
 .topbar{
-  height: var(--topbar-h);
+  min-height: var(--topbar-h);
   background: var(--bg-topbar);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 22px;
+  padding: 10px 22px;
   flex-wrap: wrap;
   gap: 10px;
 }
