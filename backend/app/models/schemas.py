@@ -97,10 +97,38 @@ class VolumeProfileOut(CamelModel):
     total_volume: float
 
 
+class MarketProfileRowOut(CamelModel):
+    price: float
+    letters: str
+    tpo_count: int
+
+
 class MarketProfileOut(CamelModel):
     vah: float
     val: float
     poc: float
+    rows: list[MarketProfileRowOut] = []
+    session_high: Optional[float] = None
+    session_low: Optional[float] = None
+    ib_high: Optional[float] = None
+    ib_low: Optional[float] = None
+    ib_range: Optional[float] = None
+    range_extension_up: Optional[float] = None
+    range_extension_down: Optional[float] = None
+    day_type: Optional[str] = None
+    open_type: Optional[str] = None
+    poor_high: Optional[float] = None
+    poor_low: Optional[float] = None
+    excess_high: Optional[float] = None
+    excess_low: Optional[float] = None
+
+
+class MarketProfileHistoryRowOut(CamelModel):
+    session_date: str
+    vah: float
+    val: float
+    poc: float
+    range_pts: float
 
 
 class CprDashboardOut(CamelModel):

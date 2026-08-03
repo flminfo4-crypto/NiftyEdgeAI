@@ -154,9 +154,37 @@ def get_market_profile(underlying: str, previous: bool = False) -> dict:
     session_date = _prev_trading_day(today) if previous else today
     candles = _session_candles(underlying, session_date)
     if not candles and not previous:
-        candles = _session_candles(underlying, _prev_trading_day(today))
-    vah, val, poc = analytics.market_profile(candles)
-    return {"vah": vah, "val": val, "poc": poc}
+        session_date = _prev_trading_day(today)
+        candles = _session_candles(underlying, session_date)
+    session_start, _ = _session_bounds(session_date)
+    return analytics.market_profile_detail(candles, session_start)
+
+
+def get_market_profile_history(underlying: str, days: int = 5) -> list[dict]:
+    """VAH/VAL/POC + day range for each of the last `days` completed trading
+    sessions (default 5 — a full trading week), oldest first."""
+    today = datetime.now(IST).date()
+    sessions = []
+    d = today
+    while len(sessions) < days:
+        d = _prev_trading_day(d)
+        sessions.append(d)
+    sessions.reverse()
+
+    rows = []
+    for session_date in sessions:
+        candles = _session_candles(underlying, session_date)
+        if not candles:
+            continue
+        vah, val, poc = analytics.market_profile(candles)
+        highs = [c.high for c in candles]
+        lows = [c.low for c in candles]
+        rows.append({
+            "session_date": session_date.isoformat(),
+            "vah": vah, "val": val, "poc": poc,
+            "range_pts": round(max(highs) - min(lows), 2),
+        })
+    return rows
 
 
 # -- CPR dashboard --------------------------------------------------------------

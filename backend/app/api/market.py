@@ -12,6 +12,7 @@ from app.models.schemas import (
     CvdOut,
     IvRankOut,
     MarketBreadthOut,
+    MarketProfileHistoryRowOut,
     MarketProfileOut,
     OiBuildupRowOut,
     OiSummaryOut,
@@ -155,6 +156,14 @@ def get_profile_previous_day(underlying: str = "NIFTY50"):
         return market_data.get_market_profile(underlying, previous=True)
     except ValueError:
         raise HTTPException(status_code=404, detail=f"No candles available for underlying '{underlying}'")
+
+
+@router.get("/profile/history", response_model=list[MarketProfileHistoryRowOut])
+def get_profile_history(underlying: str = "NIFTY50", days: int = 5):
+    """VAH/VAL/POC + range for each of the last `days` trading sessions
+    (default 5 = one trading week) so market-profile.html can show more than
+    a single-session snapshot."""
+    return market_data.get_market_profile_history(underlying, days)
 
 
 @router.get("/cpr-dashboard", response_model=CprDashboardOut)

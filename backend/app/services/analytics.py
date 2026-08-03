@@ -49,6 +49,130 @@ def market_profile(candles: list[Candle]) -> tuple[float, float, float]:
     return max(included), min(included), poc
 
 
+def _period_letter(idx: int) -> str:
+    return chr(65 + idx) if idx < 26 else chr(65 + (idx % 26))
+
+
+def _classify_day_type(ib_range: float, day_range: float, ext_up: float, ext_down: float) -> str:
+    """Simplified reading of the standard Dalton (Mind Over Markets) day-type
+    taxonomy, driven off real IB/range-extension numbers rather than the
+    tick-by-tick rotation detail a full classifier would need."""
+    if ib_range <= 0:
+        return "Insufficient Data"
+    if ext_up > 0 and ext_down > 0:
+        return "Neutral Day"
+    ratio = day_range / ib_range
+    if ratio <= 1.15:
+        return "Normal Day"
+    if ratio <= 2.0:
+        return "Normal Variation Day"
+    return "Trend Day"
+
+
+def _classify_open_type(period0_candles: list[Candle], open_price: float) -> str:
+    """Simplified reading of Dalton's four open types (Open-Drive/Test-Drive/
+    Rejection-Reverse/Auction), using only the first TPO period's real
+    high/low relative to the real session open — not full tick-by-tick
+    order-flow, which isn't available from this data source."""
+    if not period0_candles:
+        return "Open-Auction"
+    period0_high = max(c.high for c in period0_candles)
+    period0_low = min(c.low for c in period0_candles)
+    upper_room = period0_high - open_price
+    lower_room = open_price - period0_low
+    tol = 3.0
+    if lower_room <= tol and upper_room > tol:
+        return "Open-Drive (Bullish)"
+    if upper_room <= tol and lower_room > tol:
+        return "Open-Drive (Bearish)"
+    if upper_room > tol and lower_room > tol:
+        return "Open-Auction"
+    return "Open-Test-Drive"
+
+
+def market_profile_detail(candles: list[Candle], session_start, tick: float = 5.0, period_minutes: int = 30) -> dict:
+    """Full TPO (Time Price Opportunity) profile: real per-price letters
+    binned into `period_minutes`-wide brackets from `session_start`, plus the
+    derived Initial Balance, day/open type, poor high/low and excess-tail
+    reads that market-profile.html shows. Unlike `market_profile()` above
+    (which only returns vah/val/poc), this drives the letter grid itself so
+    nothing on the page is left as static placeholder content.
+    """
+    if not candles:
+        raise ValueError("no candles to build a market profile from")
+    sorted_candles = sorted(candles, key=lambda c: c.ts)
+    period_seconds = period_minutes * 60
+
+    letters_by_price: dict[float, set] = defaultdict(set)
+    period_high: dict[int, float] = {}
+    period_low: dict[int, float] = {}
+    period0_candles: list[Candle] = []
+    for c in sorted_candles:
+        idx = max(0, int((c.ts - session_start).total_seconds() // period_seconds))
+        period_high[idx] = max(period_high.get(idx, c.high), c.high)
+        period_low[idx] = min(period_low.get(idx, c.low), c.low)
+        if idx == 0:
+            period0_candles.append(c)
+        letter = _period_letter(idx)
+        lo = round(c.low / tick) * tick
+        hi = round(c.high / tick) * tick
+        if hi <= lo:
+            hi = lo + tick
+        levels = int(round((hi - lo) / tick)) + 1
+        price = lo
+        for _ in range(levels):
+            letters_by_price[price].add(letter)
+            price += tick
+
+    tpo_count = {p: len(ls) for p, ls in letters_by_price.items()}
+    poc = max(tpo_count, key=tpo_count.get)
+    total = sum(tpo_count.values())
+    target = total * 0.68
+    by_count_desc = sorted(tpo_count, key=lambda p: -tpo_count[p])
+    included, acc = [], 0.0
+    for p in by_count_desc:
+        included.append(p)
+        acc += tpo_count[p]
+        if acc >= target:
+            break
+    vah, val = max(included), min(included)
+
+    rows = [
+        {"price": p, "letters": "".join(sorted(letters_by_price[p])), "tpo_count": tpo_count[p]}
+        for p in sorted(tpo_count)
+    ]
+
+    top_price, bottom_price = max(tpo_count), min(tpo_count)
+    ib_periods = [idx for idx in (0, 1) if idx in period_high]
+    ib_high = max(period_high[idx] for idx in ib_periods) if ib_periods else top_price
+    ib_low = min(period_low[idx] for idx in ib_periods) if ib_periods else bottom_price
+    ib_range = ib_high - ib_low
+
+    day_high = max(c.high for c in candles)
+    day_low = min(c.low for c in candles)
+    day_range = day_high - day_low
+    ext_up = max(0.0, day_high - ib_high)
+    ext_down = max(0.0, ib_low - day_low)
+
+    return {
+        "rows": rows,
+        "vah": vah, "val": val, "poc": poc,
+        "session_high": day_high, "session_low": day_low,
+        "ib_high": ib_high, "ib_low": ib_low, "ib_range": ib_range,
+        "range_extension_up": ext_up, "range_extension_down": ext_down,
+        "day_type": _classify_day_type(ib_range, day_range, ext_up, ext_down),
+        "open_type": _classify_open_type(period0_candles, sorted_candles[0].open),
+        # A level with only one TPO letter is a "single print" — at the
+        # session extreme that means a poorly-tested, quickly-rejected tail
+        # (excess); 2+ letters at the extreme means the auction kept
+        # returning there without resolving it (a "poor" high/low).
+        "poor_high": top_price if tpo_count[top_price] >= 2 else None,
+        "poor_low": bottom_price if tpo_count[bottom_price] >= 2 else None,
+        "excess_high": top_price if tpo_count[top_price] == 1 else None,
+        "excess_low": bottom_price if tpo_count[bottom_price] == 1 else None,
+    }
+
+
 def volume_profile(candles: list[Candle], tick: float = 6.0) -> dict:
     """A real volume-by-price histogram — each candle's actual traded volume
     (not a time-weighted proxy) spread evenly across the price levels between
