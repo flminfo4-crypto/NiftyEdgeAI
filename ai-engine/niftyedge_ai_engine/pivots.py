@@ -299,3 +299,203 @@ def daily_levels(
         two_day=two_day,
         pdh=high, pdl=low, pdc=close,
     )
+
+
+# ---------------------------------------------------------------------------
+# Opening-print confirmation [Ochoa 2010, Ch. 6, ~pp.168-176]
+#
+# The book is explicit that a two-day relationship supplies only an INITIAL
+# bias, and that the bias must be confirmed by the opening print: the seven
+# relationships depend on two prices, the prior day's close and the current
+# day's open. A bullish relationship whose open prints below the range is
+# REJECTED, and the range then becomes a fade (short) opportunity rather than
+# a place to buy pullbacks — the book notes some of the biggest rallies come
+# from a bearish relationship being rejected the same way. Treating the
+# relationship alone as the verdict, without this check, inverts the plan on
+# exactly the days it matters most.
+# ---------------------------------------------------------------------------
+
+ConfirmationStatus = Literal["CONFIRMED", "REJECTED", "PENDING"]
+
+_BULLISH_RELS = ("HIGHER_VALUE", "OVERLAPPING_HIGHER_VALUE")
+_BEARISH_RELS = ("LOWER_VALUE", "OVERLAPPING_LOWER_VALUE")
+
+
+@dataclass
+class BiasConfirmation:
+    status: ConfirmationStatus
+    initial_direction: str                # from the two-day relationship alone
+    effective_direction: str              # after the opening print is applied
+    strong: bool                          # open beyond the far edge (highest conviction)
+    prior_close_supports: Optional[bool]  # prior close outside the range in the bias direction
+    guidance: str
+
+
+def confirm_two_day_bias(
+    two_day: Optional[TwoDayRelationship],
+    today_cpr: CPR,
+    open_price: Optional[float],
+    prior_close: Optional[float] = None,
+) -> Optional[BiasConfirmation]:
+    """Apply the day's opening print to a two-day relationship's initial bias.
+
+    Returns None when there is no relationship to judge, and PENDING when the
+    session has not opened yet, since the confirmation genuinely is not
+    knowable until the open prints.
+    """
+    if two_day is None:
+        return None
+    initial = two_day.direction
+    tc, bc = today_cpr.tc, today_cpr.bc
+
+    prior_supports: Optional[bool] = None
+    if prior_close is not None:
+        if initial == "BULLISH":
+            prior_supports = prior_close > tc
+        elif initial == "BEARISH":
+            prior_supports = prior_close < bc
+
+    if open_price is None:
+        return BiasConfirmation(
+            status="PENDING", initial_direction=initial, effective_direction=initial,
+            strong=False, prior_close_supports=prior_supports,
+            guidance=(
+                f"{two_day.label} bias is provisional — it is confirmed or rejected "
+                f"by where the session opens relative to {bc:.2f}-{tc:.2f}."
+            ),
+        )
+
+    if two_day.relationship in _BULLISH_RELS:
+        if open_price >= bc:
+            strong = open_price > tc
+            return BiasConfirmation(
+                status="CONFIRMED", initial_direction=initial, effective_direction="BULLISH",
+                strong=strong, prior_close_supports=prior_supports,
+                guidance=(
+                    "Open above the CPR confirms the bullish bias — buy pullbacks into the range."
+                    if strong else
+                    "Open inside the CPR but above its floor keeps the bullish bias — buy pullbacks to the range."
+                ),
+            )
+        return BiasConfirmation(
+            status="REJECTED", initial_direction=initial, effective_direction="BEARISH",
+            strong=False, prior_close_supports=prior_supports,
+            guidance=(
+                f"Open below the CPR floor ({bc:.2f}) rejects the bullish bias — "
+                "the range becomes resistance to fade, not support to buy."
+            ),
+        )
+
+    if two_day.relationship in _BEARISH_RELS:
+        if open_price <= tc:
+            strong = open_price < bc
+            return BiasConfirmation(
+                status="CONFIRMED", initial_direction=initial, effective_direction="BEARISH",
+                strong=strong, prior_close_supports=prior_supports,
+                guidance=(
+                    "Open below the CPR confirms the bearish bias — sell rallies into the range."
+                    if strong else
+                    "Open inside the CPR but below its top keeps the bearish bias — sell rallies to the range."
+                ),
+            )
+        return BiasConfirmation(
+            status="REJECTED", initial_direction=initial, effective_direction="BULLISH",
+            strong=False, prior_close_supports=prior_supports,
+            guidance=(
+                f"Open above the CPR top ({tc:.2f}) rejects the bearish bias — sentiment "
+                "shifted overnight; the sharpest rallies come from exactly this rejection."
+            ),
+        )
+
+    # Neutral relationships (unchanged / outside / inside): the open decides
+    # direction outright rather than confirming a pre-existing lean.
+    if open_price > tc:
+        eff, note = "BULLISH", "above"
+    elif open_price < bc:
+        eff, note = "BEARISH", "below"
+    else:
+        return BiasConfirmation(
+            status="PENDING", initial_direction=initial, effective_direction="NEUTRAL",
+            strong=False, prior_close_supports=prior_supports,
+            guidance=(
+                f"Neutral relationship and the open sits inside the CPR ({bc:.2f}-{tc:.2f}) — "
+                "wait for a break of the range to pick a side."
+            ),
+        )
+    return BiasConfirmation(
+        status="CONFIRMED", initial_direction=initial, effective_direction=eff,
+        strong=True, prior_close_supports=prior_supports,
+        guidance=f"Neutral relationship, but the open printed {note} the CPR — trade in the direction of the break.",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Pivot Trend Analysis [Ochoa 2010, Ch. 5, ~pp.151-158]
+#
+# Per the book the market remains strictly above S1 in a bullish trend and
+# below R1 in a bearish trend, and the trend persists until price CLOSES
+# beyond that level, which flips the state. In an uptrend the tradeable zones
+# are S1 and the CPR (buy pullbacks, target R1/R2); in a downtrend they are
+# R1 and the CPR (sell rallies, target S1/S2).
+# ---------------------------------------------------------------------------
+
+TrendState = Literal["BULLISH", "BEARISH", "NEUTRAL"]
+
+
+@dataclass
+class PivotTrend:
+    state: TrendState
+    days_in_state: int
+    flip_level: Optional[float]   # a close beyond this flips the trend
+    buy_zones: list
+    sell_zones: list
+    targets: list
+    guidance: str
+
+
+def pivot_trend_state(sessions: list) -> Optional[PivotTrend]:
+    """Walk real sessions to derive the current pivot trend.
+
+    `sessions` is oldest-first; each entry is a dict holding that day's close
+    plus the S1/R1 that were in force for it (i.e. computed from the day
+    before): {"close": float, "s1": float, "r1": float}. Needs at least two.
+    """
+    if not sessions or len(sessions) < 2:
+        return None
+    state: TrendState = "NEUTRAL"
+    days = 0
+    for s in sessions:
+        close, s1, r1 = s["close"], s["s1"], s["r1"]
+        if state == "BULLISH":
+            new_state: TrendState = "BEARISH" if close < s1 else "BULLISH"
+        elif state == "BEARISH":
+            new_state = "BULLISH" if close > r1 else "BEARISH"
+        else:
+            new_state = "BULLISH" if close > r1 else "BEARISH" if close < s1 else "NEUTRAL"
+        days = days + 1 if new_state == state else 1
+        state = new_state
+
+    last = sessions[-1]
+    if state == "BULLISH":
+        return PivotTrend(
+            state=state, days_in_state=days, flip_level=round(last["s1"], 2),
+            buy_zones=["S1", "CPR"], sell_zones=[], targets=["R1", "R2"],
+            guidance=(
+                f"Uptrend intact while price closes above S1 ({last['s1']:.2f}). "
+                "Buy pullbacks to S1 or the CPR; target R1/R2. A close below S1 flips the trend."
+            ),
+        )
+    if state == "BEARISH":
+        return PivotTrend(
+            state=state, days_in_state=days, flip_level=round(last["r1"], 2),
+            buy_zones=[], sell_zones=["R1", "CPR"], targets=["S1", "S2"],
+            guidance=(
+                f"Downtrend intact while price closes below R1 ({last['r1']:.2f}). "
+                "Sell rallies to R1 or the CPR; target S1/S2. A close above R1 flips the trend."
+            ),
+        )
+    return PivotTrend(
+        state=state, days_in_state=days, flip_level=None,
+        buy_zones=[], sell_zones=[], targets=[],
+        guidance="No established pivot trend — price is closing between S1 and R1. Wait for a close beyond either to set the trend.",
+    )

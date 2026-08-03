@@ -309,6 +309,12 @@ class BrokerRejectionOut(CamelModel):
 
 # -- backtests -------------------------------------------------------------------
 
+class StrategyOut(CamelModel):
+    key: str
+    label: str
+    description: str = ""
+
+
 class BacktestRequestIn(CamelModel):
     strategy: str = "ai-bias-ce-writing-below-vah"
     instrument: str = "NIFTY50_OPTIONS"
@@ -319,6 +325,10 @@ class BacktestRequestIn(CamelModel):
     stop_loss_pct: float = Field(alias="stopLossPct", default=1.5)
     target_pct: float = Field(alias="targetPct", default=3.0)
     include_slippage_and_costs: bool = Field(alias="includeSlippageAndCosts", default=True)
+    # How long each position is carried, independent of the date range:
+    # "strategy" keeps each strategy's own choice, the rest force one horizon.
+    hold: Literal["strategy", "intraday", "weekly", "custom"] = "strategy"
+    hold_days: int = Field(alias="holdDays", default=5, ge=1, le=60)
 
 
 class BacktestTradeOut(CamelModel):
@@ -327,6 +337,74 @@ class BacktestTradeOut(CamelModel):
     label: str
     pnl: float
     result: str
+
+
+class PeriodRowOut(CamelModel):
+    period: str
+    start_date: str
+    end_date: str
+    trades: int
+    wins: int
+    losses: int
+    pnl: float
+    return_pct: float
+    opening_equity: float
+    closing_equity: float
+    hit_target: bool
+
+
+class PeriodSummaryOut(CamelModel):
+    total_periods: int
+    periods_with_trades: int
+    periods_flat: int
+    periods_profitable: int
+    periods_hit_target: int
+    pct_hit_target: float
+    pct_profitable: float
+    avg_return_pct: float
+    median_return_pct: float
+    best_period_pct: float
+    worst_period_pct: float
+    max_consecutive_losing_periods: int
+    final_equity: float
+    total_return_pct: float
+
+
+class PeriodReportOut(CamelModel):
+    strategy: str
+    strategy_label: str
+    instrument: str
+    underlying: str
+    period: Literal["weekly", "monthly"]
+    years: float
+    from_date: str
+    to_date: str
+    starting_capital: float
+    position_size_lots: int
+    target_return_pct: float
+    summary: PeriodSummaryOut
+    rows: list[PeriodRowOut]
+
+
+class WeeklyStatsOut(CamelModel):
+    """Per-week performance of a backtest — the unit the app's 1-2%/week
+    goal is judged on. Computed against the equity at each week's start."""
+    total_weeks: int
+    avg_return_pct: float
+    median_return_pct: float
+    pct_weeks_profitable: float
+    pct_weeks_hit_1pct: float
+    pct_weeks_hit_2pct: float
+    best_week_pct: float
+    worst_week_pct: float
+    max_consecutive_losing_weeks: int
+
+
+class IvRealityCheckOut(CamelModel):
+    available: bool
+    model_sigma_pct: Optional[float] = None
+    real_market_iv_pct: Optional[float] = None
+    delta_pct: Optional[float] = None
 
 
 class BacktestResultOut(CamelModel):
@@ -345,6 +423,8 @@ class BacktestResultOut(CamelModel):
     winning_trades: int
     losing_trades: int
     equity_curve: list[float]
+    weekly: Optional[WeeklyStatsOut] = None
+    iv_reality_check: Optional[IvRealityCheckOut] = None
 
 
 # -- CPR / pivot levels (docs/PivotBoss-Roadmap.md, docs/API/API.md §2) -----------
@@ -432,6 +512,177 @@ class TopNarrowStocksOut(CamelModel):
     stocks: list[TopNarrowStockOut]
 
 
+class TpoRowOut(CamelModel):
+    price: float
+    letters: str
+    count: int
+    is_poc: bool
+    in_value_area: bool
+    is_single_print: bool
+
+
+class TpoPreviousSessionOut(CamelModel):
+    relationship: str
+    bias: str
+    overlap_pct: float
+    poc_migration: float
+    prev_vah: float
+    prev_val: float
+    prev_poc: float
+    prev_session_date: str
+
+
+class VirginPocOut(CamelModel):
+    date: str
+    poc: float
+    sessions_ago: int
+    distance: float
+    above: bool
+
+
+class VirginPocsOut(CamelModel):
+    underlying: str
+    as_of_session: str
+    current_price: float
+    sessions_scanned: int
+    virgin_pocs: list[VirginPocOut]
+
+
+class TpoProfileOut(CamelModel):
+    """Full TPO Market Profile for one session — letter grid plus the
+    structural reads (value area, Initial Balance, extension, day type)."""
+    session_date: str
+    bracket_minutes: int
+    brackets: int
+    tick: float
+    rows: list[TpoRowOut]
+    poc: float
+    vah: float
+    val: float
+    day_high: float
+    day_low: float
+    day_range: float
+    ib_high: float
+    ib_low: float
+    ib_range: float
+    range_extension_up: float
+    range_extension_down: float
+    single_prints: list[float]
+    poor_high: bool
+    poor_low: bool
+    open_price: float
+    close_price: float
+    day_type: str
+    reasoning: str
+    bias: str
+    open_type: str = "Unclassified"
+    open_reasoning: str = ""
+    selling_tail: list[float] = []
+    buying_tail: list[float] = []
+    virgin_pocs: list[VirginPocOut] = []
+    previous_session: Optional[TpoPreviousSessionOut] = None
+
+
+class PressureStrikeOut(CamelModel):
+    strike: float
+    ce_oi_change: float
+    pe_oi_change: float
+    ce_activity: Optional[str] = None
+    pe_activity: Optional[str] = None
+
+
+class OptionPressureOut(CamelModel):
+    underlying: str
+    expiry: str
+    spot_price: float
+    net_score: float
+    direction: Literal["BULLISH", "BEARISH", "NEUTRAL"]
+    label: str
+    ce_pressure: float
+    pe_pressure: float
+    ce_dominant: Optional[str] = None
+    pe_dominant: Optional[str] = None
+    ce_oi_added: float
+    pe_oi_added: float
+    pcr_oi: float
+    pcr_volume: float
+    support_strike: Optional[float] = None
+    resistance_strike: Optional[float] = None
+    strikes_analyzed: int
+    strikes: list[PressureStrikeOut]
+
+
+class AtmAnalysisRowOut(CamelModel):
+    time: str
+    ts: str
+    spot_close: float
+    spot_high: float
+    spot_low: float
+    atm_strike: float
+    ce_high: Optional[float] = None
+    ce_low: Optional[float] = None
+    ce_close: Optional[float] = None
+    pe_high: Optional[float] = None
+    pe_low: Optional[float] = None
+    pe_close: Optional[float] = None
+    straddle: Optional[float] = None
+    # real per-bucket traded volume and open interest
+    ce_volume: Optional[float] = None
+    pe_volume: Optional[float] = None
+    ce_oi: Optional[float] = None
+    pe_oi: Optional[float] = None
+    ce_oi_change: Optional[float] = None
+    pe_oi_change: Optional[float] = None
+    # IV solved from the row's real premium; Greeks derived from that IV
+    ce_iv: Optional[float] = None
+    ce_delta: Optional[float] = None
+    ce_gamma: Optional[float] = None
+    ce_theta: Optional[float] = None
+    ce_vega: Optional[float] = None
+    pe_iv: Optional[float] = None
+    pe_delta: Optional[float] = None
+    pe_gamma: Optional[float] = None
+    pe_theta: Optional[float] = None
+    pe_vega: Optional[float] = None
+    reason: str = ""
+
+
+class AtmAnalysisOut(CamelModel):
+    underlying: str
+    from_date: str
+    to_date: str
+    expiry_kind: Literal["weekly", "monthly"]
+    expiry_date: Optional[str] = None
+    interval: str
+    strike_step: int
+    source: Literal["mock", "broker"] = "mock"
+    note: Optional[str] = None
+    rows: list[AtmAnalysisRowOut]
+
+
+class BiasConfirmationOut(CamelModel):
+    """Whether the day's opening print confirmed or rejected the two-day
+    CPR bias [Ochoa 2010, Ch. 6] — a rejected bias inverts the plan."""
+    status: Literal["CONFIRMED", "REJECTED", "PENDING"]
+    initial_direction: str
+    effective_direction: str
+    strong: bool = False
+    prior_close_supports: Optional[bool] = None
+    guidance: str = ""
+
+
+class PivotTrendOut(CamelModel):
+    """Pivot Trend Analysis [Ochoa 2010, Ch. 5]: uptrend holds while price
+    closes above S1, downtrend while it closes below R1."""
+    state: Literal["BULLISH", "BEARISH", "NEUTRAL"]
+    days_in_state: int
+    flip_level: Optional[float] = None
+    buy_zones: list[str] = []
+    sell_zones: list[str] = []
+    targets: list[str] = []
+    guidance: str = ""
+
+
 class CprAnalysisOut(CamelModel):
     underlying: str
     session_date: str
@@ -453,6 +704,9 @@ class CprAnalysisOut(CamelModel):
     support_cluster: CprClusterOut
     resistance_cluster: CprClusterOut
     trade_plan: CprTradePlanOut
+    session_open: Optional[float] = None
+    bias_confirmation: Optional[BiasConfirmationOut] = None
+    pivot_trend: Optional[PivotTrendOut] = None
 
 
 # -- reports ---------------------------------------------------------------------

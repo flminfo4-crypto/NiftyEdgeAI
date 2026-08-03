@@ -66,6 +66,7 @@
       Orders
     </a>
     <a class="nav-item" href="backtester.html">
+    <a class="nav-item" href="data-analysis.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>Data Analysis</a>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       Backtester
     </a>
@@ -221,6 +222,33 @@
             </div>
             </div>
             <div class="flex justify-between mt-8" style="font-size:10px; color:var(--text-muted);"><span>Resistance</span><span>Support</span></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">CE / PE Pressure <span style="color:var(--text-muted); font-weight:500; font-size:10px;">(live OI + premium shift)</span></div>
+            <div class="flex items-center justify-between" style="margin:4px 0 10px;">
+              <div>
+                <div style="font-size:22px; font-weight:800; line-height:1.1;" data-live="dash-pressure-score">—</div>
+                <div style="font-size:11px; font-weight:600;" data-live="dash-pressure-label">Awaiting data…</div>
+              </div>
+              <span class="badge badge-neutral" data-live="dash-pressure-badge">—</span>
+            </div>
+
+            <div class="stat-row" style="align-items:center;">
+              <span class="k">CE <span style="color:var(--text-muted);" data-live="dash-ce-dominant">—</span></span>
+              <span style="flex:1; margin:0 8px;"><span class="wall-bar-track" style="display:flex;"><span class="wall-bar" data-live="dash-ce-bar" style="width:0%; background:var(--text-muted);"></span></span></span>
+              <span class="v" data-live="dash-ce-pressure" style="min-width:44px; text-align:right;">—</span>
+            </div>
+            <div class="stat-row" style="align-items:center;">
+              <span class="k">PE <span style="color:var(--text-muted);" data-live="dash-pe-dominant">—</span></span>
+              <span style="flex:1; margin:0 8px;"><span class="wall-bar-track" style="display:flex;"><span class="wall-bar" data-live="dash-pe-bar" style="width:0%; background:var(--text-muted);"></span></span></span>
+              <span class="v" data-live="dash-pe-pressure" style="min-width:44px; text-align:right;">—</span>
+            </div>
+
+            <div class="divider" style="margin:8px 0;"></div>
+            <div class="stat-row"><span class="k">Put Writing (support)</span><span class="v text-green" data-live="dash-pressure-support">—</span></div>
+            <div class="stat-row"><span class="k">Call Writing (resistance)</span><span class="v text-red" data-live="dash-pressure-resistance">—</span></div>
+            <div class="stat-row"><span class="k">PCR (OI / Vol)</span><span class="v" data-live="dash-pressure-pcr">—</span></div>
           </div>
 
           <div class="card">

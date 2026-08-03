@@ -165,6 +165,32 @@ class MockBrokerAdapter(BrokerAdapter):
     def get_universe_symbols(self) -> list[str]:
         return ["COALINDIA", "BPCL", "ITC", "ONGC", "NTPC", "HINDALCO", "TATASTEEL", "WIPRO"]
 
+    def resolve_option_expiry(self, underlying: str, expiry_kind: str) -> str:
+        today = datetime.now(timezone.utc).date()
+        days = 6 if expiry_kind == "weekly" else 27
+        return str(today + timedelta(days=days))
+
+    def get_option_intraday_candles(self, underlying, strike, option_type, expiry_kind, interval, frm, to):
+        # synthetic decaying premium walk — demo only, callers see source="mock"
+        candles = []
+        premium = max(20.0, abs(_QUOTES["NIFTY50"]["ltp"] - strike) * 0.4 + 80.0)
+        step = timedelta(minutes=int(interval.rstrip("m")) if interval.rstrip("m").isdigit() else 15)
+        t = frm
+        oi = random.uniform(2e6, 5e6)
+        while t <= to and len(candles) < 500:
+            o = premium
+            c = max(0.05, o + random.uniform(-6, 5.5))
+            h = max(o, c) + random.uniform(0.5, 3)
+            l = max(0.05, min(o, c) - random.uniform(0.5, 3))
+            oi = max(1e5, oi + random.uniform(-2e5, 3e5))  # drifts like a real building/unwinding book
+            candles.append(Candle(
+                ts=t, open=round(o, 2), high=round(h, 2), low=round(l, 2), close=round(c, 2),
+                volume=random.uniform(1e4, 8e4), oi=round(oi),
+            ))
+            premium = c
+            t += step
+        return candles
+
     # -- orders -----------------------------------------------------------
     def place_order(self, order: OrderRequest) -> OrderResult:
         broker_order_id = str(uuid.uuid4().int)[:15]

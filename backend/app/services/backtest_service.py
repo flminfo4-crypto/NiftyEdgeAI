@@ -13,6 +13,7 @@ import uuid
 from datetime import date, datetime, timedelta, timezone
 
 from niftyedge_ai_engine import Candle, run_backtest
+from niftyedge_ai_engine.options_pricing import realized_volatility
 
 from app.services import market_data
 
@@ -47,6 +48,35 @@ def _fetch_candles(underlying: str, frm: date, to: date) -> list[Candle]:
     return list(seen.values())
 
 
+def _iv_reality_check(underlying: str, candles: list[Candle]) -> dict:
+    """Dhan retains zero expired option contracts (verified directly against
+    the live API), so there is no real historical option-price series to
+    backtest against — only a live snapshot. Rather than silently keep using
+    the model's realized-vol proxy unchecked, this compares it to today's
+    real market-implied ATM IV from the live option chain, so a user can see
+    how well-calibrated the model's volatility assumption is right now. Not
+    a substitute for real historical option data — a disclosed sanity check
+    against the one piece of real option data Dhan does expose."""
+    closes = [c.close for c in candles]
+    model_sigma_pct = round(realized_volatility(closes) * 100, 2) if closes else None
+    try:
+        expiries = market_data.get_expiries(underlying)
+        if not expiries:
+            raise ValueError("no expiries")
+        chain = market_data.get_option_chain(underlying, expiries[0])
+        if not chain.rows:
+            raise ValueError("empty chain")
+        atm = min(chain.rows, key=lambda r: abs(r.strike - chain.spot_price))
+        real_market_iv_pct = round((atm.ce_iv + atm.pe_iv) / 2, 2)
+    except Exception:
+        return {"model_sigma_pct": model_sigma_pct, "real_market_iv_pct": None, "delta_pct": None, "available": False}
+    delta_pct = round(real_market_iv_pct - model_sigma_pct, 2) if model_sigma_pct is not None else None
+    return {
+        "model_sigma_pct": model_sigma_pct, "real_market_iv_pct": real_market_iv_pct,
+        "delta_pct": delta_pct, "available": True,
+    }
+
+
 def submit_backtest(request: dict) -> dict:
     job_id = f"BT-{uuid.uuid4().hex[:10]}"
     underlying, is_futures = _INSTRUMENT_MAP.get(request.get("instrument", ""), ("NIFTY50", False))
@@ -63,6 +93,8 @@ def submit_backtest(request: dict) -> dict:
         target_pct=request.get("target_pct", 3.0),
         include_slippage_and_costs=request.get("include_slippage_and_costs", True),
         is_futures=is_futures,
+        hold_mode=request.get("hold", "strategy"),
+        custom_hold_days=request.get("hold_days", 5),
     )
     record = {
         "job_id": job_id,
@@ -70,6 +102,7 @@ def submit_backtest(request: dict) -> dict:
         "request": request,
         "submitted_at": datetime.now(timezone.utc),
         "result": result,
+        "iv_reality_check": _iv_reality_check(underlying, candles),
     }
     _jobs[job_id] = record
     return record

@@ -363,6 +363,44 @@
     setText("dash-new-lows", String(b.newLows));
   }
 
+  function applyPressure(p) {
+    var scoreEl = document.querySelector('[data-live="dash-pressure-score"]');
+    if (scoreEl) {
+      scoreEl.textContent = (p.netScore >= 0 ? "+" : "") + p.netScore.toFixed(0);
+      scoreEl.classList.remove("text-red", "text-green");
+      if (p.direction !== "NEUTRAL") scoreEl.classList.add(p.direction === "BULLISH" ? "text-green" : "text-red");
+    }
+    setText("dash-pressure-label", p.label);
+    var badge = document.querySelector('[data-live="dash-pressure-badge"]');
+    if (badge) {
+      badge.textContent = p.direction === "BULLISH" ? "Bullish" : p.direction === "BEARISH" ? "Bearish" : "Neutral";
+      badge.className = "badge " + (p.direction === "BULLISH" ? "badge-green" : p.direction === "BEARISH" ? "badge-red" : "badge-neutral");
+    }
+
+    // Bars show conviction (|score|); colour carries the direction, so a
+    // strongly-bearish and strongly-bullish read are equally long but differ
+    // in colour rather than being mistaken for "more/less activity".
+    [["ce", p.cePressure, p.ceDominant], ["pe", p.pePressure, p.peDominant]].forEach(function (t) {
+      var side = t[0], val = t[1], dominant = t[2];
+      setText("dash-" + side + "-pressure", (val >= 0 ? "+" : "") + val.toFixed(0));
+      setText("dash-" + side + "-dominant", dominant ? "(" + dominant + ")" : "");
+      var bar = document.querySelector('[data-live="dash-' + side + '-bar"]');
+      if (bar) {
+        bar.style.width = Math.min(100, Math.abs(val)).toFixed(0) + "%";
+        bar.style.background = val > 5 ? "var(--green)" : val < -5 ? "var(--red)" : "var(--text-muted)";
+      }
+      var valEl = document.querySelector('[data-live="dash-' + side + '-pressure"]');
+      if (valEl) {
+        valEl.classList.remove("text-red", "text-green");
+        if (Math.abs(val) > 5) valEl.classList.add(val > 0 ? "text-green" : "text-red");
+      }
+    });
+
+    setText("dash-pressure-support", p.supportStrike ? Math.round(p.supportStrike).toLocaleString("en-IN") : "—");
+    setText("dash-pressure-resistance", p.resistanceStrike ? Math.round(p.resistanceStrike).toLocaleString("en-IN") : "—");
+    setText("dash-pressure-pcr", p.pcrOi.toFixed(2) + " / " + p.pcrVolume.toFixed(2));
+  }
+
   function applyIvRank(iv) {
     setText("iv-rank-value", iv.ivRank.toFixed(1));
     setText("dash-iv-rank-label", iv.ivRank >= 70 ? "High" : iv.ivRank >= 40 ? "Moderate" : "Low");
@@ -460,53 +498,73 @@
   var UNDERLYING = "NIFTY50";
   var hasChainSections = !!document.querySelector('[data-live="dash-oi-resistance"]');
 
+  // A single failing endpoint used to reject the whole Promise.all below and
+  // blank every panel on the Dashboard (e.g. volume-profile 404s on a
+  // non-trading day, taking down bias, signals, OI and pressure with it).
+  // Each panel now degrades on its own: a failed call resolves to null and
+  // only that panel keeps its previous/placeholder content.
+  function optional(path) {
+    return fetchJSON(path).catch(function () { return null; });
+  }
+
   function load(expiry, expiryLabel) {
     var today = new Date().toISOString().slice(0, 10);
     var calls = [
-      fetchJSON("/market/quote?symbols=NIFTY50,INDIAVIX"),
-      fetchJSON("/signals/bias"),
-      fetchJSON("/signals/active"),
-      fetchJSON("/positions/open"),
-      fetchJSON("/positions/margins"),
+      optional("/market/quote?symbols=NIFTY50,INDIAVIX"),
+      optional("/signals/bias"),
+      optional("/signals/active"),
+      optional("/positions/open"),
+      optional("/positions/margins"),
     ];
     if (hasChainSections && expiry) {
       calls.push(
-        fetchJSON("/market/option-chain?underlying=" + UNDERLYING + "&expiry=" + expiry),
-        fetchJSON("/market/oi-buildup?underlying=" + UNDERLYING + "&expiry=" + expiry),
-        fetchJSON("/positions/greeks?underlying=" + UNDERLYING + "&expiry=" + expiry),
-        fetchJSON("/market/volume-profile?underlying=" + UNDERLYING),
-        fetchJSON("/reports/summary?from=" + today + "&to=" + today),
-        fetchJSON("/market/candles?symbol=" + UNDERLYING + "&interval=5m"),
-        fetchJSON("/market/breadth"),
-        fetchJSON("/market/iv-rank?underlying=" + UNDERLYING + "&expiry=" + expiry),
-        fetchJSON("/market/cvd?underlying=" + UNDERLYING)
+        optional("/market/option-chain?underlying=" + UNDERLYING + "&expiry=" + expiry),
+        optional("/market/oi-buildup?underlying=" + UNDERLYING + "&expiry=" + expiry),
+        optional("/positions/greeks?underlying=" + UNDERLYING + "&expiry=" + expiry),
+        optional("/market/volume-profile?underlying=" + UNDERLYING),
+        optional("/reports/summary?from=" + today + "&to=" + today),
+        optional("/market/candles?symbol=" + UNDERLYING + "&interval=5m"),
+        optional("/market/breadth"),
+        optional("/market/iv-rank?underlying=" + UNDERLYING + "&expiry=" + expiry),
+        optional("/market/cvd?underlying=" + UNDERLYING),
+        optional("/market/pressure?underlying=" + UNDERLYING + "&expiry=" + expiry)
       );
+    }
+
+    // Runs an apply function only when its data actually arrived, and never
+    // lets one panel's rendering error take down the rest of the Dashboard.
+    function panel(fn) {
+      var args = Array.prototype.slice.call(arguments, 1);
+      if (args[0] == null) return;
+      try { fn.apply(null, args); } catch (e) { /* one panel failing is not fatal */ }
     }
 
     Promise.all(calls)
       .then(function (results) {
-        applyQuotes(results[0]);
-        applyBias(results[1]);
-        applySignals(results[2]);
-        applyPositions(results[3]);
-        applyMargins(results[4]);
-        applyExposure(results[4]);
+        panel(applyQuotes, results[0]);
+        panel(applyBias, results[1]);
+        panel(applySignals, results[2]);
+        panel(applyPositions, results[3]);
+        panel(applyMargins, results[4]);
+        panel(applyExposure, results[4]);
         if (hasChainSections && expiry) {
           var chain = results[5], buildup = results[6], greeks = results[7], profile = results[8], report = results[9],
-            candles = results[10], breadth = results[11], ivRank = results[12], cvd = results[13];
+            candles = results[10], breadth = results[11], ivRank = results[12], cvd = results[13],
+            pressure = results[14];
           setText("dash-expiry-label", expiryLabel);
-          applyChainTicker(chain);
-          applyOiWalls(chain);
-          applyOptionChainSnapshot(chain, buildup);
-          applyAtmGreeks(chain);
-          applyPortfolioGreeks(greeks);
-          applyVolumeProfilePanel(profile);
-          applyPnlToday(report);
-          applyChartHeader(candles);
-          applyCandleChart(candles);
-          applyBreadth(breadth);
-          applyIvRank(ivRank);
-          applyCvd(cvd);
+          panel(applyChainTicker, chain);
+          panel(applyOiWalls, chain);
+          panel(applyOptionChainSnapshot, chain, buildup);
+          panel(applyAtmGreeks, chain);
+          panel(applyPortfolioGreeks, greeks);
+          panel(applyVolumeProfilePanel, profile);
+          panel(applyPnlToday, report);
+          panel(applyChartHeader, candles);
+          panel(applyCandleChart, candles);
+          panel(applyBreadth, breadth);
+          panel(applyIvRank, ivRank);
+          panel(applyCvd, cvd);
+          panel(applyPressure, pressure);
         }
         if (window.NE) window.NE.applyMarketOpenBadges();
         applyMarketHours();

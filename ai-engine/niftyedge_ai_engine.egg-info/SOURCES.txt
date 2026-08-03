@@ -7,6 +7,7 @@ niftyedge_ai_engine/features.py
 niftyedge_ai_engine/options_pricing.py
 niftyedge_ai_engine/pivots.py
 niftyedge_ai_engine/signals.py
+niftyedge_ai_engine/virgin_intraday.py
 niftyedge_ai_engine.egg-info/PKG-INFO
 niftyedge_ai_engine.egg-info/SOURCES.txt
 niftyedge_ai_engine.egg-info/dependency_links.txt

@@ -309,3 +309,367 @@ def portfolio_greeks_detail(positions: list[BrokerPosition], chain: OptionChainS
         "net_delta": net["delta"], "net_gamma": net["gamma"],
         "net_theta": net["theta"], "net_vega": net["vega"], "net_rho": net["rho"],
     }
+
+
+# -- Full TPO market profile ---------------------------------------------------
+#
+# Market Profile proper (Steidlmayer; day types as catalogued in Dalton and in
+# Ochoa 2010, Ch. 1): the session is cut into fixed time brackets, each labelled
+# with a letter, and every price the market traded during a bracket gets one
+# TPO (Time Price Opportunity) at that level. The resulting distribution shows
+# where the market spent time — i.e. which prices it accepted.
+#
+# Indices carry no traded volume of their own (only their derivatives trade),
+# so a TPO/time-based profile is the correct construction here rather than a
+# volume profile — see volume_profile() for the traded-volume view of an
+# instrument that does have real volume.
+
+_TPO_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+_SESSION_START_MIN = 9 * 60 + 15   # 09:15 IST
+_IB_MINUTES = 60                   # Initial Balance = first hour
+
+
+def _bracket_index(ts, bracket_minutes: int) -> int:
+    """Which time bracket a candle belongs to, anchored at the 09:15 open."""
+    ist = ts.astimezone(_IST) if ts.tzinfo else ts
+    minutes = ist.hour * 60 + ist.minute
+    return max(0, (minutes - _SESSION_START_MIN) // bracket_minutes)
+
+
+from datetime import timedelta, timezone as _tz
+
+_IST = _tz(timedelta(hours=5, minutes=30))
+
+
+def tpo_profile(candles: list[Candle], tick: float = 10.0, bracket_minutes: int = 30) -> dict:
+    """Build the full TPO profile for one session.
+
+    Returns the letter grid, POC, value area, Initial Balance, range
+    extension, single prints and poor high/low — everything the Market
+    Profile page needs, all derived from the real intraday candles passed in.
+    """
+    if not candles:
+        raise ValueError("no candles to build a market profile from")
+
+    ordered = sorted(candles, key=lambda c: c.ts)
+    letters_by_price: dict[float, list] = defaultdict(list)
+    for c in ordered:
+        b = _bracket_index(c.ts, bracket_minutes)
+        letter = _TPO_LETTERS[b] if b < len(_TPO_LETTERS) else _TPO_LETTERS[-1]
+        lo = round(c.low / tick) * tick
+        hi = round(c.high / tick) * tick
+        if hi < lo:
+            lo, hi = hi, lo
+        price = lo
+        while price <= hi + 1e-9:
+            if letter not in letters_by_price[price]:
+                letters_by_price[price].append(letter)
+            price += tick
+
+    if not letters_by_price:
+        raise ValueError("profile produced no price levels")
+
+    counts = {p: len(ls) for p, ls in letters_by_price.items()}
+    poc = max(counts, key=lambda p: (counts[p], -abs(p - ordered[-1].close)))
+
+    # Value area: expand out from the POC until ~70% of all TPOs are covered,
+    # the standard construction.
+    total = sum(counts.values())
+    target = total * 0.70
+    prices_sorted = sorted(counts)
+    poc_i = prices_sorted.index(poc)
+    lo_i = hi_i = poc_i
+    acc = counts[poc]
+    while acc < target and (lo_i > 0 or hi_i < len(prices_sorted) - 1):
+        below = counts[prices_sorted[lo_i - 1]] if lo_i > 0 else -1
+        above = counts[prices_sorted[hi_i + 1]] if hi_i < len(prices_sorted) - 1 else -1
+        if above >= below:
+            hi_i += 1
+            acc += counts[prices_sorted[hi_i]]
+        else:
+            lo_i -= 1
+            acc += counts[prices_sorted[lo_i]]
+    val, vah = prices_sorted[lo_i], prices_sorted[hi_i]
+
+    # Initial Balance — the first hour, which sets the session's reference range
+    session_open = ordered[0].ts.astimezone(_IST)
+    ib_cut = session_open + timedelta(minutes=_IB_MINUTES)
+    ib = [c for c in ordered if c.ts.astimezone(_IST) < ib_cut]
+    ib_high = max((c.high for c in ib), default=ordered[0].high)
+    ib_low = min((c.low for c in ib), default=ordered[0].low)
+
+    day_high = max(c.high for c in ordered)
+    day_low = min(c.low for c in ordered)
+
+    # Single prints: a level touched in exactly one bracket, and not at the
+    # profile's own edges (edge singles are just the tails of the day).
+    singles = sorted(
+        p for p in counts
+        if counts[p] == 1 and prices_sorted[0] < p < prices_sorted[-1]
+    )
+
+    # Poor high/low: the extreme has several TPOs rather than a single-print
+    # tail, meaning the move stalled rather than being rejected — these tend
+    # to get revisited.
+    poor_high = counts[prices_sorted[-1]] >= 2
+    poor_low = counts[prices_sorted[0]] >= 2
+
+    rows = [
+        {
+            "price": round(p, 2),
+            "letters": "".join(letters_by_price[p]),
+            "count": counts[p],
+            "is_poc": p == poc,
+            "in_value_area": val <= p <= vah,
+            "is_single_print": p in singles,
+        }
+        for p in sorted(counts, reverse=True)
+    ]
+
+    return {
+        "rows": rows,
+        "poc": round(poc, 2), "vah": round(vah, 2), "val": round(val, 2),
+        "day_high": round(day_high, 2), "day_low": round(day_low, 2),
+        "ib_high": round(ib_high, 2), "ib_low": round(ib_low, 2),
+        "ib_range": round(ib_high - ib_low, 2),
+        "day_range": round(day_high - day_low, 2),
+        "range_extension_up": round(max(0.0, day_high - ib_high), 2),
+        "range_extension_down": round(max(0.0, ib_low - day_low), 2),
+        "single_prints": [round(p, 2) for p in singles],
+        "poor_high": poor_high, "poor_low": poor_low,
+        "open_price": round(ordered[0].open, 2),
+        "close_price": round(ordered[-1].close, 2),
+        "bracket_minutes": bracket_minutes,
+        "brackets": len({_bracket_index(c.ts, bracket_minutes) for c in ordered}),
+        "tick": tick,
+    }
+
+
+def classify_day_type(profile: dict) -> dict:
+    """Name the session from its own geometry.
+
+    The Initial Balance versus the full day's range is what separates the
+    classic day types: a day that barely leaves its first hour is balanced,
+    one that doubles it is trending. Extension on both sides means the market
+    probed each way and rejected both, which is the Neutral day. The reasoning
+    string is returned alongside the label so the classification can be
+    audited rather than taken on trust.
+    """
+    ib_range = profile["ib_range"]
+    day_range = profile["day_range"]
+    ext_up = profile["range_extension_up"]
+    ext_dn = profile["range_extension_down"]
+    if ib_range <= 0 or day_range <= 0:
+        return {"day_type": "Unclassified", "reasoning": "Initial Balance or day range is zero.", "bias": "NEUTRAL"}
+
+    ratio = day_range / ib_range
+    both_sides = ext_up > 0 and ext_dn > 0
+    ext_ratio_up = ext_up / ib_range
+    ext_ratio_dn = ext_dn / ib_range
+    close_pos = (profile["close_price"] - profile["day_low"]) / day_range  # 0 = at low, 1 = at high
+
+    if ratio >= 2.0 and not both_sides:
+        direction = "BULLISH" if ext_up > ext_dn else "BEARISH"
+        near_extreme = close_pos > 0.75 if direction == "BULLISH" else close_pos < 0.25
+        label = "Trend Day" if near_extreme else "Double-Distribution Trend Day"
+        why = (f"Day range is {ratio:.1f}x the Initial Balance with one-sided extension "
+               f"({'up' if direction == 'BULLISH' else 'down'}), and the close sits "
+               f"{close_pos * 100:.0f}% up the range.")
+        return {"day_type": label, "reasoning": why, "bias": direction}
+
+    if both_sides and ext_ratio_up > 0.15 and ext_ratio_dn > 0.15:
+        return {
+            "day_type": "Neutral Day",
+            "reasoning": (f"Range extended both ways ({ext_up:.0f} pts up, {ext_dn:.0f} pts down) — "
+                          "the market probed each side of the Initial Balance and was rejected."),
+            "bias": "NEUTRAL",
+        }
+
+    if ratio <= 1.15:
+        return {
+            "day_type": "Normal Day",
+            "reasoning": (f"Day range is only {ratio:.2f}x the Initial Balance — the first hour "
+                          "contained almost the whole session."),
+            "bias": "NEUTRAL",
+        }
+
+    if ratio <= 2.0:
+        direction = "BULLISH" if ext_up > ext_dn else "BEARISH" if ext_dn > ext_up else "NEUTRAL"
+        return {
+            "day_type": "Normal Variation Day",
+            "reasoning": (f"Day range is {ratio:.1f}x the Initial Balance with extension mainly "
+                          f"{'higher' if direction == 'BULLISH' else 'lower' if direction == 'BEARISH' else 'balanced'} — "
+                          "a single range extension beyond a contained open."),
+            "bias": direction,
+        }
+
+    return {
+        "day_type": "Trading Range Day",
+        "reasoning": f"Day range is {ratio:.1f}x the Initial Balance with two-sided rotation and no sustained extension.",
+        "bias": "NEUTRAL",
+    }
+
+
+def value_area_relationship(today: dict, prev: dict) -> dict:
+    """How today's value area sits against the previous session's — the same
+    seven-way read used for CPR, applied to the value area."""
+    t_vah, t_val = today["vah"], today["val"]
+    p_vah, p_val = prev["vah"], prev["val"]
+    if t_val > p_vah:
+        rel, bias = "HIGHER_VALUE", "BULLISH"
+    elif t_vah < p_val:
+        rel, bias = "LOWER_VALUE", "BEARISH"
+    elif t_vah > p_vah and t_val > p_val:
+        rel, bias = "OVERLAPPING_HIGHER_VALUE", "BULLISH"
+    elif t_vah < p_vah and t_val < p_val:
+        rel, bias = "OVERLAPPING_LOWER_VALUE", "BEARISH"
+    elif t_vah >= p_vah and t_val <= p_val:
+        rel, bias = "OUTSIDE_VALUE", "NEUTRAL"
+    elif t_vah <= p_vah and t_val >= p_val:
+        rel, bias = "INSIDE_VALUE", "NEUTRAL"
+    else:
+        rel, bias = "UNCHANGED_VALUE", "NEUTRAL"
+
+    overlap_hi = min(t_vah, p_vah)
+    overlap_lo = max(t_val, p_val)
+    overlap = max(0.0, overlap_hi - overlap_lo)
+    union = max(t_vah, p_vah) - min(t_val, p_val)
+    return {
+        "relationship": rel,
+        "bias": bias,
+        "overlap_pct": round(overlap / union * 100, 1) if union else 0.0,
+        "poc_migration": round(today["poc"] - prev["poc"], 2),
+    }
+
+
+# -- Open type and excess tails ------------------------------------------------
+#
+# Two more structural reads that Market Profile draws from the same TPO data.
+#
+# The OPEN TYPE grades the conviction behind the session's start (Dalton's
+# four openings). Where price goes relative to its own opening print in the
+# first brackets says whether one side arrived with intent or the market is
+# merely auctioning: an open that drives away and never trades back through
+# itself is the strongest, one that oscillates around the open is the weakest.
+#
+# An EXCESS TAIL is a run of single TPOs at an extreme — price went there,
+# found nobody, and left. That is rejection, and it marks an end the market
+# has already agreed on. It is the opposite of a poor high/low, where the
+# extreme has several TPOs and no rejection happened, which is why those tend
+# to get revisited.
+
+
+def classify_open_type(candles: list[Candle], profile: dict, bracket_minutes: int = 30) -> dict:
+    """Grade the session's opening conviction from real early-bracket action."""
+    if not candles:
+        return {"open_type": "Unclassified", "open_reasoning": "No candles."}
+    ordered = sorted(candles, key=lambda c: c.ts)
+    open_px = ordered[0].open
+    day_range = profile["day_range"]
+    if day_range <= 0:
+        return {"open_type": "Unclassified", "open_reasoning": "Zero day range."}
+
+    # first two brackets define the "opening" for this purpose
+    first = [c for c in ordered if _bracket_index(c.ts, bracket_minutes) < 2]
+    if not first:
+        first = ordered[:4]
+    hi = max(c.high for c in first)
+    lo = min(c.low for c in first)
+    up_from_open = hi - open_px
+    down_from_open = open_px - lo
+    # did price trade back through its own open after the first bracket?
+    later = [c for c in ordered if _bracket_index(c.ts, bracket_minutes) >= 1]
+    crossed_back = any(c.low <= open_px <= c.high for c in later)
+    drift = profile["close_price"] - open_px
+    one_sided = min(up_from_open, down_from_open) < day_range * 0.12
+
+    if one_sided and not crossed_back and abs(drift) > day_range * 0.35:
+        return {
+            "open_type": "Open-Drive",
+            "open_reasoning": (
+                f"Price left the open ({open_px:.0f}) decisively "
+                f"{'higher' if drift > 0 else 'lower'} and never traded back through it — "
+                "strongest opening conviction."
+            ),
+        }
+    if crossed_back and abs(drift) > day_range * 0.30:
+        probed_up = up_from_open > down_from_open
+        drove_up = drift > 0
+        if probed_up != drove_up:
+            return {
+                "open_type": "Open-Test-Drive",
+                "open_reasoning": (
+                    f"The open probed {'higher' if probed_up else 'lower'}, failed, then drove "
+                    f"{'higher' if drove_up else 'lower'} for the session — the initial probe was a test."
+                ),
+            }
+        return {
+            "open_type": "Open-Rejection-Reverse",
+            "open_reasoning": (
+                f"Price moved {'up' if probed_up else 'down'} off the open, was rejected, and "
+                "reversed back through the opening print."
+            ),
+        }
+    return {
+        "open_type": "Open-Auction",
+        "open_reasoning": (
+            f"Price rotated around the opening print ({open_px:.0f}) without one side taking "
+            "control — low opening conviction, balanced start."
+        ),
+    }
+
+
+def find_excess_tails(profile: dict) -> dict:
+    """Runs of single TPOs at either extreme — real rejection, not a poor end."""
+    rows = profile["rows"]  # already sorted high -> low
+    if len(rows) < 3:
+        return {"selling_tail": [], "buying_tail": []}
+
+    selling = []
+    for r in rows:                       # from the high downward
+        if r["count"] == 1:
+            selling.append(r["price"])
+        else:
+            break
+    buying = []
+    for r in reversed(rows):             # from the low upward
+        if r["count"] == 1:
+            buying.append(r["price"])
+        else:
+            break
+    # a single lone TPO is noise; a tail needs at least two stacked
+    return {
+        "selling_tail": sorted(selling, reverse=True) if len(selling) >= 2 else [],
+        "buying_tail": sorted(buying) if len(buying) >= 2 else [],
+    }
+
+
+def find_virgin_pocs(session_profiles: list, current_price: float, max_age: int = 20) -> list:
+    """Prior-session POCs that price has not traded back to since.
+
+    The book treats an untested point of control as a magnet — the fairest
+    price of that session, left unvisited — and notes such levels tend to be
+    revisited [Ochoa 2010, Ch. 4, ~pp.116-121]. `session_profiles` is
+    oldest-first, each {"date": date, "poc": float, "high": float, "low": float}.
+    A POC stays virgin until a LATER session's range covers it.
+    """
+    virgins = []
+    for i, s in enumerate(session_profiles[:-1]):   # the newest session cannot be tested yet
+        poc = s["poc"]
+        tested = False
+        age = 0
+        for later in session_profiles[i + 1:]:
+            age += 1
+            if later["low"] <= poc <= later["high"]:
+                tested = True
+                break
+        if not tested and age <= max_age:
+            virgins.append({
+                "date": str(s["date"]),
+                "poc": round(poc, 2),
+                "sessions_ago": len(session_profiles) - 1 - i,
+                "distance": round(poc - current_price, 2),
+                "above": poc > current_price,
+            })
+    virgins.sort(key=lambda v: abs(v["distance"]))
+    return virgins

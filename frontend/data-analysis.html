@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Orders · NiftyEdge Pro Trading Terminal</title>
+<title>Data Detail Analysis · NiftyEdge Pro Trading Terminal</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="css/style.css">
 <script>(function(){try{var t=localStorage.getItem("niftyedge-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
@@ -18,7 +18,7 @@
   </div>
   <nav class="nav">
     <a class="nav-item" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
-<a class="nav-item" href="cpr-dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 14l2 2 4-4"/></svg>CPR Dashboard</a>
+    <a class="nav-item" href="cpr-dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 14l2 2 4-4"/></svg>CPR Dashboard</a>
     <a class="nav-item" href="market-profile.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Market Profile</a>
     <a class="nav-item" href="volume-profile.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg>Volume Profile</a>
     <a class="nav-item" href="footprint.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>Footprint (Order Flow)</a>
@@ -27,9 +27,9 @@
     <a class="nav-item" href="greeks.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>Greeks</a>
     <a class="nav-item" href="strategy-signals.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>Strategy Signals</a>
     <a class="nav-item" href="positions.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>Positions</a>
-    <a class="nav-item active" href="orders.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Orders</a>
+    <a class="nav-item" href="orders.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Orders</a>
     <a class="nav-item" href="backtester.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Backtester</a>
-    <a class="nav-item" href="data-analysis.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>Data Analysis</a>
+    <a class="nav-item active" href="data-analysis.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>Data Analysis</a>
     <a class="nav-item" href="reports.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Reports</a>
     <div class="nav-divider"></div>
     <a class="nav-item" href="settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</a>
@@ -58,80 +58,71 @@
   <main class="page">
     <div class="page-head">
       <div>
-        <div class="page-title">Orders</div>
-        <div class="page-sub">Order book &amp; new order entry &middot; Account XXXX1234</div>
+        <div class="page-title">Data Detail Analysis</div>
+        <div class="page-sub">Rolling ATM strike premium movement over time &middot; real Dhan intraday data</div>
       </div>
       <div class="page-actions">
-        <div class="tabs">
-          <span class="tab active" data-live="orders-tab-open">Open (2)</span>
-          <span class="tab" data-live="orders-tab-executed">Executed (5)</span>
-          <span class="tab" data-live="orders-tab-cancelled">Cancelled (1)</span>
-        </div>
+        <button class="btn btn-primary" data-live="da-load-btn-top">Load Data</button>
       </div>
     </div>
 
-    <div class="grid" style="grid-template-columns: 1fr 320px;">
-      <div class="card">
-        <div class="table-wrap">
-          <table class="table">
-            <thead><tr><th>Time</th><th>Instrument</th><th>Type</th><th>Side</th><th>Qty</th><th>Price</th><th>Trigger</th><th>Status</th><th></th></tr></thead>
-            <tbody data-live="orders-tbody">
-              <tr>
-                <td>10:14:52 AM</td><td>NIFTY 24 JUL 23600 CE</td><td>LIMIT</td><td><span class="badge badge-red">SELL</span></td><td>75</td><td>109.00</td><td>&mdash;</td><td><span class="badge badge-amber">Pending</span></td><td><button class="btn btn-sm">Cancel</button></td>
-              </tr>
-              <tr>
-                <td>10:09:18 AM</td><td>NIFTY 24 JUL 23400 PE</td><td>SL-LIMIT</td><td><span class="badge badge-green">BUY</span></td><td>75</td><td>52.00</td><td>52.50</td><td><span class="badge badge-amber">Pending</span></td><td><button class="btn btn-sm">Cancel</button></td>
-              </tr>
-              <tr style="opacity:.7;">
-                <td>10:02:41 AM</td><td>NIFTY 24 JUL 23550 CE</td><td>MARKET</td><td><span class="badge badge-red">SELL</span></td><td>75</td><td>82.60</td><td>&mdash;</td><td><span class="badge badge-green">Executed</span></td><td>&mdash;</td>
-              </tr>
-              <tr style="opacity:.7;">
-                <td>09:58:03 AM</td><td>NIFTY 24 JUL 23550 CE</td><td>MARKET</td><td><span class="badge badge-green">BUY</span></td><td>75</td><td>65.40</td><td>&mdash;</td><td><span class="badge badge-green">Executed</span></td><td>&mdash;</td>
-              </tr>
-              <tr style="opacity:.7;">
-                <td>09:42:15 AM</td><td>NIFTY 24 JUL 23300 PE</td><td>LIMIT</td><td><span class="badge badge-green">BUY</span></td><td>50</td><td>34.15</td><td>&mdash;</td><td><span class="badge badge-green">Executed</span></td><td>&mdash;</td>
-              </tr>
-              <tr style="opacity:.7;">
-                <td>09:31:07 AM</td><td>NIFTY 24 JUL 23500 CE</td><td>LIMIT</td><td><span class="badge badge-red">SELL</span></td><td>75</td><td>67.40</td><td>&mdash;</td><td><span class="badge badge-green">Executed</span></td><td>&mdash;</td>
-              </tr>
-              <tr style="opacity:.55;">
-                <td>09:18:44 AM</td><td>NIFTY 24 JUL 23700 CE</td><td>LIMIT</td><td><span class="badge badge-red">SELL</span></td><td>75</td><td>28.00</td><td>&mdash;</td><td><span class="badge badge-gray">Cancelled</span></td><td>&mdash;</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+    <div class="card mb-14">
+      <div class="card-title mb-8">Filters</div>
+      <div class="form-row" style="display:grid; grid-template-columns: repeat(6, 1fr); gap:12px; align-items:end;">
+        <div class="form-group"><label>Index</label><select class="form-control" id="da-underlying">
+          <option value="NIFTY50">NIFTY 50</option>
+          <option value="NIFTYBANK">BANK NIFTY</option>
+          <option value="SENSEX">SENSEX</option>
+        </select></div>
+        <div class="form-group"><label>From</label><input class="form-control" type="date" id="da-from" /></div>
+        <div class="form-group"><label>To</label><input class="form-control" type="date" id="da-to" /></div>
+        <div class="form-group"><label>Expiry</label><select class="form-control" id="da-expiry">
+          <option value="weekly">Weekly Expiry</option>
+          <option value="monthly">Monthly Expiry</option>
+        </select></div>
+        <div class="form-group"><label>Interval</label><select class="form-control" id="da-interval">
+          <option value="1m">1 minute</option>
+          <option value="5m">5 minutes</option>
+          <option value="15m" selected>15 minutes</option>
+          <option value="30m">30 minutes</option>
+        </select></div>
+        <div class="form-group"><button class="btn btn-primary w-full" style="justify-content:center;" data-live="da-load-btn">Load Data</button></div>
       </div>
+      <div data-live="da-error" style="display:none; margin-top:8px; font-size:11.5px; color:var(--red);"></div>
+      <div data-live="da-meta" style="margin-top:8px; font-size:11px; color:var(--text-muted);"></div>
+    </div>
 
-      <div class="flex-col gap-14">
-        <div class="card">
-          <div class="card-title mb-8">New Order</div>
-          <div class="tabs" style="width:100%; margin-bottom:14px;">
-            <span class="tab active" style="flex:1; text-align:center;">Buy</span>
-            <span class="tab" style="flex:1; text-align:center;">Sell</span>
-          </div>
-          <div class="form-group">
-            <label>Instrument</label>
-            <select class="form-control"><option>NIFTY 24 JUL 23500 CE</option><option>NIFTY 24 JUL 23500 PE</option><option>NIFTY 24 JUL 23600 CE</option><option>NIFTY FUT 24 JUL</option></select>
-          </div>
-          <div class="form-row">
-            <div class="form-group"><label>Order Type</label><select class="form-control"><option>Market</option><option>Limit</option><option>SL</option><option>SL-M</option></select></div>
-            <div class="form-group"><label>Product</label><select class="form-control"><option>MIS (Intraday)</option><option>NRML</option></select></div>
-          </div>
-          <div class="form-row">
-            <div class="form-group"><label>Quantity (Lots)</label><input class="form-control" value="3" /></div>
-            <div class="form-group"><label>Price</label><input class="form-control" value="58.40" /></div>
-          </div>
-          <div class="stat-row"><span class="k">Margin Required</span><span class="v">&#8377;42,180</span></div>
-          <div class="stat-row"><span class="k">Available</span><span class="v" data-live="margin-available">&#8377;6,75,440</span></div>
-          <button class="btn btn-primary w-full mt-8" style="justify-content:center;">Place Buy Order</button>
-        </div>
-
-        <div class="card">
-          <div class="card-title mb-8">Quick Stats</div>
-          <div class="stat-row"><span class="k">Orders Today</span><span class="v" data-live="orders-today-count">8</span></div>
-          <div class="stat-row"><span class="k">Fill Rate</span><span class="v text-green" data-live="orders-fill-rate">87.5%</span></div>
-          <div class="stat-row"><span class="k">Avg Slippage</span><span class="v text-amber" data-live="orders-avg-slippage">0.4 pts</span></div>
-        </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title accent">ATM Strike Movement Grid</span>
+        <span style="font-size:11px; color:var(--text-muted);" data-live="da-grid-sub">Pick filters and click "Load Data"</span>
+      </div>
+      <div class="flex items-center gap-14 mb-8" style="flex-wrap:wrap; font-size:12px;">
+        <span style="color:var(--text-muted); font-weight:600;">Columns:</span>
+        <label class="flex items-center gap-6" style="cursor:pointer;"><input type="checkbox" id="da-col-price" checked> Price (H/L/Close)</label>
+        <label class="flex items-center gap-6" style="cursor:pointer;"><input type="checkbox" id="da-col-voloi" checked> Volume &amp; OI</label>
+        <label class="flex items-center gap-6" style="cursor:pointer;"><input type="checkbox" id="da-col-greeks"> Greeks &amp; IV</label>
+      </div>
+      <div class="table-wrap" style="max-height:560px; overflow:auto;">
+        <table class="table" id="da-grid-table">
+          <thead><tr>
+            <th>Time</th><th>Spot</th><th>Spot H / L</th><th>ATM Strike</th>
+            <th class="col-price">CE High</th><th class="col-price">CE Low</th><th class="col-price">CE Close</th>
+            <th class="col-price">PE High</th><th class="col-price">PE Low</th><th class="col-price">PE Close</th>
+            <th class="col-price">Straddle</th>
+            <th class="col-voloi">CE Vol</th><th class="col-voloi">CE OI</th><th class="col-voloi">CE &Delta;OI</th>
+            <th class="col-voloi">PE Vol</th><th class="col-voloi">PE OI</th><th class="col-voloi">PE &Delta;OI</th>
+            <th class="col-greeks">CE IV</th><th class="col-greeks">CE &delta;</th><th class="col-greeks">CE &gamma;</th><th class="col-greeks">CE &theta;</th><th class="col-greeks">CE vega</th>
+            <th class="col-greeks">PE IV</th><th class="col-greeks">PE &delta;</th><th class="col-greeks">PE &gamma;</th><th class="col-greeks">PE &theta;</th><th class="col-greeks">PE vega</th>
+            <th>Reason</th>
+          </tr></thead>
+          <tbody data-live="da-grid-tbody">
+            <tr><td colspan="28" style="text-align:center; color:var(--text-muted);">No data loaded yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="mt-8" style="font-size:10.5px; color:var(--text-muted); line-height:1.5;">
+        All prices, <b>volume and open interest are real Dhan data</b>: index candles plus the actual CE/PE contract candles (with the exchange OI series) of whichever strike was ATM in each time bucket (rolling ATM). <b>Greeks are derived, not fetched</b> — Dhan publishes Greeks only in a live snapshot, so for each row the implied volatility is solved from that bucket's real traded premium (real spot, strike, premium, time-to-expiry) and Delta/Gamma/Theta/Vega computed from it; they describe the contract as the market actually priced it at that moment. Theta is per calendar day, vega per 1 vol point. Dhan retains no data for expired option contracts, so premiums only populate for dates inside the current contract's listing window (&asymp;5 weeks for weeklies, &asymp;2 months for monthlies) — spot columns always fill. 30-minute rows are aggregated from real 15-minute candles (Dhan has no native 30m interval). The Reason column is computed from the data: spot move size/direction, ATM strike rolls, theta/IV effects, real OI positioning (long/short buildup vs unwinding/covering), and prior-day high/low crossings.
       </div>
     </div>
   </main>
@@ -151,6 +142,6 @@
 </div>
 <script src="js/app.js"></script>
 <script src="js/ne-common.js"></script>
-<script src="js/orders-page.js"></script>
+<script src="js/data-analysis-page.js"></script>
 </body>
 </html>

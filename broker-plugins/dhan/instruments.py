@@ -15,6 +15,7 @@ import csv
 import io
 import re
 from dataclasses import dataclass
+from datetime import datetime
 
 import httpx
 
@@ -117,3 +118,54 @@ def resolve(instrument: str) -> tuple[str, str]:
     monthly = [c for c in contracts if c.expiry_flag == "M"]
     chosen = monthly[0] if monthly else min(contracts, key=lambda c: c.expiry_date)
     return chosen.security_id, chosen.exchange_segment
+
+
+def find_option_contract(underlying: str, strike: float, option_type: str, expiry_kind: str) -> tuple[str, str, str]:
+    """Nearest LIVE contract for (underlying, strike, CE/PE) of the given
+    expiry kind ("weekly" → SEM_EXPIRY_FLAG W, "monthly" → M). Scans the
+    cached scrip master by symbol shape ("{root}-{MonYYYY}-{strike}-{type}"),
+    which covers every listed month in one pass. Expired contracts are not
+    in the master at all, so anything returned here is genuinely tradable
+    today. Returns (securityId, exchangeSegment, expiry_date "YYYY-MM-DD").
+    Raises KeyError if nothing is listed."""
+    root = _DHAN_UNDERLYING_ROOT.get(underlying.upper().replace(" ", ""))
+    if not root:
+        raise KeyError(f"No Dhan option root for underlying {underlying!r}")
+    flag = "W" if expiry_kind == "weekly" else "M"
+    strike_token = f"-{int(strike)}-"
+    suffix = f"-{option_type.upper()}"
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    candidates = []
+    for sym, contracts in _load_scrip_master().items():
+        if not sym.startswith(root + "-") or not sym.endswith(suffix) or strike_token not in sym:
+            continue
+        for c in contracts:
+            if c.expiry_flag == flag and c.expiry_date >= now:
+                candidates.append(c)
+    if not candidates:
+        raise KeyError(
+            f"No live {expiry_kind} {option_type} contract at strike {int(strike)} for {underlying!r}"
+        )
+    chosen = min(candidates, key=lambda c: c.expiry_date)
+    return chosen.security_id, chosen.exchange_segment, chosen.expiry_date[:10]
+
+
+def find_nearest_expiry(underlying: str, expiry_kind: str) -> str:
+    """Nearest live expiry date (YYYY-MM-DD) of the given kind for this
+    underlying, straight from the scrip master's real contract calendar."""
+    root = _DHAN_UNDERLYING_ROOT.get(underlying.upper().replace(" ", ""))
+    if not root:
+        raise KeyError(f"No Dhan option root for underlying {underlying!r}")
+    flag = "W" if expiry_kind == "weekly" else "M"
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    dates = [
+        c.expiry_date
+        for sym, contracts in _load_scrip_master().items()
+        if sym.startswith(root + "-")
+        for c in contracts
+        if c.expiry_flag == flag and c.expiry_date >= now
+    ]
+    if not dates:
+        raise KeyError(f"No live {expiry_kind} expiry listed for {underlying!r}")
+    return min(dates)[:10]

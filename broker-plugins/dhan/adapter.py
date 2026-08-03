@@ -48,6 +48,21 @@ from broker_plugins.core.interface import (
 _BASE = "https://api.dhan.co/v2"
 
 # our symbol -> (securityId, exchangeSegment, instrument)
+# Dhan's chart endpoints interpret fromDate/toDate as IST WALL-CLOCK times,
+# not UTC. Callers here work in UTC (the app stores everything tz-aware in
+# UTC), so every request timestamp must be converted to IST before being
+# formatted — sending "03:45" for a 09:15 IST session open silently clips the
+# response to the overlap with the real session, which cost ~5 hours of every
+# intraday day and left profiles built on the first 45 minutes.
+_IST = timezone(timedelta(hours=5, minutes=30))
+
+
+def _ist_str(dt: datetime, fmt: str = "%Y-%m-%d %H:%M:%S") -> str:
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(_IST).strftime(fmt)
+
+
 _INDEX_MAP = {
     "NIFTY50": ("13", "IDX_I", "INDEX"),
     "NIFTYBANK": ("25", "IDX_I", "INDEX"),
@@ -190,16 +205,16 @@ class DhanBrokerAdapter(BrokerAdapter):
             payload = {
                 "securityId": sec_id, "exchangeSegment": seg, "instrument": inst,
                 "interval": interval.rstrip("m"),
-                "fromDate": frm.strftime("%Y-%m-%d %H:%M:%S"),
-                "toDate": to.strftime("%Y-%m-%d %H:%M:%S"),
+                "fromDate": _ist_str(frm),
+                "toDate": _ist_str(to),
             }
             data = self._post("/charts/intraday", payload)
         else:
             payload = {
                 "securityId": sec_id, "exchangeSegment": seg, "instrument": inst,
-                "fromDate": frm.strftime("%Y-%m-%d"),
+                "fromDate": _ist_str(frm, "%Y-%m-%d"),
                 # Dhan's toDate is non-inclusive for dailies — pad one day
-                "toDate": (to + timedelta(days=1)).strftime("%Y-%m-%d"),
+                "toDate": _ist_str(to + timedelta(days=1), "%Y-%m-%d"),
             }
             data = self._post("/charts/historical", payload)
         return parse_candles(data)
@@ -249,6 +264,29 @@ class DhanBrokerAdapter(BrokerAdapter):
 
     def get_universe_symbols(self) -> list[str]:
         return list(_NIFTY50_CONSTITUENTS.keys())
+
+    def resolve_option_expiry(self, underlying: str, expiry_kind: str) -> str:
+        from .instruments import find_nearest_expiry
+
+        return find_nearest_expiry(underlying, expiry_kind)
+
+    def get_option_intraday_candles(
+        self, underlying: str, strike: float, option_type: str,
+        expiry_kind: str, interval: str, frm: datetime, to: datetime,
+    ) -> list[Candle]:
+        from .instruments import find_option_contract
+
+        sec_id, seg, _expiry = find_option_contract(underlying, strike, option_type, expiry_kind)
+        payload = {
+            "securityId": sec_id, "exchangeSegment": seg, "instrument": "OPTIDX",
+            "interval": interval.rstrip("m"),
+            # oi=true adds a real per-bucket open_interest series alongside OHLCV
+            "oi": True,
+            "fromDate": _ist_str(frm),
+            "toDate": _ist_str(to),
+        }
+        data = self._post("/charts/intraday", payload)
+        return parse_candles(data)
 
     # -- orders -----------------------------------------------------------
 
@@ -313,12 +351,15 @@ class DhanBrokerAdapter(BrokerAdapter):
 
 
 def parse_candles(data: dict) -> list[Candle]:
-    """Dhan returns parallel arrays (open[], high[], ..., timestamp[])."""
+    """Dhan returns parallel arrays (open[], high[], ..., timestamp[]).
+    open_interest[] is present only when the request passed oi=true, and is
+    genuinely zero-filled for indices (they have no OI)."""
     opens = data.get("open", [])
     highs = data.get("high", [])
     lows = data.get("low", [])
     closes = data.get("close", [])
     vols = data.get("volume", [])
+    ois = data.get("open_interest", [])
     stamps = data.get("timestamp", [])
     out = []
     for i in range(min(len(opens), len(highs), len(lows), len(closes), len(stamps))):
@@ -327,6 +368,7 @@ def parse_candles(data: dict) -> list[Candle]:
             open=float(opens[i]), high=float(highs[i]), low=float(lows[i]),
             close=float(closes[i]),
             volume=float(vols[i]) if i < len(vols) else 0.0,
+            oi=float(ois[i]) if i < len(ois) else 0.0,
         ))
     return out
 

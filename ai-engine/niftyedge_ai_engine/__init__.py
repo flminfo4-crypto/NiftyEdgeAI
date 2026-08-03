@@ -1,7 +1,8 @@
 from .bias import compute_bias
 from .features import compute_features
 from .signals import generate_signals
-from .backtest import Candle, run_backtest
+from .backtest import Candle, STRATEGY_REGISTRY, run_backtest
+from .options_pricing import Greeks, black_scholes, greeks, implied_volatility, realized_volatility
 from .pivots import (
     camarilla, cpr, classify_two_day, classify_width, classify_width_percentile,
     daily_levels, floor_pivots,
@@ -9,6 +10,8 @@ from .pivots import (
 
 __all__ = [
     "compute_bias", "compute_features", "generate_signals", "run_backtest", "Candle",
+    "STRATEGY_REGISTRY",
+    "Greeks", "black_scholes", "greeks", "implied_volatility", "realized_volatility",
     "camarilla", "cpr", "classify_two_day", "classify_width", "classify_width_percentile",
     "daily_levels", "floor_pivots",
 ]

@@ -29,6 +29,7 @@
     <a class="nav-item" href="positions.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>Positions</a>
     <a class="nav-item" href="orders.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Orders</a>
     <a class="nav-item active" href="backtester.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Backtester</a>
+    <a class="nav-item" href="data-analysis.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>Data Analysis</a>
     <a class="nav-item" href="reports.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Reports</a>
     <div class="nav-divider"></div>
     <a class="nav-item" href="settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</a>
@@ -70,10 +71,8 @@
         <div class="card-title mb-8">Configuration</div>
         <div class="form-group"><label>Strategy</label><select class="form-control" id="bt-strategy">
           <option value="ai-bias-ce-writing-below-vah">AI Bias &middot; CE Writing Below VAH</option>
-          <option value="mean-reversion-at-val">Mean Reversion at VAL</option>
-          <option value="breakout-above-vah">Breakout Above VAH</option>
-          <option value="iron-condor-weekly">Iron Condor (Weekly)</option>
-        </select></div>
+        </select>
+        <div data-live="bt-strategy-desc" style="margin-top:6px; font-size:10.5px; color:var(--text-muted); line-height:1.5;"></div></div>
         <div class="form-row">
           <div class="form-group"><label>From</label><input class="form-control" type="date" id="bt-from" value="2023-01-01" /></div>
           <div class="form-group"><label>To</label><input class="form-control" type="date" id="bt-to" value="2026-07-25" /></div>
@@ -90,6 +89,23 @@
         <div class="form-row">
           <div class="form-group"><label>Stop Loss %</label><input class="form-control" type="number" step="0.1" id="bt-sl" value="1.5" /></div>
           <div class="form-group"><label>Target %</label><input class="form-control" type="number" step="0.1" id="bt-target" value="3.0" /></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Trade Duration</label><select class="form-control" id="bt-hold">
+            <option value="strategy">Strategy default</option>
+            <option value="intraday">Intraday (same-day exit)</option>
+            <option value="weekly">Weekly (hold to expiry)</option>
+            <option value="custom">Custom (hold N days)</option>
+          </select></div>
+          <div class="form-group"><label>Hold Days</label><input class="form-control" type="number" min="1" max="60" id="bt-hold-days" value="5" disabled /></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Breakdown</label><select class="form-control" id="bt-period">
+            <option value="weekly">Weekly (52 / yr)</option>
+            <option value="monthly">Monthly (12 / yr)</option>
+            <option value="none">None</option>
+          </select></div>
+          <div class="form-group"><label>Target % per period</label><input class="form-control" type="number" step="0.1" id="bt-period-target" value="1.0" /></div>
         </div>
         <div class="flex items-center justify-between mt-8">
           <span style="font-size:12px; color:var(--text-secondary);">Include slippage &amp; costs</span>
@@ -145,6 +161,41 @@
             <div class="stat-row"><span class="k">Max Win Streak</span><span class="v text-green" data-live="bt-max-win-streak">9</span></div>
             <div class="stat-row"><span class="k">Max Loss Streak</span><span class="v text-red" data-live="bt-max-loss-streak">4</span></div>
             <div class="stat-row"><span class="k">Avg Holding Time</span><span class="v" data-live="bt-avg-holding">2h 10m</span></div>
+          </div>
+        </div>
+
+        <div class="card" data-live="bt-period-wrap" style="display:none;">
+          <div class="card-header">
+            <span class="card-title accent" data-live="bt-period-title">Period Breakdown</span>
+            <span style="font-size:11px; color:var(--text-muted);" data-live="bt-period-sub"></span>
+          </div>
+          <div class="grid g-5 mb-8">
+            <div class="stat-block"><div class="k">Total Periods</div><div class="v" data-live="bt-period-total">&mdash;</div></div>
+            <div class="stat-block"><div class="k">Hit Target</div><div class="v" data-live="bt-period-hit">&mdash;</div></div>
+            <div class="stat-block"><div class="k">Profitable</div><div class="v" data-live="bt-period-profitable">&mdash;</div></div>
+            <div class="stat-block"><div class="k">Flat (no trades)</div><div class="v" data-live="bt-period-flat">&mdash;</div></div>
+            <div class="stat-block"><div class="k">Median / Avg</div><div class="v" data-live="bt-period-median">&mdash;</div></div>
+          </div>
+          <div class="table-wrap" style="max-height:420px; overflow:auto;">
+            <table class="table">
+              <thead><tr><th>#</th><th>Period</th><th>Dates</th><th>Trades</th><th>P&amp;L</th><th>Return %</th><th>Equity</th><th>Target</th></tr></thead>
+              <tbody data-live="bt-period-tbody"></tbody>
+            </table>
+          </div>
+          <div class="mt-8" style="font-size:10.5px; color:var(--text-muted); line-height:1.5;">
+            One row per period across the selected range. Each period's return is measured against the equity it <em>started</em> with, so it reads as "what this week/month actually earned". Periods where the strategy took no trade are shown at 0.00% rather than skipped &mdash; a flat week is a real week, and hiding it would overstate how often the target was met. Rows come from a single continuous backtest bucketed into periods, not isolated per-period runs, so positions held across a boundary are not artificially closed.
+          </div>
+        </div>
+
+        <div class="card" data-live="bt-iv-check-wrap" style="display:none;">
+          <div class="card-header"><span class="card-title accent">IV Reality Check</span><span style="font-size:11px; color:var(--text-muted);">Live market data, not modeled</span></div>
+          <div class="grid g-3">
+            <div class="stat-block"><div class="k">Model Sigma (Realized Vol)</div><div class="v" data-live="bt-iv-model">&mdash;</div></div>
+            <div class="stat-block"><div class="k">Real Market ATM IV (Live)</div><div class="v" data-live="bt-iv-real">&mdash;</div></div>
+            <div class="stat-block"><div class="k">Delta</div><div class="v" data-live="bt-iv-delta">&mdash;</div></div>
+          </div>
+          <div class="mt-8" style="font-size:10.5px; color:var(--text-muted); line-height:1.5;">
+            Dhan retains no historical price data for expired option contracts (verified directly against its API), so true historical option-price backtesting isn't available &mdash; only a live snapshot. This compares the backtest's realized-vol-based pricing model to today's real market-implied ATM IV, so you can see how well-calibrated that assumption is right now.
           </div>
         </div>
 

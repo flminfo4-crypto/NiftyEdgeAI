@@ -12,7 +12,15 @@ import threading
 import time
 from datetime import date, datetime, timedelta, timezone
 
-from niftyedge_ai_engine.pivots import classify_width, classify_width_percentile, cpr as calc_cpr, daily_levels
+from niftyedge_ai_engine.pivots import (
+    classify_width,
+    classify_width_percentile,
+    confirm_two_day_bias,
+    cpr as calc_cpr,
+    daily_levels,
+    floor_pivots,
+    pivot_trend_state,
+)
 
 from app.config import settings
 
@@ -150,7 +158,7 @@ def _trailing_daily_days(underlying: str) -> list[dict] | None:
     days = []
     for c in sorted(candles, key=lambda c: c.ts):
         ist_date = (c.ts.astimezone(IST)).date()
-        days.append({"date": ist_date, "h": c.high, "l": c.low, "c": c.close})
+        days.append({"date": ist_date, "o": c.open, "h": c.high, "l": c.low, "c": c.close})
     return days
 
 
@@ -212,19 +220,42 @@ def _build_trade_plan(levels, current_ltp: float | None, percentile_regime: str 
     broke_above_resistance = current_ltp is not None and current_ltp > resistance_cluster["upper"]
     broke_below_support = current_ltp is not None and current_ltp < support_cluster["lower"]
 
+    # Width decides how far to reach [Ochoa 2010, Ch. 6, ~p.196]: a narrow
+    # CPR follows a quiet session and lets price run past the second layer,
+    # so taking profit at R1 leaves money behind. A wide CPR follows a big
+    # session and rarely reaches beyond the second layer, so aiming at R3/R4
+    # is a disservice — moderate to R1.
+    is_narrow = percentile_regime == "NARROW"
+
     if is_ascending and not is_wide and (broke_above_resistance or (current_ltp is not None and current_ltp > upper)):
-        t1, t2 = (floor.r2, floor.r3) if current_ltp and current_ltp >= floor.r1 else (floor.r1, floor.r2)
+        if is_narrow:
+            t1, t2 = (floor.r2, floor.r3) if current_ltp and current_ltp >= floor.r1 else (floor.r1, floor.r2)
+            reach = "Narrow CPR — price can run past the second layer, so targets extend."
+        elif is_wide:
+            t1, t2 = floor.r1, floor.r1
+            reach = "Wide CPR — price rarely clears the second layer; keep the target at R1."
+        else:
+            t1, t2 = (floor.r2, floor.r3) if current_ltp and current_ltp >= floor.r1 else (floor.r1, floor.r2)
+            reach = ""
         return {
             "bias": "Bullish", "side": "LONG",
-            "entry_trigger": f"Confirm next session opens/holds above {resistance_cluster['upper']:.2f} (R1/PDH cluster).",
+            "entry_trigger": (f"Confirm next session opens/holds above {resistance_cluster['upper']:.2f} (R1/PDH cluster). " + reach).strip(),
             "stop_loss": round(lower, 2), "target1": round(t1, 2), "target2": round(t2, 2),
         }
 
     if is_descending and not is_wide and (broke_below_support or (current_ltp is not None and current_ltp < lower)):
-        t1, t2 = (floor.s2, floor.s3) if current_ltp and current_ltp <= floor.s1 else (floor.s1, floor.s2)
+        if is_narrow:
+            t1, t2 = (floor.s2, floor.s3) if current_ltp and current_ltp <= floor.s1 else (floor.s1, floor.s2)
+            reach = "Narrow CPR — price can run past the second layer, so targets extend."
+        elif is_wide:
+            t1, t2 = floor.s1, floor.s1
+            reach = "Wide CPR — price rarely clears the second layer; keep the target at S1."
+        else:
+            t1, t2 = (floor.s2, floor.s3) if current_ltp and current_ltp <= floor.s1 else (floor.s1, floor.s2)
+            reach = ""
         return {
             "bias": "Bearish", "side": "SHORT",
-            "entry_trigger": f"Confirm next session opens/holds below {support_cluster['lower']:.2f} (S1/PDL cluster).",
+            "entry_trigger": (f"Confirm next session opens/holds below {support_cluster['lower']:.2f} (S1/PDL cluster). " + reach).strip(),
             "stop_loss": round(upper, 2), "target1": round(t1, 2), "target2": round(t2, 2),
         }
 
@@ -260,6 +291,29 @@ def get_cpr_analysis(underlying: str) -> dict | None:
     except Exception:
         pass
 
+    # Opening print: the book treats the two-day bias as provisional until
+    # the session opens. Use today's real open when the session has started;
+    # stays None (PENDING) pre-market rather than guessing.
+    session_open = None
+    if days:
+        today_ist = datetime.now(timezone(timedelta(hours=5, minutes=30))).date()
+        if days[-1]["date"] == today_ist:
+            session_open = days[-1].get("o")
+    confirmation = confirm_two_day_bias(
+        levels.two_day, levels.cpr_today, session_open, prior_close=levels.pdc,
+    )
+
+    # Pivot trend: each session judged against the S1/R1 that were in force
+    # for it (computed from the session before it).
+    trend = None
+    if days and len(days) >= 3:
+        sessions = []
+        for i in range(1, len(days)):
+            prior = days[i - 1]
+            fp = floor_pivots(prior["h"], prior["l"], prior["c"])
+            sessions.append({"close": days[i]["c"], "s1": fp.s1, "r1": fp.r1})
+        trend = pivot_trend_state(sessions)
+
     floor = levels.floor
     resistance_cluster = {"lower": round(min(floor.r1, levels.pdh), 2), "upper": round(max(floor.r1, levels.pdh), 2)}
     support_cluster = {"lower": round(min(floor.s1, levels.pdl), 2), "upper": round(max(floor.s1, levels.pdl), 2)}
@@ -277,6 +331,24 @@ def get_cpr_analysis(underlying: str) -> dict | None:
         "resistance_cluster": resistance_cluster,
         "support_cluster": support_cluster,
         "trade_plan": trade_plan,
+        "session_open": session_open,
+        "bias_confirmation": {
+            "status": confirmation.status,
+            "initial_direction": confirmation.initial_direction,
+            "effective_direction": confirmation.effective_direction,
+            "strong": confirmation.strong,
+            "prior_close_supports": confirmation.prior_close_supports,
+            "guidance": confirmation.guidance,
+        } if confirmation else None,
+        "pivot_trend": {
+            "state": trend.state,
+            "days_in_state": trend.days_in_state,
+            "flip_level": trend.flip_level,
+            "buy_zones": trend.buy_zones,
+            "sell_zones": trend.sell_zones,
+            "targets": trend.targets,
+            "guidance": trend.guidance,
+        } if trend else None,
     }
 
 
