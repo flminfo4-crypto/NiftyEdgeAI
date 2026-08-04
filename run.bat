@@ -41,7 +41,38 @@ echo === Installing backend requirements ===
 echo All dependencies installed.
 echo.
 
-REM --- 3. Start the server -------------------------------------------
+REM --- 3. Free port 8000 if a previous run is still occupying it -------
+REM The most common cause: closing this window with the X instead of
+REM pressing CTRL+C first leaves uvicorn running in the background, so the
+REM NEXT run.bat hits "only one usage of each socket address is normally
+REM permitted" and exits immediately.
+set "EXISTING_PID="
+for /f "usebackq" %%p in (`powershell -NoProfile -Command "(Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue).OwningProcess" 2^>nul`) do set "EXISTING_PID=%%p"
+
+if defined EXISTING_PID (
+    echo [WARNING] Port 8000 is already in use by process ID !EXISTING_PID!.
+    echo This is usually a previous run of this launcher that wasn't closed
+    echo properly - closing the window directly, instead of pressing
+    echo CTRL+C first, can leave the server running in the background.
+    echo.
+    choice /C YN /M "Stop that process and continue"
+    if errorlevel 2 (
+        echo.
+        echo Left it running. Close it yourself in Task Manager, or run:
+        echo   taskkill /F /PID !EXISTING_PID!
+        echo then run this file again.
+        echo.
+        pause
+        exit /b 1
+    )
+    powershell -NoProfile -Command "Stop-Process -Id !EXISTING_PID! -Force" >nul 2>&1
+    echo Stopped process !EXISTING_PID!. Waiting for the port to free up...
+    timeout /t 2 /nobreak >nul
+    set "EXISTING_PID="
+    echo.
+)
+
+REM --- 4. Start the server -------------------------------------------
 echo ============================================
 echo  Starting backend on http://localhost:8000
 echo  API docs:  http://localhost:8000/api/v1/docs
