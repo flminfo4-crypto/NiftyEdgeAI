@@ -117,11 +117,20 @@ class StrategyContext:
 
 @dataclass
 class LegShape:
-    """What a strategy wants to trade once its signal fires. CONDOR is its
-    own kind since a range bet has fundamentally different P&L math (see
-    _condor_pnl) than a single directional leg (see _leg_pnl) — everything
-    else is described generically so adding a new single-leg strategy never
-    requires touching the simulation loop, only registering a new signal_fn.
+    """What a strategy wants to trade once its signal fires. CONDOR and
+    SPREAD are their own kinds since a multi-leg position has fundamentally
+    different P&L math (see _condor_pnl / _spread_pnl) than a single
+    directional leg (see _leg_pnl) — everything else is described generically
+    so adding a new single-leg strategy never requires touching the
+    simulation loop, only registering a new signal_fn.
+
+    CONDOR sells a naked strangle (call + put, no protective legs) — its
+    entire loss is exposed to however far the underlying moves; stop_loss_pct
+    is a soft percentage check, not a structural cap (see the drawdowns on
+    iron-condor-weekly / the weekly-income-* strategies). SPREAD sells one
+    option and buys a further-OTM option of the same type as protection
+    (a vertical credit spread) — max loss is capped at the strike width minus
+    the credit received, a structural bound the naked CONDOR doesn't have.
 
     hold controls the exit style on the daily-bar series:
     - SWING: walk day-by-day until stop/target/expiry (_leg_pnl).
@@ -132,13 +141,17 @@ class LegShape:
       value at the close — i.e. actual expiry settlement, which is exact
       rather than modeled.
     """
-    kind: Literal["SINGLE", "CONDOR"]
+    kind: Literal["SINGLE", "CONDOR", "SPREAD"]
     option_type: Optional[Literal["CE", "PE"]] = None
     side: Optional[Literal["BUY", "SELL"]] = None
+    # SINGLE: offset of the one leg. SPREAD: offset of the short (sold) leg —
+    # the long protective leg sits `wing_offset` further out (see below).
     strike_offset: int = 0  # points OTM from ATM (0 = ATM); direction of "OTM" follows option_type
     direction: int = 0      # +1 profits from underlying rising, -1 profits from underlying falling
     hold: Literal["SWING", "INTRADAY", "EXPIRY_DAY"] = "SWING"
-    wing_offset: int = 200  # CONDOR only: points OTM for each wing; wider = safer, less premium
+    # CONDOR: each wing's OTM distance from ATM (both legs are naked).
+    # SPREAD: extra OTM distance from the short leg to the protective long leg.
+    wing_offset: int = 200
     # Multiplier on the run's target_pct [Ochoa 2010, Ch. 6, ~p.196]: a narrow
     # CPR follows a quiet session and lets price run past the second pivot
     # layer, so a fixed target leaves money behind; a wide CPR rarely clears
@@ -389,6 +402,54 @@ def _sig_ma_greeks_trend_buy(entry_spot: float, levels: DailyLevels, ctx: Strate
     # absolute points from ATM, so flip the sign for puts to land on atm+off.
     shape_off = best_off if opt == "CE" else -best_off
     return LegShape(kind="SINGLE", option_type=opt, side="BUY", strike_offset=shape_off, direction=1 if up else -1)
+
+
+@register_strategy("ma-greeks-credit-spread", "SELL CREDIT SPREAD (MA Trend + Delta, Defined Risk)")
+def _sig_ma_greeks_credit_spread(entry_spot: float, levels: DailyLevels, ctx: StrategyContext) -> Optional[LegShape]:
+    """Defined-risk income strategy: when the 20-SMA/50-SMA trend agrees with
+    a rangebound CPR-width read (NORMAL or WIDE — NARROW is skipped, the same
+    coiled-breakout filter the other premium sellers above use), sells a
+    vertical credit spread in the direction of the trend — a bull put spread
+    in an uptrend, a bear call spread in a downtrend. The short strike is
+    chosen by Black-Scholes delta (~0.25, a standard defensive credit-spread
+    convention — mirrors ma-greeks-trend-buy's delta-driven strike pick
+    above, just selling instead of buying), and a further-OTM long strike is
+    bought as protection. That protective leg is what iron-condor-weekly and
+    the weekly-income-* strategies don't have: max loss here is structurally
+    capped at the strike width minus the credit received (see
+    LegShape/_spread_pnl), not merely soft-stopped against however far the
+    underlying actually moves. The trend + width filter is deliberately
+    selective — it is meant to fire a handful of times a month, not every
+    week."""
+    i = ctx.index
+    closes = [c.close for c in ctx.candles[: i + 1]]
+    s20, s50 = _sma(closes, 20), _sma(closes, 50)
+    if s20 is None or s50 is None:
+        return None
+    if _percentile_width_regime(ctx) == "NARROW":
+        return None
+    up = s20 > s50 and entry_spot > s20
+    down = s20 < s50 and entry_spot < s20
+    if not (up or down):
+        return None
+
+    opt: Literal["CE", "PE"] = "PE" if up else "CE"  # sell the side the trend defends
+    sigma = realized_volatility(closes)
+    today = ctx.candles[i].dt
+    expiry = _next_thursday(today)
+    t = max((expiry - today).days / 365.0, 1.0 / 365.0)
+    atm = _round_strike(entry_spot)
+    best_off, best_err = 50, float("inf")
+    for off in range(50, 301, STRIKE_STEP):
+        strike = atm + off if opt == "CE" else atm - off
+        err = abs(abs(black_scholes(entry_spot, strike, t, sigma, opt).delta) - 0.25)
+        if err < best_err:
+            best_err, best_off = err, off
+
+    return LegShape(
+        kind="SPREAD", option_type=opt, side="SELL", strike_offset=best_off,
+        direction=1 if up else -1, wing_offset=100,
+    )
 
 
 @register_strategy("expiry-theta-crush-seller", "SELL OTM (Expiry-Day Theta Crush)")
@@ -718,6 +779,43 @@ def _condor_pnl(
     return entry_premium, exit_premium, closed
 
 
+def _spread_pnl(
+    entry_spot: float, short_strike: float, long_strike: float, option_type: Literal["CE", "PE"],
+    entry_date: date, expiry: date, path: list[Candle], sigma: float,
+    stop_loss_pct: float, target_pct: float, direction: int,
+) -> tuple[float, float, date]:
+    """A defined-risk vertical credit spread: sells `short_strike`, buys
+    `long_strike` further OTM as protection, both the same option_type and
+    expiry. Unlike _condor_pnl's naked strangle, the bought leg structurally
+    caps max loss at the strike width minus the net credit received, however
+    far the underlying moves — there is no equivalent of the condor's
+    triple-digit drawdowns here by construction, only what stop/target/expiry
+    realize along the way. Net premium tracked is short leg minus long leg
+    (the credit received); stop/target read the *underlying's* real move like
+    _leg_pnl, in the one direction this spread is actually exposed to (a
+    credit spread's risk is one-sided, unlike a condor's two-sided one)."""
+    entry_t = max((expiry - entry_date).days / 365.0, 1.0 / 365.0)
+    short_entry = black_scholes(entry_spot, short_strike, entry_t, sigma, option_type).price
+    long_entry = black_scholes(entry_spot, long_strike, entry_t, sigma, option_type).price
+    entry_net = short_entry - long_entry
+
+    exit_net = entry_net
+    closed = expiry
+    for c in path:
+        if c.dt <= entry_date:
+            continue
+        t = max((expiry - c.dt).days / 365.0, 1.0 / 365.0)
+        short_px = black_scholes(c.close, short_strike, t, sigma, option_type).price
+        long_px = black_scholes(c.close, long_strike, t, sigma, option_type).price
+        exit_net = short_px - long_px
+        closed = c.dt
+        spot_move_pct = direction * (c.close - entry_spot) / entry_spot * 100
+        decay_pct = (entry_net - exit_net) / entry_net * 100
+        if spot_move_pct <= -stop_loss_pct or decay_pct >= target_pct or c.dt >= expiry:
+            break
+    return entry_net, exit_net, closed
+
+
 def _same_day_pnl(
     entry_spot: float, strike: float, option_type: Literal["CE", "PE"],
     hold: str, today: Candle, sigma: float,
@@ -750,9 +848,10 @@ def _apply_hold_mode(shape: LegShape, hold_mode: str) -> LegShape:
     alone; the others force every trade onto the same footing so the SAME
     signal can be compared intraday vs weekly vs a fixed holding period.
 
-    A condor is left alone: it is a multi-day premium-decay structure whose
-    P&L model has no same-day form (see _condor_pnl)."""
-    if hold_mode == "strategy" or shape.kind == "CONDOR":
+    A condor or spread is left alone: both are multi-day premium-decay
+    structures whose P&L model has no same-day form (see _condor_pnl /
+    _spread_pnl)."""
+    if hold_mode == "strategy" or shape.kind in ("CONDOR", "SPREAD"):
         return shape
     if hold_mode == "intraday":
         return replace(shape, hold="INTRADAY")
@@ -806,6 +905,15 @@ def _simulate_trades(
                 entry_spot, ce_strike, pe_strike, today.dt, expiry, path, sigma, stop_loss_pct, eff_target_pct
             )
             pnl = (entry_p - exit_p) * LOT_SIZE * position_size_lots
+            turnover = (entry_p + exit_p) * LOT_SIZE * position_size_lots
+        elif shape.kind == "SPREAD":
+            short_strike = _strike_for(entry_spot, shape.option_type, shape.strike_offset)
+            long_strike = _strike_for(entry_spot, shape.option_type, shape.strike_offset + shape.wing_offset)
+            entry_p, exit_p, closed_date = _spread_pnl(
+                entry_spot, short_strike, long_strike, shape.option_type, today.dt, expiry, path, sigma,
+                stop_loss_pct, eff_target_pct, direction=shape.direction,
+            )
+            pnl = (entry_p - exit_p) * LOT_SIZE * position_size_lots  # SELL-the-spread: net credit convention
             turnover = (entry_p + exit_p) * LOT_SIZE * position_size_lots
         else:
             strike = _strike_for(entry_spot, shape.option_type, shape.strike_offset)
