@@ -38,6 +38,25 @@ COST_FRACTION = 0.0015
 PERCENTILE_TRAILING_SESSIONS = 20
 
 
+def _estimate_leg_charges(side: Literal["BUY", "SELL"], turnover: float) -> float:
+    """Real per-order NSE F&O charge model — mirrors
+    backend/app/services/order_service._estimate_charges exactly (flat
+    brokerage capped at Rs20/order, STT only on the sell side, standard
+    exchange/GST/stamp-duty rates), kept local since ai-engine has no
+    backend dependency. Used for SPREAD trades instead of the blended
+    COST_FRACTION approximation above, since a spread's 4 separate orders
+    (sell-open, buy-open, buy-close, sell-close) each have a different,
+    side-dependent real cost — STT only hits the two SELL legs, stamp duty
+    is ~30x higher on the two BUY legs — that a single flat percentage
+    can't represent."""
+    brokerage = min(20.0, turnover * 0.0003)
+    exchange_charges = turnover * 0.0003503
+    stt = turnover * 0.0005 if side == "SELL" else 0.0
+    stamp_duty = turnover * 0.00003 if side == "BUY" else turnover * 0.000001
+    gst = (brokerage + exchange_charges) * 0.18
+    return brokerage + exchange_charges + stt + stamp_duty + gst
+
+
 @dataclass
 class Candle:
     dt: date
@@ -412,15 +431,34 @@ def _sig_ma_greeks_credit_spread(entry_spot: float, levels: DailyLevels, ctx: St
     vertical credit spread in the direction of the trend — a bull put spread
     in an uptrend, a bear call spread in a downtrend. The short strike is
     chosen by Black-Scholes delta (~0.25, a standard defensive credit-spread
-    convention — mirrors ma-greeks-trend-buy's delta-driven strike pick
-    above, just selling instead of buying), and a further-OTM long strike is
-    bought as protection. That protective leg is what iron-condor-weekly and
-    the weekly-income-* strategies don't have: max loss here is structurally
-    capped at the strike width minus the credit received (see
-    LegShape/_spread_pnl), not merely soft-stopped against however far the
-    underlying actually moves. The trend + width filter is deliberately
-    selective — it is meant to fire a handful of times a month, not every
-    week."""
+    convention), and a further-OTM long strike is bought as protection. That
+    protective leg is what iron-condor-weekly and the weekly-income-*
+    strategies don't have: max loss here is structurally capped at the
+    strike width minus the credit received (see LegShape/_spread_pnl), not
+    merely soft-stopped against however far the underlying actually moves.
+
+    Two tuning notes from real iteration against 6 years of Dhan data (see
+    the strategy lab sweep), kept here so the next change starts from
+    evidence, not a guess:
+    - A further-OTM ~0.20 delta was tried first for a higher win rate. It
+      backfired: less-OTM strikes collect less credit, so for the *same*
+      wing width the structural max loss (width - credit) is actually
+      *larger*, not smaller — out-of-sample max drawdown got worse
+      (-109% vs -96%), not better. Reverted to 0.25.
+    - target_scale=10 turns the run's shared target_pct (meant for a
+      directional leg's underlying-move target, default 3%) into a ~30%
+      net-credit decay target instead. Left at the shared 3% default, this
+      exited almost every trade within a day or two for a token profit —
+      a 70% win rate but a 0.65 profit factor (mostly tiny wins, one loss
+      that ran much further). 30% is a middle ground between that and the
+      standard "take profit at 50% of max credit" convention, which (at
+      0.25 delta) pushed drawdown worse still by holding losers longer
+      before the stop could fire.
+    Net effect after both changes is still being validated — see the lab
+    sweep's out-of-sample numbers for ma-greeks-credit-spread before
+    trusting this as tuned rather than in-progress. The trend + width
+    filter is deliberately selective — meant to fire a handful of times a
+    month, not every week."""
     i = ctx.index
     closes = [c.close for c in ctx.candles[: i + 1]]
     s20, s50 = _sma(closes, 20), _sma(closes, 50)
@@ -448,7 +486,7 @@ def _sig_ma_greeks_credit_spread(entry_spot: float, levels: DailyLevels, ctx: St
 
     return LegShape(
         kind="SPREAD", option_type=opt, side="SELL", strike_offset=best_off,
-        direction=1 if up else -1, wing_offset=100,
+        direction=1 if up else -1, wing_offset=100, target_scale=10.0,
     )
 
 
@@ -779,11 +817,26 @@ def _condor_pnl(
     return entry_premium, exit_premium, closed
 
 
+@dataclass
+class _SpreadFill:
+    """The four individual leg prices behind a SPREAD trade's net credit —
+    kept separate from the aggregate entry_net/exit_net so the caller can
+    cost each of the four real orders (sell-open, buy-open, buy-close,
+    sell-close) with _estimate_leg_charges instead of one blended rate."""
+    entry_net: float
+    exit_net: float
+    closed: date
+    short_entry: float
+    long_entry: float
+    short_exit: float
+    long_exit: float
+
+
 def _spread_pnl(
     entry_spot: float, short_strike: float, long_strike: float, option_type: Literal["CE", "PE"],
     entry_date: date, expiry: date, path: list[Candle], sigma: float,
     stop_loss_pct: float, target_pct: float, direction: int,
-) -> tuple[float, float, date]:
+) -> _SpreadFill:
     """A defined-risk vertical credit spread: sells `short_strike`, buys
     `long_strike` further OTM as protection, both the same option_type and
     expiry. Unlike _condor_pnl's naked strangle, the bought leg structurally
@@ -799,21 +852,22 @@ def _spread_pnl(
     long_entry = black_scholes(entry_spot, long_strike, entry_t, sigma, option_type).price
     entry_net = short_entry - long_entry
 
+    short_exit, long_exit = short_entry, long_entry
     exit_net = entry_net
     closed = expiry
     for c in path:
         if c.dt <= entry_date:
             continue
         t = max((expiry - c.dt).days / 365.0, 1.0 / 365.0)
-        short_px = black_scholes(c.close, short_strike, t, sigma, option_type).price
-        long_px = black_scholes(c.close, long_strike, t, sigma, option_type).price
-        exit_net = short_px - long_px
+        short_exit = black_scholes(c.close, short_strike, t, sigma, option_type).price
+        long_exit = black_scholes(c.close, long_strike, t, sigma, option_type).price
+        exit_net = short_exit - long_exit
         closed = c.dt
         spot_move_pct = direction * (c.close - entry_spot) / entry_spot * 100
         decay_pct = (entry_net - exit_net) / entry_net * 100
         if spot_move_pct <= -stop_loss_pct or decay_pct >= target_pct or c.dt >= expiry:
             break
-    return entry_net, exit_net, closed
+    return _SpreadFill(entry_net, exit_net, closed, short_entry, long_entry, short_exit, long_exit)
 
 
 def _same_day_pnl(
@@ -898,6 +952,7 @@ def _simulate_trades(
         # they reach (see LegShape.target_scale). Default 1.0 = unchanged.
         eff_target_pct = target_pct * shape.target_scale
 
+        costs = 0.0
         if shape.kind == "CONDOR":
             ce_strike = _round_strike(entry_spot) + shape.wing_offset
             pe_strike = _round_strike(entry_spot) - shape.wing_offset
@@ -905,16 +960,28 @@ def _simulate_trades(
                 entry_spot, ce_strike, pe_strike, today.dt, expiry, path, sigma, stop_loss_pct, eff_target_pct
             )
             pnl = (entry_p - exit_p) * LOT_SIZE * position_size_lots
-            turnover = (entry_p + exit_p) * LOT_SIZE * position_size_lots
+            if include_costs:
+                costs = (entry_p + exit_p) * LOT_SIZE * position_size_lots * COST_FRACTION
         elif shape.kind == "SPREAD":
             short_strike = _strike_for(entry_spot, shape.option_type, shape.strike_offset)
             long_strike = _strike_for(entry_spot, shape.option_type, shape.strike_offset + shape.wing_offset)
-            entry_p, exit_p, closed_date = _spread_pnl(
+            fill = _spread_pnl(
                 entry_spot, short_strike, long_strike, shape.option_type, today.dt, expiry, path, sigma,
                 stop_loss_pct, eff_target_pct, direction=shape.direction,
             )
+            entry_p, exit_p, closed_date = fill.entry_net, fill.exit_net, fill.closed
             pnl = (entry_p - exit_p) * LOT_SIZE * position_size_lots  # SELL-the-spread: net credit convention
-            turnover = (entry_p + exit_p) * LOT_SIZE * position_size_lots
+            if include_costs:
+                # Itemized real per-order charges (see _estimate_leg_charges) for
+                # each of the 4 real orders a spread trade actually places —
+                # exact, not the blended COST_FRACTION the other kinds use.
+                qty = LOT_SIZE * position_size_lots
+                costs = (
+                    _estimate_leg_charges("SELL", fill.short_entry * qty)   # open: sell the short leg
+                    + _estimate_leg_charges("BUY", fill.long_entry * qty)   # open: buy the protective leg
+                    + _estimate_leg_charges("BUY", fill.short_exit * qty)   # close: buy back the short leg
+                    + _estimate_leg_charges("SELL", fill.long_exit * qty)   # close: sell the protective leg
+                )
         else:
             strike = _strike_for(entry_spot, shape.option_type, shape.strike_offset)
             if shape.hold == "SWING":
@@ -928,10 +995,10 @@ def _simulate_trades(
                 )
             pnl = (entry_p - exit_p) if shape.side == "SELL" else (exit_p - entry_p)
             pnl *= LOT_SIZE * position_size_lots
-            turnover = (entry_p + exit_p) * LOT_SIZE * position_size_lots
+            if include_costs:
+                costs = (entry_p + exit_p) * LOT_SIZE * position_size_lots * COST_FRACTION
 
-        if include_costs:
-            pnl -= turnover * COST_FRACTION
+        pnl -= costs
 
         pnl = round(pnl, 2)
         trades.append(Trade(
