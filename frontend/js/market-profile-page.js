@@ -139,6 +139,8 @@
     if (dtEl && p.reasoning) dtEl.title = p.reasoning;
   }
 
+  var lastLtp = null;
+
   function load() {
     var sessionEl = document.getElementById("mp-session");
     var bracketEl = document.getElementById("mp-bracket");
@@ -155,10 +157,28 @@
         NE.applyFooterTicker(r[0]);
         renderGrid(r[1]);
         renderStats(r[1]);
+        var spot = r[0].filter(function (q) { return q.symbol === "NIFTY50"; })[0];
+        lastLtp = spot ? spot.ltp : null;
         NE.markStatus(true);
         NE.stampRefresh();
       })
       .catch(function () { NE.markStatus(false); });
+  }
+
+  // Composite (multi-session) chart — its own slow cadence like Virgin POCs
+  // below, since it costs the backend a multi-day intraday fetch rather than
+  // the single cached session the 2s poll above reads.
+  function loadComposite() {
+    var canvas = document.querySelector('[data-live="mp-composite-canvas"]');
+    if (!canvas) return;
+    var bracketEl = document.getElementById("mp-bracket");
+    var bracket = bracketEl ? bracketEl.value : "30";
+    NE.fetchJSONLong("/market/tpo-profile/composite?underlying=" + UNDERLYING +
+                      "&sessions=5&bracket=" + bracket, 15000)
+      .then(function (sessions) {
+        NE.renderCompositeChart(canvas, sessions, { mode: "tpo", ltp: lastLtp, tick: 10.0 });
+      })
+      .catch(function () {});
   }
 
   // Virgin POCs need a multi-session fetch server-side, so they load on their
@@ -200,9 +220,13 @@
     var el = document.getElementById(id);
     if (el) el.addEventListener("change", load);
   });
+  var bracketEl = document.getElementById("mp-bracket");
+  if (bracketEl) bracketEl.addEventListener("change", loadComposite);
 
   load();
   setInterval(load, 2000);
   loadVirginPocs();
   setInterval(loadVirginPocs, 300000); // 5 min — prior-session POCs barely move
+  loadComposite();
+  setInterval(loadComposite, 30000);
 })();

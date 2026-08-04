@@ -75,7 +75,21 @@
       </div>
     </div>
 
-    <div class="grid" style="grid-template-columns: 1fr 300px;">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title accent">Composite Profile &middot; Last 5 Sessions</span>
+        <div class="flex gap-14" style="font-size:11px;">
+          <span><span class="legend-dot" style="background:var(--amber);"></span>Value Area</span>
+          <span><span class="legend-dot" style="background:var(--blue);"></span>POC / POC Trend</span>
+          <span><span class="legend-dot" style="background:var(--green);"></span>LTP</span>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <canvas data-live="vp-composite-canvas" style="width:100%; display:block;"></canvas>
+      </div>
+    </div>
+
+    <div class="grid mt-12" style="grid-template-columns: 1fr 300px;">
       <div class="card">
         <div class="card-header">
           <span class="card-title accent">Volume by Price</span>
@@ -86,40 +100,7 @@
           </div>
         </div>
         <div class="vprofile" data-live="vp-rows">
-          <div class="row"><span class="price">23,652</span><div class="track"><div class="fill" style="width:1.9%; background:var(--border);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">9K</span></div>
-          <div class="row"><span class="price">23,646</span><div class="track"><div class="fill" style="width:2.6%; background:var(--border);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">13K</span></div>
-          <div class="row"><span class="price">23,640</span><div class="track"><div class="fill" style="width:3.5%; background:var(--border);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">18K</span></div>
-          <div class="row"><span class="price">23,634</span><div class="track"><div class="fill" style="width:4.8%; background:var(--border);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">25K</span></div>
-          <div class="row"><span class="price">23,628</span><div class="track"><div class="fill" style="width:5.9%; background:var(--border);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">31K</span></div>
-          <div class="row"><span class="price">23,622</span><div class="track"><div class="fill" style="width:7.9%; background:var(--border);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">42K</span></div>
-          <div class="row"><span class="price">23,616</span><div class="track"><div class="fill" style="width:7.7%; background:var(--border);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">40K</span></div>
-          <div class="row"><span class="price">23,610</span><div class="track"><div class="fill" style="width:11.1%; background:var(--blue);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">59K</span></div>
-          <div class="row"><span class="price">23,604</span><div class="track"><div class="fill" style="width:15.7%; background:var(--blue);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">83K</span></div>
-          <div class="row"><span class="price text-red">23,598 &#9642;VAH</span><div class="track"><div class="fill" style="width:17.7%; background:var(--blue);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">94K</span></div>
-          <div class="row"><span class="price">23,592</span><div class="track"><div class="fill" style="width:22.9%; background:var(--blue);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">122K</span></div>
-          <div class="row"><span class="price">23,586</span><div class="track"><div class="fill" style="width:21.6%; background:var(--blue);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">115K</span></div>
-          <div class="row"><span class="price">23,580</span><div class="track"><div class="fill" style="width:28.5%; background:var(--blue);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">152K</span></div>
-          <div class="row"><span class="price">23,574</span><div class="track"><div class="fill" style="width:31.0%; background:var(--blue);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">166K</span></div>
-          <div class="row"><span class="price">23,568</span><div class="track"><div class="fill" style="width:39.2%; background:var(--blue);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">209K</span></div>
-          <div class="row"><span class="price">23,562</span><div class="track"><div class="fill" style="width:45.0%; background:var(--blue);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">241K</span></div>
-          <div class="row"><span class="price">23,556</span><div class="track"><div class="fill" style="width:42.3%; background:var(--blue);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">226K</span></div>
-          <div class="row"><span class="price">23,550</span><div class="track"><div class="fill" style="width:50.4%; background:var(--purple);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">270K</span></div>
-          <div class="row"><span class="price">23,544</span><div class="track"><div class="fill" style="width:56.6%; background:var(--purple);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">302K</span></div>
-          <div class="row"><span class="price">23,538</span><div class="track"><div class="fill" style="width:74.0%; background:var(--purple);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">396K</span></div>
-          <div class="row"><span class="price text-green bold">23,532 &#9642;LTP</span><div class="track"><div class="fill" style="width:76.2%; background:var(--purple);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">408K</span></div>
-          <div class="row"><span class="price">23,526</span><div class="track"><div class="fill" style="width:67.2%; background:var(--purple);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">359K</span></div>
-          <div class="row"><span class="price">23,520</span><div class="track"><div class="fill" style="width:85.4%; background:var(--purple);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">457K</span></div>
-          <div class="row"><span class="price">23,514</span><div class="track"><div class="fill" style="width:72.4%; background:var(--purple);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">387K</span></div>
-          <div class="row"><span class="price">23,508</span><div class="track"><div class="fill" style="width:85.9%; background:var(--purple);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">460K</span></div>
-          <div class="row"><span class="price text-amber bold">23,502 &#9642;POC</span><div class="track"><div class="fill" style="width:74.5%; background:var(--amber);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">399K</span></div>
-          <div class="row"><span class="price">23,496</span><div class="track"><div class="fill" style="width:71.3%; background:var(--purple);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">381K</span></div>
-          <div class="row"><span class="price">23,490</span><div class="track"><div class="fill" style="width:92.0%; background:var(--purple);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">492K</span></div>
-          <div class="row"><span class="price">23,484</span><div class="track"><div class="fill" style="width:73.7%; background:var(--purple);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">394K</span></div>
-          <div class="row"><span class="price">23,478</span><div class="track"><div class="fill" style="width:71.2%; background:var(--purple);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">381K</span></div>
-          <div class="row"><span class="price">23,472</span><div class="track"><div class="fill" style="width:84.9%; background:var(--purple);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">454K</span></div>
-          <div class="row"><span class="price text-red">23,466 &#9642;VAL</span><div class="track"><div class="fill" style="width:77.6%; background:var(--purple);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">415K</span></div>
-          <div class="row"><span class="price">23,460</span><div class="track"><div class="fill" style="width:60.8%; background:var(--blue);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">325K</span></div>
-          <div class="row"><span class="price">23,454</span><div class="track"><div class="fill" style="width:67.9%; background:var(--blue);"></div></div><span style="width:44px;font-size:10.5px;color:var(--text-muted);">363K</span></div>
+          <div class="row" style="color:var(--text-muted);">Loading profile&hellip;</div>
         </div>
       </div>
 
@@ -183,6 +164,7 @@
 </div>
 <script src="js/app.js"></script>
 <script src="js/ne-common.js"></script>
+<script src="js/composite-profile-chart.js"></script>
 <script src="js/volume-profile-page.js"></script>
 </body>
 </html>

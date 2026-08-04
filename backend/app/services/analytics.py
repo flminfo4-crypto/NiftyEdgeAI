@@ -353,9 +353,13 @@ def tpo_profile(candles: list[Candle], tick: float = 10.0, bracket_minutes: int 
 
     ordered = sorted(candles, key=lambda c: c.ts)
     letters_by_price: dict[float, list] = defaultdict(list)
+    bracket_high: dict[int, float] = {}
+    bracket_low: dict[int, float] = {}
     for c in ordered:
         b = _bracket_index(c.ts, bracket_minutes)
         letter = _TPO_LETTERS[b] if b < len(_TPO_LETTERS) else _TPO_LETTERS[-1]
+        bracket_high[b] = max(bracket_high.get(b, c.high), c.high)
+        bracket_low[b] = min(bracket_low.get(b, c.low), c.low)
         lo = round(c.low / tick) * tick
         hi = round(c.high / tick) * tick
         if hi < lo:
@@ -442,6 +446,14 @@ def tpo_profile(candles: list[Candle], tick: float = 10.0, bracket_minutes: int 
         "bracket_minutes": bracket_minutes,
         "brackets": len({_bracket_index(c.ts, bracket_minutes) for c in ordered}),
         "tick": tick,
+        # per-bracket high/low, in bracket order — used by classify_bar_structure()
+        # to compare this session against the previous one (not part of the
+        # page's own display, so TpoProfileOut doesn't declare it).
+        "bracket_ranges": [
+            {"letter": _TPO_LETTERS[b] if b < len(_TPO_LETTERS) else _TPO_LETTERS[-1],
+             "high": bracket_high[b], "low": bracket_low[b]}
+            for b in sorted(bracket_high)
+        ],
     }
 
 
@@ -673,3 +685,57 @@ def find_virgin_pocs(session_profiles: list, current_price: float, max_age: int 
             })
     virgins.sort(key=lambda v: abs(v["distance"]))
     return virgins
+
+
+def classify_bar_structure(prev: dict, today: dict) -> str:
+    """Best-effort reconstruction of the Inside/Outside-Bar + IB-break
+    annotations professional Market Profile tools print above each session
+    (e.g. "OneTime framing - Down (3) - Broken (in A)"). There's no public
+    spec for this notation — this is a disclosed heuristic, not a faithful
+    reproduction of any specific vendor's exact algorithm — built from the
+    same `tpo_profile()` output (day_high/day_low/bracket_ranges) used
+    elsewhere on this page:
+      - Inside Bar: today's full range sits inside yesterday's range.
+      - Outside Bar: today's range engulfs yesterday's range.
+      - Otherwise "OneTime framing - Up/Down (N)": a one-directional range
+        extension, N = number of TPO brackets that printed beyond today's own
+        Initial Balance on the extending side.
+      - "Broken (in X)" / "Broken BothSides (in X)": X = the first bracket
+        letter whose own high/low took out yesterday's high, yesterday's
+        low, or both.
+    """
+    prev_high, prev_low = prev["day_high"], prev["day_low"]
+    day_high, day_low = today["day_high"], today["day_low"]
+
+    if day_high <= prev_high and day_low >= prev_low:
+        bar_type = "Inside Bar (" + ("U" if today["close_price"] >= today["open_price"] else "D") + ")"
+    elif day_high > prev_high and day_low < prev_low:
+        bar_type = "Outside Bar"
+    else:
+        ext_up, ext_down = today["range_extension_up"], today["range_extension_down"]
+        if ext_up >= ext_down:
+            n = sum(1 for b in today["bracket_ranges"] if b["high"] > today["ib_high"])
+            bar_type = "OneTime framing - Up (%d)" % max(n, 1)
+        else:
+            n = sum(1 for b in today["bracket_ranges"] if b["low"] < today["ib_low"])
+            bar_type = "OneTime framing - Down (%d)" % max(n, 1)
+
+    broken_high = broken_low = None
+    for b in today["bracket_ranges"]:
+        if broken_high is None and b["high"] > prev_high:
+            broken_high = b["letter"]
+        if broken_low is None and b["low"] < prev_low:
+            broken_low = b["letter"]
+        if broken_high is not None and broken_low is not None:
+            break
+
+    if broken_high and broken_low:
+        broken = "Broken BothSides (in %s)" % (broken_high if broken_high == broken_low else min(broken_high, broken_low))
+    elif broken_high:
+        broken = "Broken (in %s)" % broken_high
+    elif broken_low:
+        broken = "Broken (in %s)" % broken_low
+    else:
+        broken = None
+
+    return bar_type + (" - " + broken if broken else "")

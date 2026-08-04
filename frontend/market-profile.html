@@ -73,7 +73,22 @@
       </div>
     </div>
 
-    <div class="grid" style="grid-template-columns: 1fr 300px;">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title accent">Composite Profile &middot; Last 5 Sessions</span>
+        <div class="flex gap-14" style="font-size:11px;">
+          <span><span class="legend-dot" style="background:var(--amber);"></span>Value Area</span>
+          <span><span class="legend-dot" style="background:var(--purple);"></span>Initial Balance</span>
+          <span><span class="legend-dot" style="background:var(--blue);"></span>POC / POC Trend</span>
+          <span><span class="legend-dot" style="background:var(--green);"></span>LTP</span>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <canvas data-live="mp-composite-canvas" style="width:100%; display:block;"></canvas>
+      </div>
+    </div>
+
+    <div class="grid mt-12" style="grid-template-columns: 1fr 300px;">
       <div class="card">
         <div class="card-header">
           <span class="card-title accent">TPO Profile</span>
@@ -83,8 +98,8 @@
             <span><span class="legend-dot" style="background:var(--blue);"></span>POC</span>
           </div>
         </div>
-        <div data-live="mp-tpo-grid" style="font-family:'SFMono-Regular',Consolas,monospace; font-size:12.5px; line-height:1.75; max-height:520px; overflow:auto;"><div style="color:var(--text-muted);">Loading profile…</div></div></div>
-          <div class="flex items-center" style="gap:10px;"><span style="width:64px; color:var(--text-muted); text-align:right;">23,442</span><span>A</span></div>
+        <div data-live="mp-tpo-grid" style="font-family:'SFMono-Regular',Consolas,monospace; font-size:12.5px; line-height:1.75; max-height:520px; overflow:auto;">
+          <div style="color:var(--text-muted);">Loading profile…</div>
         </div>
         <div class="mt-12" style="font-size:10.5px; color:var(--text-muted);">Periods: A 09:15&ndash;09:45 &nbsp;B 09:45&ndash;10:15 &nbsp;C 10:15&ndash;10:45 &nbsp;D 10:45&ndash;11:15 &nbsp;&hellip; &nbsp;O 15:45&ndash;16:15</div>
       </div>
@@ -156,6 +171,7 @@
 </div>
 <script src="js/app.js"></script>
 <script src="js/ne-common.js"></script>
+<script src="js/composite-profile-chart.js"></script>
 <script src="js/market-profile-page.js"></script>
 </body>
 </html>

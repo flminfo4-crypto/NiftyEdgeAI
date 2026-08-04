@@ -20,8 +20,10 @@ from app.models.schemas import (
     OptionPressureOut,
     QuoteOut,
     TopNarrowStocksOut,
+    TpoProfileCompositeSessionOut,
     TpoProfileOut,
     VirginPocsOut,
+    VolumeProfileCompositeSessionOut,
     VolumeProfileOut,
 )
 from app.services import atm_analysis_service, market_data, pivot_service
@@ -225,6 +227,23 @@ def get_virgin_pocs(underlying: str = "NIFTY50", bracket: int = 30):
         return market_data.get_virgin_pocs(underlying, bracket_minutes=bracket)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.get("/tpo-profile/composite", response_model=list[TpoProfileCompositeSessionOut])
+def get_tpo_profile_composite(underlying: str = "NIFTY50", sessions: int = 5, bracket: int = 30):
+    """Multi-session TPO composite (full letter-grid per session, IB/VA,
+    poor high/low, volume, and a best-effort bar-structure label) behind
+    market-profile.html's composite chart."""
+    if bracket not in (15, 30, 60):
+        raise HTTPException(status_code=400, detail="bracket must be 15, 30 or 60 minutes")
+    return market_data.get_tpo_profile_composite(underlying, sessions, bracket_minutes=bracket)
+
+
+@router.get("/volume-profile/composite", response_model=list[VolumeProfileCompositeSessionOut])
+def get_volume_profile_composite(underlying: str = "NIFTY50", sessions: int = 5):
+    """Multi-session composite of the real volume-by-price histogram behind
+    volume-profile.html's composite chart."""
+    return market_data.get_volume_profile_composite(underlying, sessions)
 
 
 @router.get("/cpr-dashboard", response_model=CprDashboardOut)

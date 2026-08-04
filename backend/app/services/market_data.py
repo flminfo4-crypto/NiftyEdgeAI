@@ -309,6 +309,114 @@ def get_virgin_pocs(underlying: str, bracket_minutes: int = 30) -> dict:
     }
 
 
+# -- Composite (multi-session) profiles ----------------------------------------
+#
+# The single-session TPO/volume profile above answers "what did today look
+# like"; the composite view answers "how did the last few sessions build on
+# each other" — POC migration, whether a poor high/low ever got resolved,
+# and (TPO only) a best-effort Inside/Outside-Bar read vs the prior session.
+# Both reuse the same one-multi-day-fetch-then-group-by-day trick as
+# _session_pocs() above, for the same reason: a call per displayed day would
+# be `sessions` separate Dhan requests instead of one.
+
+
+def get_tpo_profile_composite(underlying: str, sessions: int = 5, bracket_minutes: int = 30) -> list[dict]:
+    """The last `sessions` trading days, each with its full TPO letter-grid,
+    IB/VA, poor high/low, a trailing volume average, and a bar-structure
+    label vs. the prior session (see analytics.classify_bar_structure).
+    Fetches one extra day before the earliest displayed session purely as
+    that structure-classification baseline."""
+    tick = 10.0 if underlying.upper().startswith("NIFTY5") else 20.0
+    today = datetime.now(IST).date()
+
+    frm = datetime.combine(today - timedelta(days=(sessions + 1) * 2),
+                           datetime.min.time(), tzinfo=IST).astimezone(timezone.utc)
+    to = datetime.combine(today, datetime.max.time().replace(microsecond=0),
+                          tzinfo=IST).astimezone(timezone.utc)
+    candles = get_candles(underlying, "5m", frm, to)
+
+    by_day: dict[date, list] = {}
+    for c in candles:
+        by_day.setdefault(c.ts.astimezone(IST).date(), []).append(c)
+
+    fetch_days = sorted(d for d, bars in by_day.items() if len(bars) >= 5)[-(sessions + 1):]
+    if not fetch_days:
+        return []
+
+    profiles: dict[date, dict] = {}
+    for d in fetch_days:
+        prof = analytics.tpo_profile(by_day[d], tick=tick, bracket_minutes=bracket_minutes)
+        prof.update(analytics.classify_day_type(prof))
+        profiles[d] = prof
+
+    displayed_days = fetch_days[-sessions:]
+    volumes = {d: sum(c.volume for c in by_day[d]) for d in fetch_days}
+
+    rows = []
+    for d in displayed_days:
+        i = fetch_days.index(d)
+        prev_day = fetch_days[i - 1] if i > 0 else None
+        prof = profiles[d]
+
+        ma_days = fetch_days[: i + 1][-10:]  # trailing avg, bounded by what was actually fetched
+        vol_ma = sum(volumes[x] for x in ma_days) / len(ma_days)
+
+        rows.append({
+            "session_date": str(d),
+            "rows": prof["rows"],
+            "vah": prof["vah"], "val": prof["val"], "poc": prof["poc"],
+            "ib_high": prof["ib_high"], "ib_low": prof["ib_low"], "ib_range": prof["ib_range"],
+            "session_high": prof["day_high"], "session_low": prof["day_low"],
+            "poor_high": prof["day_high"] if prof["poor_high"] else None,
+            "poor_low": prof["day_low"] if prof["poor_low"] else None,
+            "volume": volumes[d],
+            "vol_ma": round(vol_ma, 0),
+            "vol_ma_window": len(ma_days),
+            "structure_label": analytics.classify_bar_structure(profiles[prev_day], prof) if prev_day else None,
+        })
+    return rows
+
+
+def get_volume_profile_composite(underlying: str, sessions: int = 5) -> list[dict]:
+    """The last `sessions` trading days of the real volume-by-price
+    histogram (see get_volume_profile), each with its own rows/VAH/VAL/POC
+    plus a trailing volume average."""
+    today = datetime.now(IST).date()
+
+    frm = datetime.combine(today - timedelta(days=sessions * 2),
+                           datetime.min.time(), tzinfo=IST).astimezone(timezone.utc)
+    to = datetime.combine(today, datetime.max.time().replace(microsecond=0),
+                          tzinfo=IST).astimezone(timezone.utc)
+    candles = get_candles(underlying, "5m", frm, to)
+
+    by_day: dict[date, list] = {}
+    for c in candles:
+        by_day.setdefault(c.ts.astimezone(IST).date(), []).append(c)
+
+    displayed_days = sorted(d for d, bars in by_day.items() if len(bars) >= 5)[-sessions:]
+    if not displayed_days:
+        return []
+
+    volumes = {d: sum(c.volume for c in by_day[d]) for d in displayed_days}
+
+    rows = []
+    for i, d in enumerate(displayed_days):
+        profile = analytics.volume_profile(by_day[d])
+        ma_days = displayed_days[: i + 1][-10:]
+        vol_ma = sum(volumes[x] for x in ma_days) / len(ma_days)
+
+        rows.append({
+            "session_date": str(d),
+            "rows": profile["rows"],
+            "vah": profile["vah"], "val": profile["val"], "poc": profile["poc"],
+            "session_high": max(c.high for c in by_day[d]), "session_low": min(c.low for c in by_day[d]),
+            "total_volume": profile["total_volume"],
+            "vol_ma": round(vol_ma, 0),
+            "vol_ma_window": len(ma_days),
+        })
+    return rows
+
+
 # -- CPR dashboard --------------------------------------------------------------
 
 
