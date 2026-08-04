@@ -120,10 +120,17 @@ def strategy_lab(instrument: str = "NIFTY50_OPTIONS", years: int = 6,
 
 @router.get("/strategies", response_model=list[StrategyOut])
 def list_strategies():
-    """Every strategy the backtest engine can run, sourced directly from
-    ai-engine's registry so this list can never drift out of sync with what
-    /backtests actually accepts."""
-    return [StrategyOut(key=key, label=d.label, description=d.description) for key, d in STRATEGY_REGISTRY.items()]
+    """Every ACTIVE strategy the backtest engine can run — built-in code
+    plus any custom strategies created on the Strategies page — sourced
+    from strategy_config_service so a deactivated strategy stops showing up
+    here even though /backtests will still run it directly by key if asked.
+    See GET /strategies for the full list including inactive ones."""
+    from app.services import strategy_config_service
+
+    return [
+        StrategyOut(key=row["key"], label=row["label"], description=row["description"])
+        for row in strategy_config_service.list_strategies(include_inactive=False)
+    ]
 
 
 @router.post("", response_model=BacktestResultOut, status_code=201)

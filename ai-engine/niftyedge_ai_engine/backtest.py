@@ -423,71 +423,143 @@ def _sig_ma_greeks_trend_buy(entry_spot: float, levels: DailyLevels, ctx: Strate
     return LegShape(kind="SINGLE", option_type=opt, side="BUY", strike_offset=shape_off, direction=1 if up else -1)
 
 
-@register_strategy("ma-greeks-credit-spread", "SELL CREDIT SPREAD (MA Trend + Delta, Defined Risk)")
-def _sig_ma_greeks_credit_spread(entry_spot: float, levels: DailyLevels, ctx: StrategyContext) -> Optional[LegShape]:
-    """Defined-risk income strategy: when the 20-SMA/50-SMA trend agrees with
-    a rangebound CPR-width read (NORMAL or WIDE — NARROW is skipped, the same
-    coiled-breakout filter the other premium sellers above use), sells a
-    vertical credit spread in the direction of the trend — a bull put spread
-    in an uptrend, a bear call spread in a downtrend. The short strike is
-    chosen by Black-Scholes delta (~0.25, a standard defensive credit-spread
-    convention), and a further-OTM long strike is bought as protection. That
-    protective leg is what iron-condor-weekly and the weekly-income-*
-    strategies don't have: max loss here is structurally capped at the
-    strike width minus the credit received (see LegShape/_spread_pnl), not
-    merely soft-stopped against however far the underlying actually moves.
+@dataclass
+class MaDeltaSpreadParams:
+    """Everything the ma_delta_spread template needs, pulled out of
+    _sig_ma_greeks_credit_spread so the Strategies page can configure its
+    own instances of the same logic (see make_ma_delta_spread_signal)
+    instead of the one fixed preset below. Defaults are that preset —
+    0.25 delta / 100pt wing / 30%-of-credit target — arrived at by real
+    iteration against 6 years of Dhan data (see that function's history for
+    the two parameter choices that made things worse, not better)."""
+    fast_ma: int = 20
+    slow_ma: int = 50
+    delta_target: float = 0.25
+    wing_offset: int = 100
+    target_scale: float = 10.0  # run's shared target_pct(default 3%) * this = ~effective % of credit
+    skip_narrow: bool = True
 
-    Two tuning notes from real iteration against 6 years of Dhan data (see
-    the strategy lab sweep), kept here so the next change starts from
-    evidence, not a guess:
-    - A further-OTM ~0.20 delta was tried first for a higher win rate. It
-      backfired: less-OTM strikes collect less credit, so for the *same*
-      wing width the structural max loss (width - credit) is actually
-      *larger*, not smaller — out-of-sample max drawdown got worse
-      (-109% vs -96%), not better. Reverted to 0.25.
-    - target_scale=10 turns the run's shared target_pct (meant for a
-      directional leg's underlying-move target, default 3%) into a ~30%
-      net-credit decay target instead. Left at the shared 3% default, this
-      exited almost every trade within a day or two for a token profit —
-      a 70% win rate but a 0.65 profit factor (mostly tiny wins, one loss
-      that ran much further). 30% is a middle ground between that and the
-      standard "take profit at 50% of max credit" convention, which (at
-      0.25 delta) pushed drawdown worse still by holding losers longer
-      before the stop could fire.
-    Net effect after both changes is still being validated — see the lab
-    sweep's out-of-sample numbers for ma-greeks-credit-spread before
-    trusting this as tuned rather than in-progress. The trend + width
-    filter is deliberately selective — meant to fire a handful of times a
-    month, not every week."""
-    i = ctx.index
-    closes = [c.close for c in ctx.candles[: i + 1]]
-    s20, s50 = _sma(closes, 20), _sma(closes, 50)
-    if s20 is None or s50 is None:
-        return None
-    if _percentile_width_regime(ctx) == "NARROW":
-        return None
-    up = s20 > s50 and entry_spot > s20
-    down = s20 < s50 and entry_spot < s20
-    if not (up or down):
-        return None
 
-    opt: Literal["CE", "PE"] = "PE" if up else "CE"  # sell the side the trend defends
-    sigma = realized_volatility(closes)
-    today = ctx.candles[i].dt
-    expiry = _next_thursday(today)
-    t = max((expiry - today).days / 365.0, 1.0 / 365.0)
-    atm = _round_strike(entry_spot)
-    best_off, best_err = 50, float("inf")
-    for off in range(50, 301, STRIKE_STEP):
-        strike = atm + off if opt == "CE" else atm - off
-        err = abs(abs(black_scholes(entry_spot, strike, t, sigma, opt).delta) - 0.25)
-        if err < best_err:
-            best_err, best_off = err, off
+def make_ma_delta_spread_signal(p: MaDeltaSpreadParams) -> SignalFn:
+    """Factory: builds a SignalFn closure for the MA-crossover-trend +
+    delta-selected defined-risk credit spread — sells a bull put spread in
+    an uptrend, a bear call spread in a downtrend, short strike chosen by
+    Black-Scholes delta, protected by a further-OTM long leg (see
+    LegShape/_spread_pnl for why that protection matters vs. the naked
+    iron-condor-weekly/weekly-income-* strategies above)."""
+    def _signal(entry_spot: float, levels: DailyLevels, ctx: StrategyContext) -> Optional[LegShape]:
+        i = ctx.index
+        closes = [c.close for c in ctx.candles[: i + 1]]
+        s_fast, s_slow = _sma(closes, p.fast_ma), _sma(closes, p.slow_ma)
+        if s_fast is None or s_slow is None:
+            return None
+        if p.skip_narrow and _percentile_width_regime(ctx) == "NARROW":
+            return None
+        up = s_fast > s_slow and entry_spot > s_fast
+        down = s_fast < s_slow and entry_spot < s_fast
+        if not (up or down):
+            return None
 
-    return LegShape(
-        kind="SPREAD", option_type=opt, side="SELL", strike_offset=best_off,
-        direction=1 if up else -1, wing_offset=100, target_scale=10.0,
-    )
+        opt: Literal["CE", "PE"] = "PE" if up else "CE"  # sell the side the trend defends
+        sigma = realized_volatility(closes)
+        today = ctx.candles[i].dt
+        expiry = _next_thursday(today)
+        t = max((expiry - today).days / 365.0, 1.0 / 365.0)
+        atm = _round_strike(entry_spot)
+        best_off, best_err = 50, float("inf")
+        for off in range(50, 301, STRIKE_STEP):
+            strike = atm + off if opt == "CE" else atm - off
+            err = abs(abs(black_scholes(entry_spot, strike, t, sigma, opt).delta) - p.delta_target)
+            if err < best_err:
+                best_err, best_off = err, off
+
+        return LegShape(
+            kind="SPREAD", option_type=opt, side="SELL", strike_offset=best_off,
+            direction=1 if up else -1, wing_offset=p.wing_offset, target_scale=p.target_scale,
+        )
+    return _signal
+
+
+# Templates the Strategies page can instantiate via register_custom_strategy.
+# Keyed by the template id the frontend/backend pass through; each maps to
+# the params dataclass and signal factory that build a runnable strategy
+# from a plain dict of user-supplied values.
+STRATEGY_TEMPLATES: dict[str, tuple[type, Callable[[object], SignalFn]]] = {
+    "ma_delta_spread": (MaDeltaSpreadParams, make_ma_delta_spread_signal),
+}
+
+_CUSTOM_STRATEGY_KEYS: set[str] = set()
+
+
+def register_custom_strategy(key: str, label: str, template: str, params: dict) -> None:
+    """Registers a data-driven strategy instance — built via the Strategies
+    page's form, not hand-written code — into the same STRATEGY_REGISTRY the
+    hand-written strategies in this file use. The backtest engine, the
+    Strategy Lab sweep, and /backtests don't need to know the difference;
+    they just see another registered key. Re-registering an existing key
+    (e.g. after an edit) overwrites it in place."""
+    if template not in STRATEGY_TEMPLATES:
+        raise ValueError(f"unknown strategy template '{template}' (known: {sorted(STRATEGY_TEMPLATES)})")
+    params_cls, factory = STRATEGY_TEMPLATES[template]
+    try:
+        p = params_cls(**params)
+    except TypeError as exc:
+        raise ValueError(f"invalid params for template '{template}': {exc}") from exc
+    fn = factory(p)
+    fn.__doc__ = f"Custom strategy — template '{template}', params {params}."
+    STRATEGY_REGISTRY[key] = _StrategyDef(label=label, signal_fn=fn, description=fn.__doc__)
+    _CUSTOM_STRATEGY_KEYS.add(key)
+
+
+def unregister_custom_strategy(key: str) -> None:
+    """Removes a custom strategy from the runnable registry (used on delete
+    and on deactivate — an inactive custom strategy simply isn't registered,
+    same as if it had never been created)."""
+    STRATEGY_REGISTRY.pop(key, None)
+    _CUSTOM_STRATEGY_KEYS.discard(key)
+
+
+def is_custom_strategy(key: str) -> bool:
+    return key in _CUSTOM_STRATEGY_KEYS
+
+
+_sig_ma_greeks_credit_spread = make_ma_delta_spread_signal(MaDeltaSpreadParams())
+_sig_ma_greeks_credit_spread.__doc__ = """Defined-risk income strategy: when the 20-SMA/50-SMA trend agrees with
+a rangebound CPR-width read (NORMAL or WIDE — NARROW is skipped, the same
+coiled-breakout filter the other premium sellers above use), sells a
+vertical credit spread in the direction of the trend — a bull put spread
+in an uptrend, a bear call spread in a downtrend. The short strike is
+chosen by Black-Scholes delta (~0.25, a standard defensive credit-spread
+convention), and a further-OTM long strike is bought as protection. That
+protective leg is what iron-condor-weekly and the weekly-income-*
+strategies don't have: max loss here is structurally capped at the
+strike width minus the credit received (see LegShape/_spread_pnl), not
+merely soft-stopped against however far the underlying actually moves.
+
+This is the fixed preset (see MaDeltaSpreadParams' defaults) behind the
+parameterized ma_delta_spread template the Strategies page offers — two
+tuning notes from real iteration against 6 years of Dhan data, kept here
+so the next change starts from evidence, not a guess:
+- A further-OTM ~0.20 delta was tried first for a higher win rate. It
+  backfired: less-OTM strikes collect less credit, so for the *same*
+  wing width the structural max loss (width - credit) is actually
+  *larger*, not smaller — out-of-sample max drawdown got worse
+  (-109% vs -96%), not better. Reverted to 0.25.
+- target_scale=10 turns the run's shared target_pct (meant for a
+  directional leg's underlying-move target, default 3%) into a ~30%
+  net-credit decay target instead. Left at the shared 3% default, this
+  exited almost every trade within a day or two for a token profit —
+  a 70% win rate but a 0.65 profit factor (mostly tiny wins, one loss
+  that ran much further). 30% is a middle ground between that and the
+  standard "take profit at 50% of max credit" convention, which (at
+  0.25 delta) pushed drawdown worse still by holding losers longer
+  before the stop could fire.
+Net effect after both changes is still being validated — see the lab
+sweep's out-of-sample numbers for ma-greeks-credit-spread before
+trusting this as tuned rather than in-progress. The trend + width
+filter is deliberately selective — meant to fire a handful of times a
+month, not every week."""
+register_strategy("ma-greeks-credit-spread", "SELL CREDIT SPREAD (MA Trend + Delta, Defined Risk)")(_sig_ma_greeks_credit_spread)
 
 
 @register_strategy("expiry-theta-crush-seller", "SELL OTM (Expiry-Day Theta Crush)")

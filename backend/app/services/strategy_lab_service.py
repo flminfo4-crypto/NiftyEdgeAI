@@ -133,8 +133,12 @@ def run_sweep(
             target_pct=target_pct, include_slippage_and_costs=True, is_futures=is_futures,
         )
 
+    from app.services import strategy_config_service
+
     rows = []
     for key, sdef in STRATEGY_REGISTRY.items():
+        if not strategy_config_service.is_active(key):
+            continue
         try:
             r_in = _run(in_sample, key)
             r_out = _run(out_sample, key)

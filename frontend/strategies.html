@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Positions · NiftyEdge Pro Trading Terminal</title>
+<title>Backtest Strategies · NiftyEdge Pro Trading Terminal</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="css/style.css">
 <script>(function(){try{var t=localStorage.getItem("niftyedge-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
@@ -26,10 +26,10 @@
     <a class="nav-item" href="open-interest.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Open Interest</a>
     <a class="nav-item" href="greeks.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>Greeks</a>
     <a class="nav-item" href="strategy-signals.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>Strategy Signals</a>
-    <a class="nav-item active" href="positions.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>Positions</a>
+    <a class="nav-item" href="positions.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>Positions</a>
     <a class="nav-item" href="orders.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Orders</a>
     <a class="nav-item" href="backtester.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Backtester</a>
-    <a class="nav-item" href="strategies.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M9 13l2 2 4-4"/></svg>Backtest Strategies</a>
+    <a class="nav-item active" href="strategies.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M9 13l2 2 4-4"/></svg>Backtest Strategies</a>
     <a class="nav-item" href="data-analysis.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>Data Analysis</a>
     <a class="nav-item" href="reports.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Reports</a>
     <div class="nav-divider"></div>
@@ -59,94 +59,49 @@
   <main class="page">
     <div class="page-head">
       <div>
-        <div class="page-title">Positions</div>
-        <div class="page-sub">Open &amp; closed positions &middot; Account XXXX1234</div>
+        <div class="page-title">Backtest Strategies</div>
+        <div class="page-sub">Manage the strategies available to the Backtester &amp; Strategy Lab &middot; built-in (code) and custom (configured here)</div>
       </div>
       <div class="page-actions">
-        <button class="btn btn-danger">Square Off All</button>
+        <button class="btn btn-primary" data-live="strat-add-btn">+ Add Strategy</button>
       </div>
     </div>
 
-    <div class="grid g-5 mb-8">
-      <div class="card"><div class="stat-block"><div class="k">Day's P&amp;L</div><div class="v text-green" data-live="pos-day-pnl">+&#8377;18,450</div><div class="d text-green" data-live="pos-day-pnl-pct">+0.78%</div></div></div>
-      <div class="card"><div class="stat-block"><div class="k">Open Positions P&amp;L</div><div class="v text-green" data-live="positions-total-pnl">+&#8377;622.50</div><div class="d text-green" data-live="pos-open-pnl-pct">+1.48%</div></div></div>
-      <div class="card"><div class="stat-block"><div class="k">Margin Used</div><div class="v" data-live="margin-used">&#8377;3,24,560</div></div></div>
-      <div class="card"><div class="stat-block"><div class="k">Available Margin</div><div class="v" data-live="margin-available">&#8377;6,75,440</div></div></div>
-      <div class="card"><div class="stat-block"><div class="k">Exposure</div><div class="v" data-live="risk-exposure-pct">32%</div><div class="meter mt-8"><span data-live="risk-exposure-meter" style="width:32%; background:var(--amber);"></span></div></div></div>
+    <div class="card" data-live="strat-form-wrap" style="display:none;">
+      <div class="card-header">
+        <span class="card-title accent" data-live="strat-form-title">Add Strategy</span>
+      </div>
+      <div class="form-group"><label>Name</label><input class="form-control" type="text" id="strat-name" placeholder="e.g. My Fast MA Spread" /></div>
+      <div class="form-group"><label>Template</label><select class="form-control" id="strat-template"></select>
+        <div style="margin-top:6px; font-size:10.5px; color:var(--text-muted); line-height:1.5;" data-live="strat-template-desc"></div>
+      </div>
+      <div id="strat-params-wrap" class="grid g-3"></div>
+      <div class="flex items-center justify-between mt-12">
+        <span style="font-size:12px; color:var(--text-secondary);">Active</span>
+        <div class="switch on" id="strat-form-active"></div>
+      </div>
+      <div data-live="strat-form-error" style="display:none; margin-top:8px; font-size:11.5px; color:var(--red);"></div>
+      <div class="flex gap-8 mt-12">
+        <button class="btn btn-primary" data-live="strat-save-btn">Save</button>
+        <button class="btn" data-live="strat-cancel-btn">Cancel</button>
+      </div>
     </div>
 
     <div class="card">
       <div class="card-header">
-        <span class="card-title accent" data-live="open-positions-title">Open Positions (3)</span>
-        <div class="tabs">
-          <span class="tab active">Options</span>
-          <span class="tab">Futures</span>
-          <span class="tab">Equity</span>
-        </div>
+        <span class="card-title accent">All Strategies</span>
+        <span style="font-size:11px; color:var(--text-muted);" data-live="strat-count-sub">&mdash;</span>
       </div>
       <div class="table-wrap">
         <table class="table">
-          <thead><tr><th>Instrument</th><th>Type</th><th>Qty</th><th>Avg Price</th><th>LTP</th><th>Delta</th><th>Theta</th><th>P&amp;L</th><th>P&amp;L %</th><th></th></tr></thead>
-          <tbody data-live="open-positions-tbody">
-            <tr>
-              <td>NIFTY 24 JUL 23600 CE</td>
-              <td><span class="badge badge-red">SHORT</span></td>
-              <td class="text-red">-75</td>
-              <td>114.25</td>
-              <td>108.40</td>
-              <td class="text-red">-0.35</td>
-              <td class="text-green">+13.90</td>
-              <td class="text-green">+438.75</td>
-              <td class="text-green">+5.12%</td>
-              <td><button class="btn btn-sm">Exit</button></td>
-            </tr>
-            <tr>
-              <td>NIFTY 24 JUL 23500 CE</td>
-              <td><span class="badge badge-red">SHORT</span></td>
-              <td class="text-red">-75</td>
-              <td>67.40</td>
-              <td>69.10</td>
-              <td class="text-red">-0.50</td>
-              <td class="text-green">+16.97</td>
-              <td class="text-red">-127.50</td>
-              <td class="text-red">-3.77%</td>
-              <td><button class="btn btn-sm">Exit</button></td>
-            </tr>
-            <tr>
-              <td>NIFTY 24 JUL 23400 PE</td>
-              <td><span class="badge badge-green">LONG</span></td>
-              <td class="text-green">+75</td>
-              <td>58.30</td>
-              <td>54.15</td>
-              <td class="text-red">-0.36</td>
-              <td class="text-red">-21.64</td>
-              <td class="text-green">+311.25</td>
-              <td class="text-green">+7.31%</td>
-              <td><button class="btn btn-sm">Exit</button></td>
-            </tr>
+          <thead><tr><th>Name</th><th>Type</th><th>Params</th><th>Active</th><th>Updated</th><th></th></tr></thead>
+          <tbody data-live="strat-tbody">
+            <tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Loading&hellip;</td></tr>
           </tbody>
-          <tfoot>
-            <tr style="border-top:2px solid var(--border);">
-              <td colspan="7" style="text-align:right; font-weight:700; color:var(--text-secondary);">Total</td>
-              <td class="text-green bold" data-live="positions-total-pnl">+&#8377;622.50</td>
-              <td class="text-green bold" data-live="pos-open-pnl-pct">+1.48%</td>
-              <td></td>
-            </tr>
-          </tfoot>
         </table>
       </div>
-    </div>
-
-    <div class="card mt-12">
-      <div class="card-header"><span class="card-title accent">Closed Positions (Today)</span></div>
-      <div class="table-wrap">
-        <table class="table">
-          <thead><tr><th>Instrument</th><th>Type</th><th>Qty</th><th>Entry</th><th>Exit</th><th>Realized P&amp;L</th><th>Time</th></tr></thead>
-          <tbody data-live="closed-positions-tbody">
-            <tr><td>NIFTY 24 JUL 23550 CE</td><td><span class="badge badge-red">SHORT</span></td><td>-75</td><td>82.60</td><td>65.40</td><td class="text-green">+1,290.00</td><td>09:42 AM</td></tr>
-            <tr><td>NIFTY 24 JUL 23300 PE</td><td><span class="badge badge-green">LONG</span></td><td>+50</td><td>34.15</td><td>29.80</td><td class="text-red">-217.50</td><td>09:05 AM</td></tr>
-          </tbody>
-        </table>
+      <div class="mt-8" style="font-size:10.5px; color:var(--text-muted); line-height:1.5;">
+        Built-in strategies are hand-written code (in ai-engine/backtest.py) — this page can show/hide them and override their display name, but not edit their logic or delete them. Custom strategies are configured entirely from a template's parameters here, and run through the exact same backtest engine, Strategy Lab sweep, and Backtester page as the built-ins — deactivating one removes it from both immediately.
       </div>
     </div>
   </main>
@@ -166,6 +121,6 @@
 </div>
 <script src="js/app.js"></script>
 <script src="js/ne-common.js"></script>
-<script src="js/positions-page.js"></script>
+<script src="js/strategies-page.js"></script>
 </body>
 </html>

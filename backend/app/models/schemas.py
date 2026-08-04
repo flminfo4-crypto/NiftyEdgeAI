@@ -315,6 +315,49 @@ class StrategyOut(CamelModel):
     description: str = ""
 
 
+# -- user-managed strategy configs (the Strategies page) -------------------------
+
+class StrategyTemplateParamOut(CamelModel):
+    name: str
+    type: Literal["int", "float", "bool"]
+    default: float | int | bool
+    label: str
+    min: Optional[float] = None
+    max: Optional[float] = None
+
+
+class StrategyTemplateOut(CamelModel):
+    template: str
+    label: str
+    description: str
+    params: list[StrategyTemplateParamOut]
+
+
+class StrategyConfigOut(CamelModel):
+    key: str
+    label: str
+    description: str = ""
+    is_builtin: bool
+    active: bool
+    template: Optional[str] = None
+    params: Optional[dict] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+
+class StrategyCreateIn(CamelModel):
+    label: str
+    template: str
+    params: dict = {}
+    active: bool = True
+
+
+class StrategyUpdateIn(CamelModel):
+    label: Optional[str] = None
+    params: Optional[dict] = None
+    active: Optional[bool] = None
+
+
 class BacktestRequestIn(CamelModel):
     strategy: str = "ai-bias-ce-writing-below-vah"
     instrument: str = "NIFTY50_OPTIONS"
