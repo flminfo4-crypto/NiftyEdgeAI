@@ -7,6 +7,17 @@
   var NE = window.NE;
   var UNDERLYING = "NIFTY50";
   var DISPLAY_WINDOW = 15; // buckets each side of POC
+  var lastLtp = null;
+
+  function loadComposite(ltp) {
+    var canvas = document.querySelector('[data-live="vp-composite-canvas"]');
+    if (!canvas) return;
+    NE.fetchJSON("/market/volume-profile/composite?underlying=" + UNDERLYING + "&sessions=5")
+      .then(function (sessions) {
+        NE.renderCompositeChart(canvas, sessions, { mode: "volume", ltp: ltp, tick: 6.0 });
+      })
+      .catch(function () {});
+  }
 
   function load() {
     Promise.all([
@@ -72,6 +83,7 @@
       }).join("");
 
       NE.setText("vp-page-sub", "Volume-by-price distribution · NIFTY 50 · Session");
+      lastLtp = ltp;
       NE.markStatus(true);
       NE.stampRefresh();
     })
@@ -80,4 +92,6 @@
 
   load();
   setInterval(load, 2000);
+  loadComposite(null);
+  setInterval(function () { loadComposite(lastLtp); }, 30000);
 })();

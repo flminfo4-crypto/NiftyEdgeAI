@@ -124,6 +124,16 @@
     }).join("");
   }
 
+  function loadComposite(ltp) {
+    var canvas = document.querySelector('[data-live="mp-composite-canvas"]');
+    if (!canvas) return;
+    NE.fetchJSON("/market/profile/composite?underlying=" + UNDERLYING + "&sessions=5")
+      .then(function (sessions) {
+        NE.renderCompositeChart(canvas, sessions, { mode: "tpo", ltp: ltp, tick: TICK });
+      })
+      .catch(function () {});
+  }
+
   function load() {
     Promise.all([
       NE.fetchJSON("/market/quote?symbols=NIFTY50,INDIAVIX"),
@@ -190,12 +200,21 @@
 
         NE.setHTML("mp-history-tbody", renderHistory(history));
 
+        // The composite chart re-derives 5+ sessions of history server-side —
+        // too heavy to refetch every 2s alongside the rest of this page, so
+        // it gets its own slower interval below. Still push the freshest LTP
+        // into it on every tick so the live-price line stays current.
+        lastLtp = ltp;
+
         NE.markStatus(true);
         NE.stampRefresh();
       })
       .catch(function () { NE.markStatus(false); });
   }
 
+  var lastLtp = null;
   load();
   setInterval(load, 2000);
+  loadComposite(null);
+  setInterval(function () { loadComposite(lastLtp); }, 30000);
 })();

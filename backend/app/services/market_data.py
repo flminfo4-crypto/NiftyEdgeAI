@@ -187,6 +187,112 @@ def get_market_profile_history(underlying: str, days: int = 5) -> list[dict]:
     return rows
 
 
+def _last_n_trading_days(end_date: date, n: int) -> list[date]:
+    days = [end_date]
+    d = end_date
+    while len(days) < n:
+        d = _prev_trading_day(d)
+        days.append(d)
+    days.reverse()
+    return days
+
+
+def get_market_profile_composite(underlying: str, sessions: int = 5) -> list[dict]:
+    """Multi-session composite: the last `sessions` trading days (today's
+    in-progress session included when it has candles), each with its full
+    TPO letter-grid, IB/VA, poor high/low, a trailing volume average, and a
+    best-effort bar-structure label vs. the prior session — the data behind
+    market-profile.html's composite chart.
+
+    Fetches one extra day before the earliest displayed session purely as a
+    structure-classification baseline (so even the first displayed column
+    gets a "vs yesterday" label); that extra day isn't itself returned.
+    """
+    today = datetime.now(IST).date()
+    anchor = today if _session_candles(underlying, today) else _prev_trading_day(today)
+    fetch_days = _last_n_trading_days(anchor, sessions + 1)
+
+    details: dict[date, dict] = {}
+    volumes: dict[date, float] = {}
+    for session_date in fetch_days:
+        candles = _session_candles(underlying, session_date)
+        if not candles:
+            continue
+        volumes[session_date] = sum(c.volume for c in candles)
+        session_start, _ = _session_bounds(session_date)
+        details[session_date] = analytics.market_profile_detail(candles, session_start)
+
+    available_days = [d for d in fetch_days if d in details]
+    displayed_days = available_days[-sessions:]
+
+    rows = []
+    for session_date in displayed_days:
+        i = available_days.index(session_date)
+        prev_date = available_days[i - 1] if i > 0 else None
+        detail = details[session_date]
+
+        ma_days = available_days[: i + 1][-10:]  # trailing avg, bounded by what was actually fetched
+        vol_ma = sum(volumes[d] for d in ma_days) / len(ma_days)
+
+        rows.append({
+            "session_date": session_date.isoformat(),
+            "rows": detail["rows"],
+            "vah": detail["vah"], "val": detail["val"], "poc": detail["poc"],
+            "ib_high": detail["ib_high"], "ib_low": detail["ib_low"], "ib_range": detail["ib_range"],
+            "session_high": detail["session_high"], "session_low": detail["session_low"],
+            "poor_high": detail["poor_high"], "poor_low": detail["poor_low"],
+            "excess_high": detail["excess_high"], "excess_low": detail["excess_low"],
+            "volume": volumes[session_date],
+            "vol_ma": round(vol_ma, 0),
+            "vol_ma_window": len(ma_days),
+            "structure_label": analytics.classify_bar_structure(details[prev_date], detail) if prev_date else None,
+        })
+    return rows
+
+
+def get_volume_profile_composite(underlying: str, sessions: int = 5) -> list[dict]:
+    """Multi-session composite of the real volume-by-price histogram (see
+    get_volume_profile) — the last `sessions` trading days, each with its own
+    rows/VAH/VAL/POC plus a trailing volume average."""
+    today = datetime.now(IST).date()
+    anchor = today if _session_candles(underlying, today) else _prev_trading_day(today)
+    fetch_days = _last_n_trading_days(anchor, sessions)
+
+    profiles: dict[date, dict] = {}
+    volumes: dict[date, float] = {}
+    highs: dict[date, float] = {}
+    lows: dict[date, float] = {}
+    for session_date in fetch_days:
+        candles = _session_candles(underlying, session_date)
+        if not candles:
+            continue
+        volumes[session_date] = sum(c.volume for c in candles)
+        highs[session_date] = max(c.high for c in candles)
+        lows[session_date] = min(c.low for c in candles)
+        profiles[session_date] = analytics.volume_profile(candles)
+
+    available_days = [d for d in fetch_days if d in profiles]
+    displayed_days = available_days[-sessions:]
+
+    rows = []
+    for session_date in displayed_days:
+        i = available_days.index(session_date)
+        ma_days = available_days[: i + 1][-10:]
+        vol_ma = sum(volumes[d] for d in ma_days) / len(ma_days)
+        profile = profiles[session_date]
+
+        rows.append({
+            "session_date": session_date.isoformat(),
+            "rows": profile["rows"],
+            "vah": profile["vah"], "val": profile["val"], "poc": profile["poc"],
+            "session_high": highs[session_date], "session_low": lows[session_date],
+            "total_volume": profile["total_volume"],
+            "vol_ma": round(vol_ma, 0),
+            "vol_ma_window": len(ma_days),
+        })
+    return rows
+
+
 # -- CPR dashboard --------------------------------------------------------------
 
 

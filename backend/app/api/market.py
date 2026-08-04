@@ -12,6 +12,7 @@ from app.models.schemas import (
     CvdOut,
     IvRankOut,
     MarketBreadthOut,
+    MarketProfileCompositeSessionOut,
     MarketProfileHistoryRowOut,
     MarketProfileOut,
     OiBuildupRowOut,
@@ -19,6 +20,7 @@ from app.models.schemas import (
     OptionChainOut,
     QuoteOut,
     TopNarrowStocksOut,
+    VolumeProfileCompositeSessionOut,
     VolumeProfileOut,
 )
 from app.services import market_data, pivot_service
@@ -164,6 +166,21 @@ def get_profile_history(underlying: str = "NIFTY50", days: int = 5):
     (default 5 = one trading week) so market-profile.html can show more than
     a single-session snapshot."""
     return market_data.get_market_profile_history(underlying, days)
+
+
+@router.get("/profile/composite", response_model=list[MarketProfileCompositeSessionOut])
+def get_profile_composite(underlying: str = "NIFTY50", sessions: int = 5):
+    """Multi-session TPO composite (full letter-grid per session, IB/VA,
+    poor high/low, volume, and a best-effort bar-structure label) behind
+    market-profile.html's composite chart."""
+    return market_data.get_market_profile_composite(underlying, sessions)
+
+
+@router.get("/volume-profile/composite", response_model=list[VolumeProfileCompositeSessionOut])
+def get_volume_profile_composite(underlying: str = "NIFTY50", sessions: int = 5):
+    """Multi-session composite of the real volume-by-price histogram behind
+    volume-profile.html's composite chart."""
+    return market_data.get_volume_profile_composite(underlying, sessions)
 
 
 @router.get("/cpr-dashboard", response_model=CprDashboardOut)

@@ -72,7 +72,22 @@
       </div>
     </div>
 
-    <div class="grid" style="grid-template-columns: 1fr 300px;">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title accent">Composite Profile &middot; Last 5 Sessions</span>
+        <div class="flex gap-14" style="font-size:11px;">
+          <span><span class="legend-dot" style="background:var(--amber);"></span>Value Area</span>
+          <span><span class="legend-dot" style="background:var(--purple);"></span>Initial Balance</span>
+          <span><span class="legend-dot" style="background:var(--blue);"></span>POC / POC Trend</span>
+          <span><span class="legend-dot" style="background:var(--green);"></span>LTP</span>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <canvas data-live="mp-composite-canvas" style="width:100%; display:block;"></canvas>
+      </div>
+    </div>
+
+    <div class="grid mt-12" style="grid-template-columns: 1fr 300px;">
       <div class="card">
         <div class="card-header">
           <span class="card-title accent">TPO Profile</span>
@@ -154,6 +169,7 @@
 </div>
 <script src="js/app.js"></script>
 <script src="js/ne-common.js"></script>
+<script src="js/composite-profile-chart.js"></script>
 <script src="js/market-profile-page.js"></script>
 </body>
 </html>

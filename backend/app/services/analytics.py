@@ -154,6 +154,14 @@ def market_profile_detail(candles: list[Candle], session_start, tick: float = 5.
     ext_up = max(0.0, day_high - ib_high)
     ext_down = max(0.0, ib_low - day_low)
 
+    # Per-period high/low, in period order — used by classify_bar_structure()
+    # to compare this session against the previous one (which period broke
+    # the prior day's high/low, whether it broke one side or both, etc).
+    period_ranges = [
+        {"letter": _period_letter(idx), "high": period_high[idx], "low": period_low[idx]}
+        for idx in sorted(period_high)
+    ]
+
     return {
         "rows": rows,
         "vah": vah, "val": val, "poc": poc,
@@ -170,7 +178,62 @@ def market_profile_detail(candles: list[Candle], session_start, tick: float = 5.
         "poor_low": bottom_price if tpo_count[bottom_price] >= 2 else None,
         "excess_high": top_price if tpo_count[top_price] == 1 else None,
         "excess_low": bottom_price if tpo_count[bottom_price] == 1 else None,
+        "period_ranges": period_ranges,
+        "open_price": sorted_candles[0].open,
+        "close_price": sorted_candles[-1].close,
     }
+
+
+def classify_bar_structure(prev: dict, today: dict) -> str:
+    """Best-effort reconstruction of the Inside/Outside-Bar + IB-break
+    annotations professional Market Profile tools print above each session
+    (e.g. "OneTime framing - Down (3) - Broken (in A)"). There's no public
+    spec for this notation — this is a disclosed heuristic, not a faithful
+    reproduction of any specific vendor's exact algorithm:
+      - Inside Bar: today's full range sits inside yesterday's range.
+      - Outside Bar: today's range engulfs yesterday's range.
+      - Otherwise "OneTime framing - Up/Down (N)": a one-directional range
+        extension, N = number of TPO periods that printed beyond today's own
+        Initial Balance on the extending side.
+      - "Broken (in X)" / "Broken BothSides (in X)": X = the first period
+        letter whose own high/low took out yesterday's high, yesterday's
+        low, or both.
+    """
+    prev_high, prev_low = prev["session_high"], prev["session_low"]
+    day_high, day_low = today["session_high"], today["session_low"]
+
+    if day_high <= prev_high and day_low >= prev_low:
+        bar_type = "Inside Bar (" + ("U" if today["close_price"] >= today["open_price"] else "D") + ")"
+    elif day_high > prev_high and day_low < prev_low:
+        bar_type = "Outside Bar"
+    else:
+        ext_up, ext_down = today["range_extension_up"], today["range_extension_down"]
+        if ext_up >= ext_down:
+            n = sum(1 for p in today["period_ranges"] if p["high"] > today["ib_high"])
+            bar_type = "OneTime framing - Up (%d)" % max(n, 1)
+        else:
+            n = sum(1 for p in today["period_ranges"] if p["low"] < today["ib_low"])
+            bar_type = "OneTime framing - Down (%d)" % max(n, 1)
+
+    broken_high = broken_low = None
+    for p in today["period_ranges"]:
+        if broken_high is None and p["high"] > prev_high:
+            broken_high = p["letter"]
+        if broken_low is None and p["low"] < prev_low:
+            broken_low = p["letter"]
+        if broken_high is not None and broken_low is not None:
+            break
+
+    if broken_high and broken_low:
+        broken = "Broken BothSides (in %s)" % (broken_high if broken_high == broken_low else min(broken_high, broken_low))
+    elif broken_high:
+        broken = "Broken (in %s)" % broken_high
+    elif broken_low:
+        broken = "Broken (in %s)" % broken_low
+    else:
+        broken = None
+
+    return bar_type + (" - " + broken if broken else "")
 
 
 def volume_profile(candles: list[Candle], tick: float = 6.0) -> dict:

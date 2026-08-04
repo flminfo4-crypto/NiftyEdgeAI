@@ -131,6 +131,40 @@ class MarketProfileHistoryRowOut(CamelModel):
     range_pts: float
 
 
+class MarketProfileCompositeSessionOut(CamelModel):
+    session_date: str
+    rows: list[MarketProfileRowOut]
+    vah: float
+    val: float
+    poc: float
+    ib_high: float
+    ib_low: float
+    ib_range: float
+    session_high: float
+    session_low: float
+    poor_high: Optional[float] = None
+    poor_low: Optional[float] = None
+    excess_high: Optional[float] = None
+    excess_low: Optional[float] = None
+    volume: float
+    vol_ma: float
+    vol_ma_window: int
+    structure_label: Optional[str] = None
+
+
+class VolumeProfileCompositeSessionOut(CamelModel):
+    session_date: str
+    rows: list[VolumeProfileRowOut]
+    vah: float
+    val: float
+    poc: float
+    session_high: float
+    session_low: float
+    total_volume: float
+    vol_ma: float
+    vol_ma_window: int
+
+
 class CprDashboardOut(CamelModel):
     ltp: float
     change: float
