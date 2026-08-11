@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Greeks + OI Lab · NiftyEdge Pro Trading Terminal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="css/style.css">
+<script>(function(){try{var t=localStorage.getItem("niftyedge-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+</head>
+<body>
+<div class="app">
+<div class="app-body">
+
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#eafff2" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+    <div class="brand-text"><div class="name">NiftyEdge</div><div class="tagline">Pro Trading Terminal</div></div>
+  </div>
+  <nav class="nav">
+    <a class="nav-item" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+<a class="nav-item" href="cpr-dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 14l2 2 4-4"/></svg>CPR Dashboard</a>
+    <a class="nav-item" href="market-profile.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Market Profile</a>
+    <a class="nav-item" href="volume-profile.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg>Volume Profile</a>
+    <a class="nav-item" href="footprint.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>Footprint (Order Flow)</a>
+    <a class="nav-item" href="options-chain.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Options Chain</a>
+    <a class="nav-item" href="open-interest.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Open Interest</a>
+    <a class="nav-item" href="greeks.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>Greeks</a>
+    <a class="nav-item" href="greeks-chart.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="21 6 21 11"/><polyline points="21 6 16 6"/></svg>Greeks Chart</a>
+    <a class="nav-item active" href="greeks-oi.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>Greeks + OI Lab</a>
+    <a class="nav-item" href="strategy-signals.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>Strategy Signals</a>
+    <a class="nav-item" href="positions.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>Positions</a>
+    <a class="nav-item" href="orders.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Orders</a>
+    <a class="nav-item" href="backtester.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Backtester</a>
+    <a class="nav-item" href="strategies.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M9 13l2 2 4-4"/></svg>Backtest Strategies</a>
+    <a class="nav-item" href="data-analysis.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>Data Analysis</a>
+    <a class="nav-item" href="reports.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Reports</a>
+    <div class="nav-divider"></div>
+    <a class="nav-item" href="settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</a>
+    <a class="nav-item" href="help.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Help</a>
+  </nav>
+  <div class="sidebar-foot">
+    <div class="api-status" data-live="api-status"><span class="dot"></span> API Connected</div>
+    <div class="acct-row"><span>Client ID</span><b>XXXXXX</b></div>
+    <div class="acct-row"><span>Account</span><b>XXXX1234</b></div>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <div class="ticker-group">
+      <div class="ticker-item price"><div class="label">Nifty 50</div><div class="value" data-live="nifty-ltp">23,532.45</div><div class="sub up" data-live="nifty-change">+182.60 (0.78%) &#9650;</div></div>
+      <div class="ticker-item"><div class="label">India VIX</div><div class="value down" data-live="vix-ltp">13.85</div><div class="sub down" data-live="vix-change">-0.45 (-3.15%)</div></div>
+    </div>
+    <div class="topbar-right">
+      <div class="market-open" data-live="market-open-badge"><span class="dot"></span> Market Open</div>
+      <div class="clock" data-clock>10:15:30 AM</div>
+<div class="theme-switch" role="group" aria-label="Theme"><button class="theme-btn" data-set-theme="light" title="Light theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button><button class="theme-btn" data-set-theme="dark" title="Dark theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button><button class="theme-btn" data-set-theme="terminal" title="Terminal theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></button></div>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="page-head">
+      <div>
+        <div class="page-title">Greeks + OI Lab</div>
+        <div class="page-sub">ATM &plusmn;2 strike ladder &middot; every leg's Greeks read against its real open interest</div>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-primary" data-live="gl-load-btn">Load Ladder</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-title mb-8">Filters</div>
+      <div class="form-row" style="display:flex; flex-wrap:wrap; gap:12px; align-items:end;">
+        <div class="form-group" style="flex:1 1 120px; min-width:120px;"><label>Index</label><select class="form-control" id="gl-underlying">
+          <option value="NIFTY50">NIFTY 50</option>
+          <option value="NIFTYBANK">BANK NIFTY</option>
+          <option value="SENSEX">SENSEX</option>
+        </select></div>
+        <div class="form-group" style="flex:1 1 160px; min-width:160px;"><label>Date Range</label><select class="form-control" id="gl-preset">
+          <option value="today" selected>Latest session</option>
+          <option value="3">Last 3 sessions</option>
+          <option value="5">Last 5 sessions</option>
+          <option value="all">All (max for interval)</option>
+          <option value="expiry">Expiry sessions only</option>
+          <option value="custom">Custom range&hellip;</option>
+        </select></div>
+        <div class="form-group" style="flex:1 1 130px; min-width:130px;"><label>From</label><input class="form-control" type="date" id="gl-from" /></div>
+        <div class="form-group" style="flex:1 1 130px; min-width:130px;"><label>To</label><input class="form-control" type="date" id="gl-to" /></div>
+        <div class="form-group" style="flex:1 1 130px; min-width:130px;"><label>Expiry</label><select class="form-control" id="gl-expiry">
+          <option value="weekly">Weekly Expiry</option>
+          <option value="monthly">Monthly Expiry</option>
+        </select></div>
+        <div class="form-group" style="flex:1 1 110px; min-width:110px;"><label>Interval</label><select class="form-control" id="gl-interval">
+          <option value="1m">1 minute</option>
+          <option value="5m">5 minutes</option>
+          <option value="15m" selected>15 minutes</option>
+          <option value="30m">30 minutes</option>
+        </select></div>
+        <div class="form-group" style="flex:1 1 110px; min-width:110px;"><label>Ladder Depth</label><select class="form-control" id="gl-depth">
+          <option value="1">ATM &plusmn;1</option>
+          <option value="2" selected>ATM &plusmn;2</option>
+          <option value="3">ATM &plusmn;3</option>
+        </select></div>
+        <div class="form-group" style="flex:0 0 auto;"><button class="btn btn-primary" style="justify-content:center; white-space:nowrap;" data-live="gl-load-btn">Load Ladder</button></div>
+      </div>
+      <div data-live="gl-error" style="display:none; margin-top:8px; font-size:11.5px; color:var(--red);"></div>
+      <div data-live="gl-meta" style="margin-top:8px; font-size:11px; color:var(--text-muted);"></div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-header" style="flex-wrap:wrap; gap:10px;">
+        <span class="card-title accent">Compare Legs</span>
+        <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; font-size:11px;">
+          <label style="color:var(--text-muted);">Metric</label>
+          <select class="form-control" id="gl-metric" style="width:auto;">
+            <option value="gamma" selected>Gamma</option>
+            <option value="gex">Gamma &times; OI (GEX)</option>
+            <option value="delta">Delta</option>
+            <option value="theta">Theta</option>
+            <option value="vega">Vega</option>
+            <option value="iv">IV %</option>
+            <option value="ltp">Premium (LTP)</option>
+          </select>
+          <label style="color:var(--text-muted);">OI pane</label>
+          <select class="form-control" id="gl-oi-mode" style="width:auto;">
+            <option value="change" selected>OI change / bucket</option>
+            <option value="absolute">Absolute OI</option>
+            <option value="off">Hidden</option>
+          </select>
+          <label style="color:var(--text-muted); display:inline-flex; align-items:center; gap:5px;">
+            <input type="checkbox" id="gl-show-price" checked /> Spot candles
+          </label>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="table w-full" id="gl-leg-table"></table>
+      </div>
+      <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+        <button class="btn btn-sm" data-legs-preset="atm">ATM only</button>
+        <button class="btn btn-sm" data-legs-preset="ce">All CE</button>
+        <button class="btn btn-sm" data-legs-preset="pe">All PE</button>
+        <button class="btn btn-sm" data-legs-preset="all">Everything</button>
+        <button class="btn btn-sm" data-legs-preset="none">Clear</button>
+      </div>
+      <div style="margin-top:9px; font-size:10.5px; color:var(--text-muted); line-height:1.5;">
+        Moneyness is resolved per side, so a given row is <b>two different strikes</b>: a call is in-the-money
+        <i>below</i> spot, a put <i>above</i> it. CE draws solid, PE dashed, and each moneyness rung keeps its own
+        colour, so CE&nbsp;ATM and PE&nbsp;ATM are the same hue in different line styles.
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-header" style="flex-wrap:wrap; gap:8px;">
+        <span class="card-title accent" data-live="gl-chart-title">Leg Comparison &middot; Gamma</span>
+        <span style="color:var(--text-muted); font-size:11px;" data-live="gl-chart-sub">Pick filters and click "Load Ladder"</span>
+      </div>
+      <div class="flex items-center gap-14 mt-4" style="font-size:11px; flex-wrap:wrap;" data-live="gl-legend"></div>
+      <div class="mt-8" style="overflow-x:auto;">
+        <canvas data-live="gl-ladder-canvas" style="display:block;"></canvas>
+      </div>
+      <div class="mt-8" style="font-size:10.5px; color:var(--text-muted); line-height:1.5;">
+        Because only one metric plots at a time, every selected leg shares its units &mdash; so the right axis carries
+        <b>real values, not a normalised 0&ndash;100%</b>. <b>Greeks are derived, not fetched</b>: Dhan publishes Greeks
+        only in a live snapshot, so each bucket's implied volatility is solved from that bucket's own real traded
+        premium and Delta/Gamma/Theta/Vega computed from it. Gaps mean the contract didn't print in that bucket &mdash;
+        they are left empty rather than interpolated. A leg only populates for dates inside the contract's listing
+        window (&asymp;5 weeks for weeklies), since Dhan retains no expired-contract history.
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-header" style="flex-wrap:wrap; gap:8px;">
+        <span class="card-title accent">Gamma Lab</span>
+        <span style="color:var(--text-muted); font-size:11px;" data-live="gl-gex-sub">Net gamma exposure through the session</span>
+      </div>
+      <div class="grid g-5" style="gap:12px; margin-bottom:12px;" data-live="gl-gex-tiles"></div>
+      <div style="overflow-x:auto;">
+        <canvas data-live="gl-gex-canvas" style="display:block;"></canvas>
+      </div>
+      <div class="mt-8" style="font-size:10.5px; color:var(--text-muted); line-height:1.5;">
+        Net GEX per bucket across the loaded ladder, summed as <b>gamma &times; OI &times; spot&sup2; &times; 1%</b> with
+        calls counted positive and puts negative. Bars above zero mean hedging flow that <i>damps</i> moves; below zero,
+        flow that <i>amplifies</i> them.
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-header" style="flex-wrap:wrap; gap:8px;">
+        <span class="card-title accent">Live Gamma Profile by Strike</span>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <span style="color:var(--text-muted); font-size:11px;" data-live="gl-profile-sub">Not loaded</span>
+          <button class="btn btn-sm" data-live="gl-profile-btn">Refresh</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <canvas data-live="gl-profile-canvas" style="display:block;"></canvas>
+      </div>
+      <div class="mt-8" style="font-size:10.5px; color:var(--text-muted); line-height:1.5;">
+        A snapshot of the <b>whole near-money chain right now</b> &mdash; the panel above is gamma through time on a few
+        strikes, this is gamma across every strike at one instant. Bars run right for call GEX, left for put GEX; the
+        line is cumulative net GEX and the dashed marker is where it crosses zero.
+        <b>The dealer sign convention is an assumption, not measured data</b> &mdash; no Indian exchange publishes
+        dealer inventory &mdash; so treat the flip level as a widely-used heuristic rather than a fact.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title mb-8">Reading Gamma Well</div>
+      <div style="font-size:11.5px; line-height:1.65; color:var(--text-secondary);">
+        <p style="margin:0 0 9px;"><b style="color:var(--text-primary);">1. Never read gamma without OI.</b>
+        Per-contract gamma is scale-free &mdash; 0.0004 on a strike carrying 40 lakh OI and 0.0004 on a dead strike
+        plot as the same line, but only one of them can move the market. Switch the metric to
+        <b>Gamma &times; OI (GEX)</b> to weight it; that is the quantity hedgers must actually trade.</p>
+        <p style="margin:0 0 9px;"><b style="color:var(--text-primary);">2. The sign matters more than the level.</b>
+        Positive net GEX means hedging flow leans against price &mdash; rallies get sold, dips get bought, realised
+        vol compresses and ranges hold. Negative net GEX means hedging flow leans <i>with</i> price, so breakouts run
+        and stops cascade. The same chart pattern deserves opposite trade structures either side of that line.</p>
+        <p style="margin:0 0 9px;"><b style="color:var(--text-primary);">3. Watch where gamma is being added, not just where it sits.</b>
+        Set the OI pane to <b>OI change / bucket</b> and compare it against the gamma line. A strike whose gamma is high
+        but whose OI is unwinding is a wall that is coming down; one with rising OI is a wall being built. The static
+        book tells you yesterday's story.</p>
+        <p style="margin:0 0 9px;"><b style="color:var(--text-primary);">4. Gamma is a clock, not a constant.</b>
+        ATM gamma rises hyperbolically into expiry &mdash; the same strike carries several times the gamma on expiry
+        morning that it did two days earlier. Load an <b>expiry session</b> from the date filter and compare the ATM
+        gamma line's slope against a mid-week session to see it. That acceleration is why short premium gets closed
+        early rather than held to the bell.</p>
+        <p style="margin:0 0 9px;"><b style="color:var(--text-primary);">5. Use the ladder to find the pin.</b>
+        Near expiry, price is drawn toward the strike with the largest positive GEX and struggles to leave it. When the
+        peak-gamma strike stops moving bucket to bucket while spot oscillates around it, that is pinning &mdash; and it
+        is a range condition, not a trend one.</p>
+        <p style="margin:0 0 9px;"><b style="color:var(--text-primary);">6. Compare CE and PE at the same rung.</b>
+        Black-Scholes gives a call and a put on the <i>same strike</i> identical gamma, so any gap you see between
+        CE and PE at one rung is a gap in <b>implied volatility</b> &mdash; that is the skew, and it is read directly
+        here by switching the metric to IV&nbsp;%.</p>
+        <p style="margin:0;"><b style="color:var(--text-primary);">Limits worth remembering.</b>
+        GEX magnitudes are in the broker's own OI units, so read them comparatively &mdash; the sign, the shape and the
+        flip level are meaningful, the absolute rupee figure is not. Ladder GEX covers only the selected rungs; the
+        strike profile above covers the full near-money chain. And every Greek here is derived from a solved IV, so a
+        thin or stale print produces a gap rather than a number.</p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="statusbar">
+    <div class="items" data-live="footer-tickers">
+      <span class="item">Nifty 50 <b>23,532.45</b> <span class="up">&#9650; 0.78%</span></span>
+      <span class="item">India VIX <b>13.85</b> <span class="down">&#9660; -3.15%</span></span>
+    </div>
+    <div class="items">
+      <span class="live" data-live="footer-market-open"><span class="dot"></span> Market Open</span>
+      <span>Data Refresh: <b data-live="last-refresh" style="color:var(--text-primary);">10:15:30 AM</b></span>
+    </div>
+  </footer>
+</div>
+</div>
+</div>
+<script src="js/app.js"></script>
+<script src="js/ne-common.js"></script>
+<script src="js/greeks-oi-page.js"></script>
+</body>
+</html>

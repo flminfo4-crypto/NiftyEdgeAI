@@ -739,6 +739,95 @@ class AtmAnalysisOut(CamelModel):
     rows: list[AtmAnalysisRowOut]
 
 
+class StrikeLegOut(CamelModel):
+    """One contract at one bucket. IV is solved from that bucket's real traded
+    premium and the Greeks derived from it; every field stays null when the
+    contract didn't print rather than being interpolated."""
+    side: Literal["CE", "PE"]
+    slot: Literal["ITM3", "ITM2", "ITM1", "ATM", "OTM1", "OTM2", "OTM3"]
+    strike: float
+    ltp: Optional[float] = None
+    volume: Optional[float] = None
+    oi: Optional[float] = None
+    oi_change: Optional[float] = None
+    iv: Optional[float] = None
+    delta: Optional[float] = None
+    gamma: Optional[float] = None
+    theta: Optional[float] = None
+    vega: Optional[float] = None
+    # Gamma exposure per 1% move, in the broker's own OI units; calls
+    # positive, puts negative. Comparable across strikes, not an exact rupee
+    # figure — see strike_greeks_service._gex.
+    gex: Optional[float] = None
+
+
+class StrikeGreeksBucketOut(CamelModel):
+    time: str
+    ts: str
+    session_date: str
+    is_expiry_day: bool = False
+    dte: Optional[float] = None
+    spot_open: float
+    spot_high: float
+    spot_low: float
+    spot_close: float
+    atm_strike: float
+    # keyed "CE_ATM", "PE_ITM1", … — one entry per side × ladder slot
+    legs: dict[str, StrikeLegOut]
+    call_gex: Optional[float] = None
+    put_gex: Optional[float] = None
+    net_gex: Optional[float] = None
+    peak_gamma_strike: Optional[float] = None
+
+
+class StrikeGreeksOut(CamelModel):
+    underlying: str
+    from_date: str
+    to_date: str
+    expiry_kind: Literal["weekly", "monthly"]
+    expiry_date: Optional[str] = None
+    interval: str
+    strike_step: int
+    depth: int
+    slots: list[str]
+    source: Literal["mock", "broker"] = "mock"
+    note: Optional[str] = None
+    buckets: list[StrikeGreeksBucketOut]
+
+
+class GammaProfileStrikeOut(CamelModel):
+    strike: float
+    ce_gamma: Optional[float] = None
+    pe_gamma: Optional[float] = None
+    ce_oi: float = 0.0
+    pe_oi: float = 0.0
+    ce_oi_change: float = 0.0
+    pe_oi_change: float = 0.0
+    ce_gex: Optional[float] = None
+    pe_gex: Optional[float] = None
+    net_gex: float = 0.0
+    cumulative_gex: float = 0.0
+
+
+class GammaProfileOut(CamelModel):
+    """Live gamma exposure across the chain. The dealer sign convention (calls
+    positive, puts negative) is an industry heuristic — no Indian exchange
+    publishes real dealer inventory — so `zero_gamma_strike` is a well-known
+    approximation, not a measured level."""
+    underlying: str
+    expiry: str
+    as_of: datetime
+    spot_price: float
+    net_gex: float
+    gamma_regime: Literal["POSITIVE", "NEGATIVE"]
+    zero_gamma_strike: Optional[float] = None
+    call_wall: Optional[float] = None
+    put_wall: Optional[float] = None
+    gamma_source: str
+    source: Literal["mock", "broker"] = "mock"
+    strikes: list[GammaProfileStrikeOut]
+
+
 class BiasConfirmationOut(CamelModel):
     """Whether the day's opening print confirmed or rejected the two-day
     CPR bias [Ochoa 2010, Ch. 6] — a rejected bias inverts the plan."""

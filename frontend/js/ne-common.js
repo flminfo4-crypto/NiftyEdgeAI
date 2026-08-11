@@ -22,8 +22,14 @@ window.NE = (function () {
     return fetch(API_BASE + path, { signal: controller.signal })
       .then(function (res) {
         clearTimeout(timer);
-        if (!res.ok) throw new Error(path + " -> " + res.status);
-        return res.json();
+        if (res.ok) return res.json();
+        // Prefer the API's own explanation. Several endpoints reject with
+        // guidance the user can act on ("range too large for 1m — max 2
+        // days", "narrow the dates or reduce the ladder depth"); a bare
+        // status code throws all of that away.
+        return res.json().catch(function () { return null; }).then(function (body) {
+          throw new Error((body && body.detail) || path + " -> " + res.status);
+        });
       })
       .catch(function (err) {
         clearTimeout(timer);

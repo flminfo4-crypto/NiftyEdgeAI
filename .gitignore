@@ -1,5 +1,7 @@
 .env
 *.env.local
+# Machine-local tool permissions; can contain credentials in allowed commands
+.claude/settings.local.json
 __pycache__/
 *.pyc
 .pytest_cache/
