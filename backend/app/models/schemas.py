@@ -639,6 +639,7 @@ class TpoProfileCompositeSessionOut(CamelModel):
     session_low: float
     poor_high: Optional[float] = None
     poor_low: Optional[float] = None
+    single_prints: list[float] = []
     volume: float
     vol_ma: float
     vol_ma_window: int
@@ -690,13 +691,16 @@ class OptionPressureOut(CamelModel):
 class AtmAnalysisRowOut(CamelModel):
     time: str
     ts: str
+    spot_open: float
     spot_close: float
     spot_high: float
     spot_low: float
     atm_strike: float
+    ce_open: Optional[float] = None
     ce_high: Optional[float] = None
     ce_low: Optional[float] = None
     ce_close: Optional[float] = None
+    pe_open: Optional[float] = None
     pe_high: Optional[float] = None
     pe_low: Optional[float] = None
     pe_close: Optional[float] = None

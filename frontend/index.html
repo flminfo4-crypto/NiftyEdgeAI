@@ -53,6 +53,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
       Greeks
     </a>
+    <a class="nav-item" href="greeks-chart.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="21 6 21 11"/><polyline points="21 6 16 6"/></svg>
+      Greeks Chart
+    </a>
     <a class="nav-item" href="strategy-signals.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
       Strategy Signals
@@ -102,7 +106,7 @@
   <header class="topbar">
     <div class="ticker-group">
       <div class="ticker-item price">
-        <div class="label">Nifty 50</div>
+        <div class="label" data-live="dash-primary-label">Nifty 50</div>
         <div class="value" data-live="nifty-ltp">23,532.45</div>
         <div class="sub up" data-live="nifty-change">+182.60 (0.78%) &#9650;</div>
       </div>
@@ -139,8 +143,16 @@
       <div class="clock" data-clock>10:15:30 AM</div>
 <div class="theme-switch" role="group" aria-label="Theme"><button class="theme-btn" data-set-theme="light" title="Light theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button><button class="theme-btn" data-set-theme="dark" title="Dark theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button><button class="theme-btn" data-set-theme="terminal" title="Terminal theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></button></div>
       <div class="expiry-select">
+        <label>Index</label>
+        <select class="select" id="dash-underlying">
+          <option value="NIFTY50">Nifty 50</option>
+          <option value="NIFTYBANK">Bank Nifty</option>
+          <option value="SENSEX">Sensex</option>
+        </select>
+      </div>
+      <div class="expiry-select">
         <label>Expiry</label>
-        <select class="select">
+        <select class="select" id="dash-expiry">
           <option>24 JUL 2024 (W)</option>
           <option>31 JUL 2024 (W)</option>
           <option>28 AUG 2024 (M)</option>
@@ -188,11 +200,11 @@
         <div class="grid g-4">
           <div class="card">
             <div class="card-title">Price vs Value</div>
-            <div class="stat-row"><span class="k">VAH</span><span class="v" style="color:var(--pink);">23,601.25</span></div>
-            <div class="stat-row"><span class="k">POC</span><span class="v" style="color:var(--amber);">23,499.50</span></div>
-            <div class="stat-row"><span class="k">VAL</span><span class="v" style="color:var(--blue);">23,394.75</span></div>
-            <div class="stat-row"><span class="k">Current Price</span><span class="v">23,532.45</span></div>
-            <div class="stat-row"><span class="k">Position</span><span class="badge badge-red">Below VAH</span></div>
+            <div class="stat-row"><span class="k">VAH</span><span class="v" style="color:var(--pink);" data-live="dash-pvv-vah">23,601.25</span></div>
+            <div class="stat-row"><span class="k">POC</span><span class="v" style="color:var(--amber);" data-live="dash-pvv-poc">23,499.50</span></div>
+            <div class="stat-row"><span class="k">VAL</span><span class="v" style="color:var(--blue);" data-live="dash-pvv-val">23,394.75</span></div>
+            <div class="stat-row"><span class="k">Current Price</span><span class="v" data-live="dash-pvv-price">23,532.45</span></div>
+            <div class="stat-row"><span class="k">Position</span><span class="badge badge-red" data-live="dash-pvv-position">Below VAH</span></div>
           </div>
 
           <div class="card">
@@ -279,7 +291,7 @@
         <div class="card">
           <div class="card-header">
             <div>
-              <span class="card-title accent" style="font-size:13px; text-transform:none;">NIFTY 50 &middot; 5 &middot; NSE</span>
+              <span class="card-title accent" style="font-size:13px; text-transform:none;" data-live="dash-chart-title">NIFTY 50 &middot; 5 &middot; NSE</span>
               <span style="font-size:11.5px; color:var(--text-secondary); margin-left:10px;" data-live="dash-chart-ohlc">O <b style="color:var(--text-primary);">23,514.45</b> H <b class="text-green">23,539.10</b> L <b class="text-red">23,512.10</b> C <b style="color:var(--text-primary);">23,532.45</b> <span class="text-green">+18.65 (+0.08%)</span></span>
             </div>
             <span class="card-title">Volume Profile</span>
@@ -316,13 +328,13 @@
           </div>
 
           <div class="flex gap-14 mt-12" style="flex-wrap:wrap; font-size:11px;">
-            <span><span class="legend-dot" style="background:var(--pink);"></span>VAH (23,601.25)</span>
-            <span><span class="legend-dot" style="background:var(--amber);"></span>POC (23,499.50)</span>
-            <span><span class="legend-dot" style="background:var(--blue);"></span>VAL (23,394.75)</span>
-            <span><span class="legend-dot" style="background:var(--text-secondary);"></span>Pivot (23,452.80)</span>
-            <span><span class="legend-dot" style="background:var(--purple);"></span>R1 (23,676.40)</span>
-            <span><span class="legend-dot" style="background:var(--text-muted);"></span>S1 (23,321.20)</span>
-            <span><span class="legend-dot" style="background:var(--text-primary); opacity:.6;"></span>VWAP</span>
+            <span><span class="legend-dot" style="background:var(--pink);"></span>VAH (<span data-live="dash-legend-vah">23,601.25</span>)</span>
+            <span><span class="legend-dot" style="background:var(--amber);"></span>POC (<span data-live="dash-legend-poc">23,499.50</span>)</span>
+            <span><span class="legend-dot" style="background:var(--blue);"></span>VAL (<span data-live="dash-legend-val">23,394.75</span>)</span>
+            <span><span class="legend-dot" style="background:var(--text-secondary);"></span>Pivot (<span data-live="dash-legend-pivot">23,452.80</span>)</span>
+            <span><span class="legend-dot" style="background:var(--purple);"></span>R1 (<span data-live="dash-legend-r1">23,676.40</span>)</span>
+            <span><span class="legend-dot" style="background:var(--text-muted);"></span>S1 (<span data-live="dash-legend-s1">23,321.20</span>)</span>
+            <span><span class="legend-dot" style="background:var(--text-primary); opacity:.6;"></span>VWAP (<span data-live="dash-legend-vwap">&mdash;</span>)</span>
           </div>
 
           <div class="divider"></div>
@@ -407,9 +419,9 @@
 
         <div class="card">
           <div class="card-title mb-8">Backtested Signal Accuracy</div>
-          <div class="stat-row"><span class="k">Last 30 signals</span><span class="v text-green">76.6% hit rate</span></div>
-          <div class="stat-row"><span class="k">Avg R:R</span><span class="v">1 : 2.1</span></div>
-          <div class="stat-row"><span class="k">Best regime</span><span class="v">Range &amp; below VAH</span></div>
+          <div class="stat-row"><span class="k" data-live="dash-stats-window">Last 30 signals</span><span class="v text-green" data-live="dash-stats-hitrate">76.6% hit rate</span></div>
+          <div class="stat-row"><span class="k">Avg R:R</span><span class="v" data-live="dash-stats-rr">1 : 2.1</span></div>
+          <div class="stat-row"><span class="k">Top Strategy</span><span class="v" data-live="dash-stats-top-strategy">Range &amp; below VAH</span></div>
           <a class="card-link" href="strategy-signals.html" style="display:block; margin-top:10px;">See all signals &rarr;</a>
         </div>
       </div>
@@ -499,7 +511,7 @@
 
   <!-- STATUS BAR -->
   <footer class="statusbar">
-    <div class="items">
+    <div class="items" data-live="footer-tickers">
       <span class="item">Nifty 50 <b>23,532.45</b> <span class="up">&#9650; 0.78%</span></span>
       <span class="item">Nifty Bank <b>50,145.80</b> <span class="up">&#9650; 0.83%</span></span>
       <span class="item">FinNifty <b>22,744.90</b> <span class="up">&#9650; 0.78%</span></span>

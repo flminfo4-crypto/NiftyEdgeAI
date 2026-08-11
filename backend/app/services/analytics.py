@@ -10,6 +10,47 @@ from collections import defaultdict
 
 from broker_plugins.core.interface import BrokerPosition, Candle, OptionChainSnapshot, TradeHistoryEntry
 
+# Standard Value Area target: one standard deviation of a normal distribution
+# covers 68.26% of observations; every major platform (CBOT, Sierra Chart,
+# TradingView) rounds that in practice to 70%.
+VALUE_AREA_PCT = 0.70
+
+
+def _expand_value_area(prices_sorted: list[float], weight_by_price: dict[float, float],
+                        poc: float, pct: float = VALUE_AREA_PCT) -> tuple[float, float]:
+    """Standard Market/Volume Profile Value Area construction: starting at the
+    POC, repeatedly compare the PAIR of rows just above the current band to
+    the PAIR just below, add whichever pair carries more weight, and repeat
+    until >= `pct` of total weight is enclosed (stopping on either side once
+    it runs out of rows). This is the CBOT/Sierra Chart/TradingView
+    convention — comparing one row at a time instead of two, or picking the
+    top-N highest-weight rows regardless of position, both silently produce
+    the wrong (or non-contiguous) VAH/VAL on multi-modal profiles.
+
+    Returns (val, vah) — both inclusive, always a contiguous band around the POC.
+    """
+    n = len(prices_sorted)
+    poc_i = prices_sorted.index(poc)
+    lo_i = hi_i = poc_i
+    total = sum(weight_by_price.values())
+    target = total * pct
+    acc = weight_by_price[poc]
+
+    while acc < target and (lo_i > 0 or hi_i < n - 1):
+        above_idx = range(hi_i + 1, min(hi_i + 3, n))
+        below_idx = range(max(lo_i - 2, 0), lo_i)
+        above = sum(weight_by_price[prices_sorted[i]] for i in above_idx)
+        below = sum(weight_by_price[prices_sorted[i]] for i in below_idx)
+        have_above, have_below = hi_i < n - 1, lo_i > 0
+        if have_above and (above >= below or not have_below):
+            hi_i = min(hi_i + 2, n - 1)
+            acc += above
+        else:
+            lo_i = max(lo_i - 2, 0)
+            acc += below
+
+    return prices_sorted[lo_i], prices_sorted[hi_i]
+
 
 def market_profile(candles: list[Candle]) -> tuple[float, float, float]:
     """Returns (vah, val, poc) from an intraday profile of the given candles.
@@ -36,17 +77,8 @@ def market_profile(candles: list[Candle]) -> tuple[float, float, float]:
             price += tick
 
     poc = max(weight_by_price, key=weight_by_price.get)
-    total = sum(weight_by_price.values())
-    target = total * 0.68
-    by_weight_desc = sorted(weight_by_price, key=lambda p: -weight_by_price[p])
-    included = []
-    acc = 0.0
-    for p in by_weight_desc:
-        included.append(p)
-        acc += weight_by_price[p]
-        if acc >= target:
-            break
-    return max(included), min(included), poc
+    val, vah = _expand_value_area(sorted(weight_by_price), weight_by_price, poc)
+    return vah, val, poc
 
 
 def volume_profile(candles: list[Candle], tick: float = 6.0) -> dict:
@@ -72,17 +104,10 @@ def volume_profile(candles: list[Candle], tick: float = 6.0) -> dict:
 
     total = sum(volume_by_price.values())
     poc = max(volume_by_price, key=volume_by_price.get)
-    target = total * 0.68
-    by_volume_desc = sorted(volume_by_price, key=lambda p: -volume_by_price[p])
-    included, acc = [], 0.0
-    for p in by_volume_desc:
-        included.append(p)
-        acc += volume_by_price[p]
-        if acc >= target:
-            break
+    val, vah = _expand_value_area(sorted(volume_by_price), volume_by_price, poc)
 
     rows = [{"price": p, "volume": v} for p, v in sorted(volume_by_price.items())]
-    return {"rows": rows, "vah": max(included), "val": min(included), "poc": poc, "total_volume": total}
+    return {"rows": rows, "vah": vah, "val": val, "poc": poc, "total_volume": total}
 
 
 def cpr_levels(prev_day: Candle) -> dict:
@@ -376,24 +401,9 @@ def tpo_profile(candles: list[Candle], tick: float = 10.0, bracket_minutes: int 
     counts = {p: len(ls) for p, ls in letters_by_price.items()}
     poc = max(counts, key=lambda p: (counts[p], -abs(p - ordered[-1].close)))
 
-    # Value area: expand out from the POC until ~70% of all TPOs are covered,
-    # the standard construction.
-    total = sum(counts.values())
-    target = total * 0.70
+    # Value area: expand out from the POC until ~70% of all TPOs are covered.
     prices_sorted = sorted(counts)
-    poc_i = prices_sorted.index(poc)
-    lo_i = hi_i = poc_i
-    acc = counts[poc]
-    while acc < target and (lo_i > 0 or hi_i < len(prices_sorted) - 1):
-        below = counts[prices_sorted[lo_i - 1]] if lo_i > 0 else -1
-        above = counts[prices_sorted[hi_i + 1]] if hi_i < len(prices_sorted) - 1 else -1
-        if above >= below:
-            hi_i += 1
-            acc += counts[prices_sorted[hi_i]]
-        else:
-            lo_i -= 1
-            acc += counts[prices_sorted[lo_i]]
-    val, vah = prices_sorted[lo_i], prices_sorted[hi_i]
+    val, vah = _expand_value_area(prices_sorted, counts, poc)
 
     # Initial Balance — the first hour, which sets the session's reference range
     session_open = ordered[0].ts.astimezone(_IST)

@@ -9,12 +9,27 @@
   var DISPLAY_WINDOW = 15; // buckets each side of POC
   var lastLtp = null;
 
-  function loadComposite(ltp) {
+  // `compositeOffset` lets the Older/Newer buttons page back through history
+  // instead of the view always being pinned to the most recent sessions —
+  // same convention as market-profile-page.js's TPO composite.
+  var compositeOffset = 0;
+
+  function loadComposite() {
     var canvas = document.querySelector('[data-live="vp-composite-canvas"]');
     if (!canvas) return;
-    NE.fetchJSONLong("/market/volume-profile/composite?underlying=" + UNDERLYING + "&sessions=5", 15000)
+    var sessionsEl = document.getElementById("vp-composite-sessions");
+    var sessionCount = sessionsEl ? sessionsEl.value : "5";
+
+    var newerBtn = document.getElementById("vp-composite-newer");
+    if (newerBtn) newerBtn.disabled = compositeOffset === 0;
+    NE.setText("vp-composite-range", compositeOffset === 0
+      ? "Last " + sessionCount + " Sessions"
+      : sessionCount + " Sessions (" + compositeOffset + " back)");
+
+    NE.fetchJSONLong("/market/volume-profile/composite?underlying=" + UNDERLYING +
+                      "&sessions=" + sessionCount + "&offset=" + compositeOffset, 15000)
       .then(function (sessions) {
-        NE.renderCompositeChart(canvas, sessions, { mode: "volume", ltp: ltp, tick: 6.0 });
+        NE.renderCompositeChart(canvas, sessions, { mode: "volume", ltp: lastLtp, tick: 6.0, underlying: UNDERLYING });
       })
       .catch(function () {});
   }
@@ -90,8 +105,27 @@
     .catch(function () { NE.markStatus(false); });
   }
 
+  var compositeSessionsEl = document.getElementById("vp-composite-sessions");
+  if (compositeSessionsEl) compositeSessionsEl.addEventListener("change", function () {
+    compositeOffset = 0;
+    loadComposite();
+  });
+  var olderBtn = document.getElementById("vp-composite-older");
+  if (olderBtn) olderBtn.addEventListener("click", function () {
+    var sessionsEl = document.getElementById("vp-composite-sessions");
+    compositeOffset += parseInt((sessionsEl && sessionsEl.value) || "5", 10);
+    loadComposite();
+  });
+  var newerBtn = document.getElementById("vp-composite-newer");
+  if (newerBtn) newerBtn.addEventListener("click", function () {
+    var sessionsEl = document.getElementById("vp-composite-sessions");
+    var step = parseInt((sessionsEl && sessionsEl.value) || "5", 10);
+    compositeOffset = Math.max(0, compositeOffset - step);
+    loadComposite();
+  });
+
   load();
   setInterval(load, 2000);
-  loadComposite(null);
-  setInterval(function () { loadComposite(lastLtp); }, 30000);
+  loadComposite();
+  setInterval(loadComposite, 30000);
 })();

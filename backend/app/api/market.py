@@ -28,6 +28,10 @@ from app.models.schemas import (
 )
 from app.services import atm_analysis_service, market_data, pivot_service
 
+# TPO bracket sizes offered by the timeframe dropdown on market-profile.html:
+# 1/5/15/30/45 min, 1hr, 4hr and a whole session as one bracket.
+_VALID_BRACKETS = (1, 5, 15, 30, 45, 60, 240, 1440)
+
 router = APIRouter(prefix="/market", tags=["market"])
 
 
@@ -206,8 +210,8 @@ def get_tpo_profile(underlying: str = "NIFTY50", previous: bool = False, bracket
     """Full TPO Market Profile for a session — letter grid, value area,
     Initial Balance, range extension, single prints, poor high/low, day-type
     classification with its reasoning, and the two-day value-area shift."""
-    if bracket not in (15, 30, 60):
-        raise HTTPException(status_code=400, detail="bracket must be 15, 30 or 60 minutes")
+    if bracket not in _VALID_BRACKETS:
+        raise HTTPException(status_code=400, detail=f"bracket must be one of {_VALID_BRACKETS} minutes")
     try:
         return market_data.get_tpo_profile(underlying, previous=previous, bracket_minutes=bracket)
     except ValueError as exc:
@@ -221,8 +225,8 @@ def get_virgin_pocs(underlying: str = "NIFTY50", bracket: int = 30):
     session, left unvisited. Needs one intraday fetch per prior session, so
     it is a separate slow endpoint (cached ~1h) rather than part of the
     2s-polled profile."""
-    if bracket not in (15, 30, 60):
-        raise HTTPException(status_code=400, detail="bracket must be 15, 30 or 60 minutes")
+    if bracket not in _VALID_BRACKETS:
+        raise HTTPException(status_code=400, detail=f"bracket must be one of {_VALID_BRACKETS} minutes")
     try:
         return market_data.get_virgin_pocs(underlying, bracket_minutes=bracket)
     except ValueError as exc:
@@ -230,20 +234,27 @@ def get_virgin_pocs(underlying: str = "NIFTY50", bracket: int = 30):
 
 
 @router.get("/tpo-profile/composite", response_model=list[TpoProfileCompositeSessionOut])
-def get_tpo_profile_composite(underlying: str = "NIFTY50", sessions: int = 5, bracket: int = 30):
+def get_tpo_profile_composite(underlying: str = "NIFTY50", sessions: int = 5, bracket: int = 30, offset: int = 0):
     """Multi-session TPO composite (full letter-grid per session, IB/VA,
     poor high/low, volume, and a best-effort bar-structure label) behind
-    market-profile.html's composite chart."""
-    if bracket not in (15, 30, 60):
-        raise HTTPException(status_code=400, detail="bracket must be 15, 30 or 60 minutes")
-    return market_data.get_tpo_profile_composite(underlying, sessions, bracket_minutes=bracket)
+    market-profile.html's composite chart. `offset` skips the N most recent
+    sessions, letting the page's Older/Newer controls page back through
+    history without re-fetching everything up to today."""
+    if bracket not in _VALID_BRACKETS:
+        raise HTTPException(status_code=400, detail=f"bracket must be one of {_VALID_BRACKETS} minutes")
+    if offset < 0:
+        raise HTTPException(status_code=400, detail="offset must be >= 0")
+    return market_data.get_tpo_profile_composite(underlying, sessions, bracket_minutes=bracket, offset=offset)
 
 
 @router.get("/volume-profile/composite", response_model=list[VolumeProfileCompositeSessionOut])
-def get_volume_profile_composite(underlying: str = "NIFTY50", sessions: int = 5):
+def get_volume_profile_composite(underlying: str = "NIFTY50", sessions: int = 5, offset: int = 0):
     """Multi-session composite of the real volume-by-price histogram behind
-    volume-profile.html's composite chart."""
-    return market_data.get_volume_profile_composite(underlying, sessions)
+    volume-profile.html's composite chart. `offset` skips the N most recent
+    sessions (see get_tpo_profile_composite)."""
+    if offset < 0:
+        raise HTTPException(status_code=400, detail="offset must be >= 0")
+    return market_data.get_volume_profile_composite(underlying, sessions, offset=offset)
 
 
 @router.get("/cpr-dashboard", response_model=CprDashboardOut)

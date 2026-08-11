@@ -25,6 +25,7 @@
     <a class="nav-item" href="options-chain.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Options Chain</a>
     <a class="nav-item" href="open-interest.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Open Interest</a>
     <a class="nav-item" href="greeks.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>Greeks</a>
+    <a class="nav-item" href="greeks-chart.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="21 6 21 11"/><polyline points="21 6 16 6"/></svg>Greeks Chart</a>
     <a class="nav-item" href="strategy-signals.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>Strategy Signals</a>
     <a class="nav-item" href="positions.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>Positions</a>
     <a class="nav-item" href="orders.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Orders</a>
@@ -69,23 +70,39 @@
       </div>
       <div class="page-actions">
         <select class="select" id="mp-session"><option value="today">Today</option><option value="previous">Previous Session</option></select>
-        <select class="select" id="mp-bracket"><option value="30">30 Min TPO</option><option value="15">15 Min TPO</option><option value="60">60 Min TPO</option></select>
-        
+        <select class="select" id="mp-bracket">
+          <option value="1">1 Min TPO</option>
+          <option value="5">5 Min TPO</option>
+          <option value="15">15 Min TPO</option>
+          <option value="30" selected>30 Min TPO</option>
+          <option value="45">45 Min TPO</option>
+          <option value="60">1 Hr TPO</option>
+          <option value="240">4 Hr TPO</option>
+          <option value="1440">1 Day TPO</option>
+        </select>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-header">
-        <span class="card-title accent">Composite Profile &middot; Last 5 Sessions</span>
-        <div class="flex gap-14" style="font-size:11px;">
+      <div class="card-header" style="flex-wrap:wrap; gap:10px;">
+        <span class="card-title accent">Composite Profile &middot; <span data-live="mp-composite-range">Last 5 Sessions</span></span>
+        <div class="flex items-center gap-14" style="font-size:11px; margin-left:auto;">
           <span><span class="legend-dot" style="background:var(--amber);"></span>Value Area</span>
           <span><span class="legend-dot" style="background:var(--purple);"></span>Initial Balance</span>
           <span><span class="legend-dot" style="background:var(--blue);"></span>POC / POC Trend</span>
           <span><span class="legend-dot" style="background:var(--green);"></span>LTP</span>
+          <select class="select" id="mp-composite-sessions" style="width:auto;">
+            <option value="5">5 Sessions</option>
+            <option value="10">10 Sessions</option>
+            <option value="20">20 Sessions</option>
+            <option value="30">30 Sessions</option>
+          </select>
+          <button class="btn" id="mp-composite-older" title="Page back to older sessions">&larr; Older</button>
+          <button class="btn" id="mp-composite-newer" title="Page forward toward today" disabled>Newer &rarr;</button>
         </div>
       </div>
       <div style="overflow-x:auto;">
-        <canvas data-live="mp-composite-canvas" style="width:100%; display:block;"></canvas>
+        <canvas data-live="mp-composite-canvas" style="display:block;"></canvas>
       </div>
     </div>
 

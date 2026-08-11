@@ -167,16 +167,31 @@
 
   // Composite (multi-session) chart — its own slow cadence like Virgin POCs
   // below, since it costs the backend a multi-day intraday fetch rather than
-  // the single cached session the 2s poll above reads.
+  // the single cached session the 2s poll above reads. `compositeOffset`
+  // lets the Older/Newer buttons page back through history instead of the
+  // view always being pinned to the most recent sessions.
+  var compositeOffset = 0;
+
   function loadComposite() {
     var canvas = document.querySelector('[data-live="mp-composite-canvas"]');
     if (!canvas) return;
     var bracketEl = document.getElementById("mp-bracket");
     var bracket = bracketEl ? bracketEl.value : "30";
+    var sessionsEl = document.getElementById("mp-composite-sessions");
+    var sessionCount = sessionsEl ? sessionsEl.value : "5";
+
+    var newerBtn = document.getElementById("mp-composite-newer");
+    if (newerBtn) newerBtn.disabled = compositeOffset === 0;
+    NE.setText("mp-composite-range", compositeOffset === 0
+      ? "Last " + sessionCount + " Sessions"
+      : sessionCount + " Sessions (" + compositeOffset + " back)");
+
     NE.fetchJSONLong("/market/tpo-profile/composite?underlying=" + UNDERLYING +
-                      "&sessions=5&bracket=" + bracket, 15000)
+                      "&sessions=" + sessionCount + "&bracket=" + bracket +
+                      "&offset=" + compositeOffset, 15000)
       .then(function (sessions) {
-        NE.renderCompositeChart(canvas, sessions, { mode: "tpo", ltp: lastLtp, tick: 10.0 });
+        NE.renderCompositeChart(canvas, sessions,
+          { mode: "tpo", ltp: lastLtp, tick: 10.0, bracketMinutes: parseInt(bracket, 10), underlying: UNDERLYING });
       })
       .catch(function () {});
   }
@@ -222,6 +237,25 @@
   });
   var bracketEl = document.getElementById("mp-bracket");
   if (bracketEl) bracketEl.addEventListener("change", loadComposite);
+
+  var compositeSessionsEl = document.getElementById("mp-composite-sessions");
+  if (compositeSessionsEl) compositeSessionsEl.addEventListener("change", function () {
+    compositeOffset = 0;
+    loadComposite();
+  });
+  var olderBtn = document.getElementById("mp-composite-older");
+  if (olderBtn) olderBtn.addEventListener("click", function () {
+    var sessionsEl = document.getElementById("mp-composite-sessions");
+    compositeOffset += parseInt((sessionsEl && sessionsEl.value) || "5", 10);
+    loadComposite();
+  });
+  var newerBtn = document.getElementById("mp-composite-newer");
+  if (newerBtn) newerBtn.addEventListener("click", function () {
+    var sessionsEl = document.getElementById("mp-composite-sessions");
+    var step = parseInt((sessionsEl && sessionsEl.value) || "5", 10);
+    compositeOffset = Math.max(0, compositeOffset - step);
+    loadComposite();
+  });
 
   load();
   setInterval(load, 2000);

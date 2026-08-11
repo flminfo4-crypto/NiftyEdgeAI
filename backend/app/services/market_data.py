@@ -320,16 +320,21 @@ def get_virgin_pocs(underlying: str, bracket_minutes: int = 30) -> dict:
 # be `sessions` separate Dhan requests instead of one.
 
 
-def get_tpo_profile_composite(underlying: str, sessions: int = 5, bracket_minutes: int = 30) -> list[dict]:
+def get_tpo_profile_composite(underlying: str, sessions: int = 5, bracket_minutes: int = 30, offset: int = 0) -> list[dict]:
     """The last `sessions` trading days, each with its full TPO letter-grid,
     IB/VA, poor high/low, a trailing volume average, and a bar-structure
     label vs. the prior session (see analytics.classify_bar_structure).
     Fetches one extra day before the earliest displayed session purely as
-    that structure-classification baseline."""
+    that structure-classification baseline.
+
+    `offset` skips the `offset` most recent trading days before counting off
+    `sessions` — the page's Older/Newer buttons page through history with it
+    rather than every view being pinned to today."""
     tick = 10.0 if underlying.upper().startswith("NIFTY5") else 20.0
     today = datetime.now(IST).date()
+    window = sessions + offset + 1
 
-    frm = datetime.combine(today - timedelta(days=(sessions + 1) * 2),
+    frm = datetime.combine(today - timedelta(days=window * 2),
                            datetime.min.time(), tzinfo=IST).astimezone(timezone.utc)
     to = datetime.combine(today, datetime.max.time().replace(microsecond=0),
                           tzinfo=IST).astimezone(timezone.utc)
@@ -339,7 +344,7 @@ def get_tpo_profile_composite(underlying: str, sessions: int = 5, bracket_minute
     for c in candles:
         by_day.setdefault(c.ts.astimezone(IST).date(), []).append(c)
 
-    fetch_days = sorted(d for d, bars in by_day.items() if len(bars) >= 5)[-(sessions + 1):]
+    fetch_days = sorted(d for d, bars in by_day.items() if len(bars) >= 5)[-window:]
     if not fetch_days:
         return []
 
@@ -349,7 +354,9 @@ def get_tpo_profile_composite(underlying: str, sessions: int = 5, bracket_minute
         prof.update(analytics.classify_day_type(prof))
         profiles[d] = prof
 
-    displayed_days = fetch_days[-sessions:]
+    end_idx = len(fetch_days) - offset
+    start_idx = max(0, end_idx - sessions)
+    displayed_days = fetch_days[start_idx:end_idx]
     volumes = {d: sum(c.volume for c in by_day[d]) for d in fetch_days}
 
     rows = []
@@ -369,6 +376,7 @@ def get_tpo_profile_composite(underlying: str, sessions: int = 5, bracket_minute
             "session_high": prof["day_high"], "session_low": prof["day_low"],
             "poor_high": prof["day_high"] if prof["poor_high"] else None,
             "poor_low": prof["day_low"] if prof["poor_low"] else None,
+            "single_prints": prof["single_prints"],
             "volume": volumes[d],
             "vol_ma": round(vol_ma, 0),
             "vol_ma_window": len(ma_days),
@@ -377,13 +385,15 @@ def get_tpo_profile_composite(underlying: str, sessions: int = 5, bracket_minute
     return rows
 
 
-def get_volume_profile_composite(underlying: str, sessions: int = 5) -> list[dict]:
+def get_volume_profile_composite(underlying: str, sessions: int = 5, offset: int = 0) -> list[dict]:
     """The last `sessions` trading days of the real volume-by-price
     histogram (see get_volume_profile), each with its own rows/VAH/VAL/POC
-    plus a trailing volume average."""
+    plus a trailing volume average. `offset` pages back through history the
+    same way as get_tpo_profile_composite()."""
     today = datetime.now(IST).date()
+    window = sessions + offset
 
-    frm = datetime.combine(today - timedelta(days=sessions * 2),
+    frm = datetime.combine(today - timedelta(days=window * 2),
                            datetime.min.time(), tzinfo=IST).astimezone(timezone.utc)
     to = datetime.combine(today, datetime.max.time().replace(microsecond=0),
                           tzinfo=IST).astimezone(timezone.utc)
@@ -393,7 +403,10 @@ def get_volume_profile_composite(underlying: str, sessions: int = 5) -> list[dic
     for c in candles:
         by_day.setdefault(c.ts.astimezone(IST).date(), []).append(c)
 
-    displayed_days = sorted(d for d, bars in by_day.items() if len(bars) >= 5)[-sessions:]
+    fetch_days = sorted(d for d, bars in by_day.items() if len(bars) >= 5)[-window:] if window else []
+    end_idx = len(fetch_days) - offset
+    start_idx = max(0, end_idx - sessions)
+    displayed_days = fetch_days[start_idx:end_idx]
     if not displayed_days:
         return []
 
