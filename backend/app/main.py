@@ -8,11 +8,25 @@ set, this runs entirely against broker-plugins/mock — no credentials, no live
 market data, and no real orders are ever placed. Interactive docs at /docs.
 """
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import backtests, market, orders, positions, reports, signals, system
+from app.api import backtests, market, orders, positions, reports, signals, strategies, system
 from app.config import settings
+from app.services import strategy_config_service
+
+
+@asynccontextmanager
+async def _lifespan(_app: FastAPI):
+    # Registers any persisted, active custom strategies (see the Strategies
+    # page / strategy_config_service) into ai-engine's STRATEGY_REGISTRY so
+    # they're runnable from process start, not only after someone visits
+    # the page.
+    strategy_config_service.bootstrap()
+    yield
+
 
 app = FastAPI(
     title=settings.app_name,
@@ -25,6 +39,7 @@ app = FastAPI(
     ),
     openapi_url=f"{settings.api_prefix}/openapi.json",
     docs_url=f"{settings.api_prefix}/docs",
+    lifespan=_lifespan,
 )
 
 app.add_middleware(
@@ -40,6 +55,7 @@ app.include_router(signals.router, prefix=settings.api_prefix)
 app.include_router(positions.router, prefix=settings.api_prefix)
 app.include_router(orders.router, prefix=settings.api_prefix)
 app.include_router(backtests.router, prefix=settings.api_prefix)
+app.include_router(strategies.router, prefix=settings.api_prefix)
 app.include_router(system.router, prefix=settings.api_prefix)
 app.include_router(reports.router, prefix=settings.api_prefix)
 

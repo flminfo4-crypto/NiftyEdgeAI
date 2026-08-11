@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Query
 
 from app.config import settings
 from app.models.schemas import (
+    AtmAnalysisOut,
     CandleOut,
     CprAnalysisOut,
     CprDashboardOut,
@@ -16,11 +17,20 @@ from app.models.schemas import (
     OiBuildupRowOut,
     OiSummaryOut,
     OptionChainOut,
+    OptionPressureOut,
     QuoteOut,
     TopNarrowStocksOut,
+    TpoProfileCompositeSessionOut,
+    TpoProfileOut,
+    VirginPocsOut,
+    VolumeProfileCompositeSessionOut,
     VolumeProfileOut,
 )
-from app.services import market_data, pivot_service
+from app.services import atm_analysis_service, market_data, pivot_service
+
+# TPO bracket sizes offered by the timeframe dropdown on market-profile.html:
+# 1/5/15/30/45 min, 1hr, 4hr and a whole session as one bracket.
+_VALID_BRACKETS = (1, 5, 15, 30, 45, 60, 240, 1440)
 
 router = APIRouter(prefix="/market", tags=["market"])
 
@@ -105,7 +115,45 @@ def get_cpr_analysis(underlying: str = "NIFTY50"):
         support_cluster=result["support_cluster"],
         resistance_cluster=result["resistance_cluster"],
         trade_plan=result["trade_plan"],
+        session_open=result.get("session_open"),
+        bias_confirmation=result.get("bias_confirmation"),
+        pivot_trend=result.get("pivot_trend"),
     )
+
+
+@router.get("/pressure", response_model=OptionPressureOut)
+def get_option_pressure(underlying: str = "NIFTY50", expiry: str | None = None):
+    """CE vs PE pressure read from the live chain's real OI and premium
+    changes around ATM — who is writing, buying, unwinding or covering, and
+    which way that leans. Defaults to the nearest real expiry."""
+    try:
+        if not expiry:
+            expiries = market_data.get_expiries(underlying)
+            if not expiries:
+                raise HTTPException(status_code=404, detail=f"No expiries listed for '{underlying}'")
+            expiry = expiries[0]
+        return market_data.get_option_pressure(underlying, expiry)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.get("/atm-analysis", response_model=AtmAnalysisOut)
+def get_atm_analysis(
+    underlying: str = "NIFTY50",
+    frm: str = Query(..., alias="from", description="YYYY-MM-DD"),
+    to: str = Query(..., description="YYYY-MM-DD"),
+    expiry: str = Query("weekly", description="weekly | monthly"),
+    interval: str = Query("15m", description="1m | 5m | 15m | 30m"),
+):
+    """Rolling-ATM time grid: per intraday bucket — real spot H/L/C, the
+    strike that WAS ATM at that moment, its real CE/PE premium H/L/C, the
+    straddle, and a computed reason for the move. Click-triggered and
+    heavily cached; option premiums are bounded by Dhan's live-contract
+    retention (no expired-contract history exists)."""
+    try:
+        return atm_analysis_service.get_atm_analysis(underlying, frm, to, expiry, interval)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
 
 @router.get("/top-narrow-stocks", response_model=TopNarrowStocksOut)
@@ -155,6 +203,58 @@ def get_profile_previous_day(underlying: str = "NIFTY50"):
         return market_data.get_market_profile(underlying, previous=True)
     except ValueError:
         raise HTTPException(status_code=404, detail=f"No candles available for underlying '{underlying}'")
+
+
+@router.get("/tpo-profile", response_model=TpoProfileOut)
+def get_tpo_profile(underlying: str = "NIFTY50", previous: bool = False, bracket: int = 30):
+    """Full TPO Market Profile for a session — letter grid, value area,
+    Initial Balance, range extension, single prints, poor high/low, day-type
+    classification with its reasoning, and the two-day value-area shift."""
+    if bracket not in _VALID_BRACKETS:
+        raise HTTPException(status_code=400, detail=f"bracket must be one of {_VALID_BRACKETS} minutes")
+    try:
+        return market_data.get_tpo_profile(underlying, previous=previous, bracket_minutes=bracket)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.get("/virgin-pocs", response_model=VirginPocsOut)
+def get_virgin_pocs(underlying: str = "NIFTY50", bracket: int = 30):
+    """Points of control from recent sessions that price has not traded back
+    to. The book treats an untested POC as a magnet — the fairest price of a
+    session, left unvisited. Needs one intraday fetch per prior session, so
+    it is a separate slow endpoint (cached ~1h) rather than part of the
+    2s-polled profile."""
+    if bracket not in _VALID_BRACKETS:
+        raise HTTPException(status_code=400, detail=f"bracket must be one of {_VALID_BRACKETS} minutes")
+    try:
+        return market_data.get_virgin_pocs(underlying, bracket_minutes=bracket)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.get("/tpo-profile/composite", response_model=list[TpoProfileCompositeSessionOut])
+def get_tpo_profile_composite(underlying: str = "NIFTY50", sessions: int = 5, bracket: int = 30, offset: int = 0):
+    """Multi-session TPO composite (full letter-grid per session, IB/VA,
+    poor high/low, volume, and a best-effort bar-structure label) behind
+    market-profile.html's composite chart. `offset` skips the N most recent
+    sessions, letting the page's Older/Newer controls page back through
+    history without re-fetching everything up to today."""
+    if bracket not in _VALID_BRACKETS:
+        raise HTTPException(status_code=400, detail=f"bracket must be one of {_VALID_BRACKETS} minutes")
+    if offset < 0:
+        raise HTTPException(status_code=400, detail="offset must be >= 0")
+    return market_data.get_tpo_profile_composite(underlying, sessions, bracket_minutes=bracket, offset=offset)
+
+
+@router.get("/volume-profile/composite", response_model=list[VolumeProfileCompositeSessionOut])
+def get_volume_profile_composite(underlying: str = "NIFTY50", sessions: int = 5, offset: int = 0):
+    """Multi-session composite of the real volume-by-price histogram behind
+    volume-profile.html's composite chart. `offset` skips the N most recent
+    sessions (see get_tpo_profile_composite)."""
+    if offset < 0:
+        raise HTTPException(status_code=400, detail="offset must be >= 0")
+    return market_data.get_volume_profile_composite(underlying, sessions, offset=offset)
 
 
 @router.get("/cpr-dashboard", response_model=CprDashboardOut)

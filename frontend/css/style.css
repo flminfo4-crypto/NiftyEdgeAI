@@ -767,3 +767,9 @@ table{ border-collapse: collapse; width: 100%; }
   border-bottom: 1px solid var(--border-soft);
 }
 .list-row:last-child{ border-bottom: none; }
+
+/* Data Detail Analysis — toggleable grid column groups. Hiding by class on
+   the table keeps thead and tbody in lockstep without re-rendering rows. */
+#da-grid-table.hide-price .col-price,
+#da-grid-table.hide-voloi .col-voloi,
+#da-grid-table.hide-greeks .col-greeks{ display: none; }

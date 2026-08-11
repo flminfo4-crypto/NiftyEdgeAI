@@ -10,8 +10,15 @@ window.NE = (function () {
   var FETCH_TIMEOUT_MS = 4000;
 
   function fetchJSON(path) {
+    return fetchJSONLong(path, FETCH_TIMEOUT_MS);
+  }
+
+  // For click-triggered heavy endpoints (backtests, ATM analysis) whose first
+  // load can legitimately take tens of seconds server-side — the default 4s
+  // abort would kill them mid-flight.
+  function fetchJSONLong(path, timeoutMs) {
     var controller = new AbortController();
-    var timer = setTimeout(function () { controller.abort(); }, FETCH_TIMEOUT_MS);
+    var timer = setTimeout(function () { controller.abort(); }, timeoutMs || 180000);
     return fetch(API_BASE + path, { signal: controller.signal })
       .then(function (res) {
         clearTimeout(timer);
@@ -144,6 +151,7 @@ window.NE = (function () {
 
   return {
     fetchJSON: fetchJSON,
+    fetchJSONLong: fetchJSONLong,
     setText: setText,
     setHTML: setHTML,
     setValue: setValue,

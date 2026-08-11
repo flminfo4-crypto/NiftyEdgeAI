@@ -80,6 +80,11 @@ class Candle:
     low: float
     close: float
     volume: float
+    # Real open interest for the bucket. Only derivatives carry it — indices
+    # return 0 from the exchange, so treat 0 as "not applicable" rather than
+    # "no positions". Populated only when the caller asks for the OI series
+    # (see DhanBrokerAdapter.get_option_intraday_candles).
+    oi: float = 0.0
 
 
 @dataclass
@@ -191,6 +196,23 @@ class BrokerAdapter(ABC):
         """Symbols this adapter can resolve for per-stock scans (e.g. NIFTY 50
         constituents) — callers loop get_historical_candles() over these
         rather than assuming any arbitrary stock symbol resolves."""
+
+    @abstractmethod
+    def resolve_option_expiry(self, underlying: str, expiry_kind: str) -> str:
+        """Nearest live expiry (ISO date) of the requested kind — "weekly" or
+        "monthly" — for this underlying, from the broker's real contract
+        calendar. Raises if none is listed."""
+
+    @abstractmethod
+    def get_option_intraday_candles(
+        self, underlying: str, strike: float, option_type: str,
+        expiry_kind: str, interval: str, frm: datetime, to: datetime,
+    ) -> list[Candle]:
+        """Intraday candles for one option contract (underlying + strike +
+        CE/PE) on the nearest live expiry of expiry_kind. Only contracts the
+        broker still lists resolve — expired contracts are gone from Dhan's
+        master entirely, so history is bounded by the contract's own listing
+        window; callers must treat missing data as unavailable, not fill it."""
 
     @abstractmethod
     def place_order(self, order: OrderRequest) -> OrderResult:

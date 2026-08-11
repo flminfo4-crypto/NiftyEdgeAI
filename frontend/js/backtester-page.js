@@ -42,6 +42,34 @@
   loadTicker();
   setInterval(loadTicker, 2000);
 
+  // -- strategy list, sourced from the backend's registry so this dropdown
+  // can never drift out of sync with what /backtests actually accepts ------
+
+  function loadStrategies() {
+    NE.fetchJSON("/backtests/strategies").then(function (strategies) {
+      var select = document.getElementById("bt-strategy");
+      if (!select || !strategies || !strategies.length) return;
+      var current = select.value;
+      select.innerHTML = strategies.map(function (s) {
+        return '<option value="' + s.key + '">' + s.label + "</option>";
+      }).join("");
+      if (strategies.some(function (s) { return s.key === current; })) select.value = current;
+
+      // Entry/strike logic under the dropdown, straight from the strategy's
+      // own docstring — answers "when does this buy/sell and at which strike"
+      // without the user reading engine code.
+      var byKey = {};
+      strategies.forEach(function (s) { byKey[s.key] = s; });
+      function updateDesc() {
+        var s = byKey[select.value];
+        NE.setText("bt-strategy-desc", s && s.description ? s.description : "");
+      }
+      select.addEventListener("change", updateDesc);
+      updateDesc();
+    }).catch(function () {});
+  }
+  loadStrategies();
+
   // -- backtest run ---------------------------------------------------------
 
   function showError(msg) {
@@ -160,6 +188,67 @@
 
     renderEquityCurve(result.equityCurve);
     renderTradeLog(trades);
+    renderIvRealityCheck(result.ivRealityCheck);
+  }
+
+  function renderPeriodReport(d) {
+    var wrap = document.querySelector('[data-live="bt-period-wrap"]');
+    if (!wrap) return;
+    if (!d || !d.rows || !d.rows.length) { wrap.style.display = "none"; return; }
+    wrap.style.display = "";
+    var s = d.summary;
+    var unit = d.period === "weekly" ? "week" : "month";
+
+    NE.setText("bt-period-title", (d.period === "weekly" ? "Weekly" : "Monthly") + " Breakdown");
+    NE.setText("bt-period-sub", d.fromDate + " to " + d.toDate + " · target " + d.targetReturnPct + "% per " + unit);
+    NE.setText("bt-period-total", String(s.totalPeriods));
+    NE.setText("bt-period-hit", s.periodsHitTarget + " (" + s.pctHitTarget + "%)");
+    NE.setText("bt-period-profitable", s.periodsProfitable + " (" + s.pctProfitable + "%)");
+    NE.setText("bt-period-flat", String(s.periodsFlat));
+    NE.setText("bt-period-median", s.medianReturnPct + "% / " + s.avgReturnPct + "%");
+
+    var hitEl = document.querySelector('[data-live="bt-period-hit"]');
+    if (hitEl) {
+      hitEl.classList.remove("text-red", "text-green");
+      hitEl.classList.add(s.pctHitTarget >= 50 ? "text-green" : "text-red");
+    }
+
+    var tbody = document.querySelector('[data-live="bt-period-tbody"]');
+    if (!tbody) return;
+    tbody.innerHTML = d.rows.map(function (r, i) {
+      var cls = r.returnPct > 0 ? "text-green" : r.returnPct < 0 ? "text-red" : "";
+      var badge = r.hitTarget
+        ? '<span class="badge badge-green">Hit</span>'
+        : (r.trades ? '<span class="badge badge-neutral">Miss</span>'
+                    : '<span style="color:var(--text-muted); font-size:11px;">no trade</span>');
+      return (
+        "<tr>" +
+        '<td style="color:var(--text-muted);">' + (i + 1) + "</td>" +
+        "<td>" + r.period + "</td>" +
+        '<td style="font-size:11px; color:var(--text-muted); white-space:nowrap;">' + r.startDate + " → " + r.endDate + "</td>" +
+        '<td class="mono">' + r.trades + "</td>" +
+        '<td class="mono ' + cls + '">' + (r.pnl >= 0 ? "+" : "") + Math.round(r.pnl).toLocaleString("en-IN") + "</td>" +
+        '<td class="mono ' + cls + '">' + (r.returnPct >= 0 ? "+" : "") + r.returnPct.toFixed(2) + "%</td>" +
+        '<td class="mono">' + Math.round(r.closingEquity).toLocaleString("en-IN") + "</td>" +
+        "<td>" + badge + "</td>" +
+        "</tr>"
+      );
+    }).join("");
+  }
+
+  function renderIvRealityCheck(ivc) {
+    var wrap = document.querySelector('[data-live="bt-iv-check-wrap"]');
+    if (!wrap) return;
+    if (!ivc || !ivc.available) { wrap.style.display = "none"; return; }
+    wrap.style.display = "";
+    NE.setText("bt-iv-model", ivc.modelSigmaPct != null ? ivc.modelSigmaPct.toFixed(2) + "%" : "—");
+    NE.setText("bt-iv-real", ivc.realMarketIvPct != null ? ivc.realMarketIvPct.toFixed(2) + "%" : "—");
+    var deltaEl = document.querySelector('[data-live="bt-iv-delta"]');
+    if (deltaEl && ivc.deltaPct != null) {
+      deltaEl.textContent = fmtGreek(ivc.deltaPct, 2) + "%";
+      deltaEl.classList.remove("text-red", "text-green");
+      deltaEl.classList.add(ivc.deltaPct >= 0 ? "text-green" : "text-red");
+    }
   }
 
   function readForm() {
@@ -173,6 +262,13 @@
     var target = parseFloat(document.getElementById("bt-target").value);
     var costsToggle = document.getElementById("bt-costs-toggle");
     var includeCosts = costsToggle ? costsToggle.classList.contains("on") : true;
+    var holdEl = document.getElementById("bt-hold");
+    var hold = holdEl ? holdEl.value : "strategy";
+    var holdDaysEl = document.getElementById("bt-hold-days");
+    var holdDays = holdDaysEl ? parseInt(holdDaysEl.value, 10) || 5 : 5;
+    if (hold === "custom" && (holdDays < 1 || holdDays > 60)) {
+      return { error: "Hold days must be between 1 and 60." };
+    }
 
     if (!from || !to) return { error: "Pick a From and To date." };
     if (new Date(from) >= new Date(to)) return { error: "From date must be before To date." };
@@ -185,8 +281,28 @@
         strategy: strategy, instrument: instrument, from: from, to: to,
         initialCapital: capital, positionSizeLots: lots,
         stopLossPct: sl, targetPct: target, includeSlippageAndCosts: includeCosts,
+        hold: hold, holdDays: holdDays,
       },
     };
+  }
+
+  function loadPeriodReport(body) {
+    var periodEl = document.getElementById("bt-period");
+    var period = periodEl ? periodEl.value : "weekly";
+    var wrap = document.querySelector('[data-live="bt-period-wrap"]');
+    if (period === "none") { if (wrap) wrap.style.display = "none"; return Promise.resolve(); }
+    var targetEl = document.getElementById("bt-period-target");
+    var target = targetEl ? parseFloat(targetEl.value) || 1.0 : 1.0;
+    var q = "/backtests/periods?strategy=" + encodeURIComponent(body.strategy) +
+      "&instrument=" + encodeURIComponent(body.instrument) +
+      "&period=" + period + "&from=" + body.from + "&to=" + body.to +
+      "&capital=" + body.initialCapital + "&lots=" + body.positionSizeLots +
+      "&target=" + target + "&stop_loss_pct=" + body.stopLossPct + "&target_pct=" + body.targetPct +
+      "&hold=" + body.hold + "&hold_days=" + body.holdDays;
+    // Long timeout: this replays the full range server-side.
+    return NE.fetchJSONLong(q).then(renderPeriodReport).catch(function () {
+      if (wrap) wrap.style.display = "none";
+    });
   }
 
   function runBacktest() {
@@ -200,6 +316,7 @@
           renderResult(result, tradesResp.items);
         });
       })
+      .then(function () { return loadPeriodReport(parsed.body); })
       .catch(function (err) {
         showError("Backtest failed: " + err.message);
       })
@@ -210,6 +327,16 @@
   if (costsToggle) {
     costsToggle.addEventListener("click", function () { costsToggle.classList.toggle("on"); });
   }
+
+  // Hold Days only applies to the custom duration mode — disable it otherwise
+  // so the field can't imply it's affecting an intraday or weekly run.
+  var holdSel = document.getElementById("bt-hold");
+  var holdDaysInput = document.getElementById("bt-hold-days");
+  function syncHoldDays() {
+    if (holdDaysInput && holdSel) holdDaysInput.disabled = holdSel.value !== "custom";
+  }
+  if (holdSel) holdSel.addEventListener("change", syncHoldDays);
+  syncHoldDays();
 
   ["bt-run-btn", "bt-run-btn-top"].forEach(function (key) {
     document.querySelectorAll('[data-live="' + key + '"]').forEach(function (btn) {

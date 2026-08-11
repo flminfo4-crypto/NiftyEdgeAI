@@ -113,6 +113,14 @@
   .tp-cluster .lab{ font-size:10.5px; font-weight:800; letter-spacing:.4px; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px; }
   .tp-cluster .val{ font-size:15px; font-weight:800; }
   .tp-notrade-banner{ background:var(--red-bg); border:1px solid #f3c6c4; color:var(--red); border-radius:10px; padding:10px 14px; font-size:12.5px; font-weight:700; margin-bottom:14px; }
+  .tp-confirm, .tp-trend{ border-radius:10px; padding:10px 14px; font-size:12px; line-height:1.55; margin-bottom:10px; border:1px solid var(--border); background:var(--card-bg); }
+  .tp-confirm b, .tp-trend b{ font-weight:800; }
+  .tp-confirm.confirmed{ background:var(--green-bg); border-color:#bfe5cb; color:#166534; }
+  .tp-confirm.rejected{ background:var(--red-bg); border-color:#f3c6c4; color:#9f1239; }
+  .tp-confirm.pending{ background:var(--tile-bg); color:var(--text-secondary); }
+  .tp-trend.bullish{ border-left:4px solid var(--green); }
+  .tp-trend.bearish{ border-left:4px solid var(--red); }
+  .tp-trend.neutral{ border-left:4px solid var(--text-muted); }
   .tp-bias-row{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
   .tp-bias{ font-size:20px; font-weight:800; }
   .tp-bias.bullish{ color:var(--green); }
@@ -235,6 +243,8 @@
         <div class="tp-cluster"><div class="lab" style="color:var(--green);">Resistance Cluster (R1 / PDH)</div><div class="val mono" data-cpr="NIFTY50-tp-resistance">&mdash;</div></div>
       </div>
       <div class="tp-notrade-banner" data-cpr="NIFTY50-tp-notrade-banner" style="display:none;">No-Trade Zone &mdash; price is locked inside a Wide CPR. Wait for a decisive break.</div>
+      <div class="tp-confirm" data-cpr="NIFTY50-tp-confirm" style="display:none;"></div>
+      <div class="tp-trend" data-cpr="NIFTY50-tp-trend" style="display:none;"></div>
       <div class="tp-bias-row">
         <span class="tp-bias neutral" data-cpr="NIFTY50-tp-bias">&mdash;</span>
         <span class="badge badge-green" data-cpr="NIFTY50-tp-side" style="display:none;">&mdash;</span>
@@ -320,6 +330,8 @@
         <div class="tp-cluster"><div class="lab" style="color:var(--green);">Resistance Cluster (R1 / PDH)</div><div class="val mono" data-cpr="SENSEX-tp-resistance">&mdash;</div></div>
       </div>
       <div class="tp-notrade-banner" data-cpr="SENSEX-tp-notrade-banner" style="display:none;">No-Trade Zone &mdash; price is locked inside a Wide CPR. Wait for a decisive break.</div>
+      <div class="tp-confirm" data-cpr="SENSEX-tp-confirm" style="display:none;"></div>
+      <div class="tp-trend" data-cpr="SENSEX-tp-trend" style="display:none;"></div>
       <div class="tp-bias-row">
         <span class="tp-bias neutral" data-cpr="SENSEX-tp-bias">&mdash;</span>
         <span class="badge badge-green" data-cpr="SENSEX-tp-side" style="display:none;">&mdash;</span>
@@ -566,6 +578,41 @@
 
     var banner = document.querySelector('[data-cpr="' + sym + '-tp-notrade-banner"]');
     if (banner) banner.style.display = plan.bias === "No-Trade" ? "" : "none";
+
+    // Opening-print confirmation: a two-day bias is provisional until the
+    // session opens, and a rejected bias flips the plan entirely.
+    var conf = d.biasConfirmation;
+    var confEl = document.querySelector('[data-cpr="' + sym + '-tp-confirm"]');
+    if (confEl) {
+      if (!conf) { confEl.style.display = "none"; }
+      else {
+        confEl.style.display = "";
+        confEl.className = "tp-confirm " + conf.status.toLowerCase();
+        var head = conf.status === "CONFIRMED" ? "Open CONFIRMED the bias"
+                 : conf.status === "REJECTED" ? "Open REJECTED the bias"
+                 : "Awaiting the opening print";
+        var flip = conf.status === "REJECTED"
+          ? " <b>" + conf.initialDirection + " → " + conf.effectiveDirection + "</b>." : "";
+        confEl.innerHTML = "<b>" + head + "</b>" + flip + " " + conf.guidance;
+      }
+    }
+
+    // Pivot Trend Analysis — which side of S1/R1 the market keeps closing on.
+    var pt = d.pivotTrend;
+    var trendEl = document.querySelector('[data-cpr="' + sym + '-tp-trend"]');
+    if (trendEl) {
+      if (!pt) { trendEl.style.display = "none"; }
+      else {
+        trendEl.style.display = "";
+        trendEl.className = "tp-trend " + pt.state.toLowerCase();
+        var zones = pt.state === "BULLISH" ? "Buy zones: " + pt.buyZones.join(" / ")
+                  : pt.state === "BEARISH" ? "Sell zones: " + pt.sellZones.join(" / ") : "";
+        if (zones && pt.targets.length) zones += " → targets " + pt.targets.join(" / ");
+        trendEl.innerHTML = "<b>Pivot Trend: " + pt.state + "</b> (" + pt.daysInState +
+          " session" + (pt.daysInState === 1 ? "" : "s") + "). " + pt.guidance +
+          (zones ? " <b>" + zones + "</b>" : "");
+      }
+    }
   }
 
   var STOCK_REGIME_LABEL = { NARROW: "Narrow", NORMAL: "Normal", WIDE: "Wide" };

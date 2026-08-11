@@ -76,16 +76,74 @@
     return sign + n.toFixed(decimals);
   }
 
-  function applyQuotes(quotes) {
+  function applyQuotes(quotes, underlying) {
     quotes.forEach(function (q) {
-      if (q.symbol === "NIFTY50") {
+      if (q.symbol === underlying) {
+        var dir = q.change >= 0 ? "up" : "down";
+        var arrow = q.change >= 0 ? "▲" : "▼";
         setText("nifty-ltp", q.ltp.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-        setText("nifty-change", fmtSigned(q.change) + " (" + fmtSigned(q.changePct) + "%) ▲");
+        setText("nifty-change", fmtSigned(q.change) + " (" + fmtSigned(q.changePct) + "%) " + arrow);
+        var changeEl = document.querySelector('[data-live="nifty-change"]');
+        if (changeEl) { changeEl.classList.remove("up", "down"); changeEl.classList.add(dir); }
       } else if (q.symbol === "INDIAVIX") {
         setText("vix-ltp", q.ltp.toFixed(2));
         setText("vix-change", fmtSigned(q.change) + " (" + fmtSigned(q.changePct) + "%)");
       }
     });
+  }
+
+  // VAH/POC/VAL + a live spot price → the "Price vs Value" stat card and
+  // (separately) the chart legend read off the same /market/profile fetch.
+  function applyPriceVsValue(profile, quotes, underlying) {
+    setText("dash-pvv-vah", fmtNum(profile.vah, 2));
+    setText("dash-pvv-poc", fmtNum(profile.poc, 2));
+    setText("dash-pvv-val", fmtNum(profile.val, 2));
+    var q = quotes && quotes.filter(function (x) { return x.symbol === underlying; })[0];
+    if (!q) return;
+    setText("dash-pvv-price", fmtNum(q.ltp, 2));
+    var badge = document.querySelector('[data-live="dash-pvv-position"]');
+    if (badge) {
+      var label, cls;
+      if (q.ltp > profile.vah) { label = "Above VAH"; cls = "badge-green"; }
+      else if (q.ltp < profile.val) { label = "Below VAL"; cls = "badge-red"; }
+      else { label = "Inside Value"; cls = "badge-amber"; }
+      badge.textContent = label;
+      badge.className = "badge " + cls;
+    }
+  }
+
+  function applyLegendProfile(profile) {
+    setText("dash-legend-vah", fmtNum(profile.vah, 2));
+    setText("dash-legend-poc", fmtNum(profile.poc, 2));
+    setText("dash-legend-val", fmtNum(profile.val, 2));
+  }
+
+  function applyLegendCpr(cpr) {
+    if (!cpr || !cpr.floor) return;
+    setText("dash-legend-pivot", fmtNum(cpr.floor.pivot, 2));
+    setText("dash-legend-r1", fmtNum(cpr.floor.r1, 2));
+    setText("dash-legend-s1", fmtNum(cpr.floor.s1, 2));
+  }
+
+  // VWAP has no dedicated endpoint — it's a cheap reduction over the same
+  // candles already fetched for the chart, so compute it client-side rather
+  // than adding a backend round trip for one number.
+  function applyLegendVwap(candles) {
+    if (!candles || !candles.length) return;
+    var pv = 0, vol = 0;
+    candles.forEach(function (c) {
+      pv += ((c.high + c.low + c.close) / 3) * c.volume;
+      vol += c.volume;
+    });
+    if (vol > 0) setText("dash-legend-vwap", fmtNum(pv / vol, 2));
+  }
+
+  function applySignalStats(stats) {
+    setText("dash-stats-window", "Last " + stats.resolvedCount + " signals");
+    setText("dash-stats-hitrate", (stats.resolvedCount ? stats.hitRatePct.toFixed(1) + "% hit rate" : "No resolved signals yet"));
+    setText("dash-stats-rr", stats.resolvedCount ? "1 : " + stats.avgRiskReward.toFixed(1) : "—");
+    var best = stats.byStrategy && stats.byStrategy.slice().sort(function (a, b) { return b.hitRatePct - a.hitRatePct; })[0];
+    setText("dash-stats-top-strategy", best ? (best.strategy + " (" + best.hitRatePct.toFixed(0) + "%)") : "—");
   }
 
   function applyBias(bias) {
@@ -363,6 +421,44 @@
     setText("dash-new-lows", String(b.newLows));
   }
 
+  function applyPressure(p) {
+    var scoreEl = document.querySelector('[data-live="dash-pressure-score"]');
+    if (scoreEl) {
+      scoreEl.textContent = (p.netScore >= 0 ? "+" : "") + p.netScore.toFixed(0);
+      scoreEl.classList.remove("text-red", "text-green");
+      if (p.direction !== "NEUTRAL") scoreEl.classList.add(p.direction === "BULLISH" ? "text-green" : "text-red");
+    }
+    setText("dash-pressure-label", p.label);
+    var badge = document.querySelector('[data-live="dash-pressure-badge"]');
+    if (badge) {
+      badge.textContent = p.direction === "BULLISH" ? "Bullish" : p.direction === "BEARISH" ? "Bearish" : "Neutral";
+      badge.className = "badge " + (p.direction === "BULLISH" ? "badge-green" : p.direction === "BEARISH" ? "badge-red" : "badge-neutral");
+    }
+
+    // Bars show conviction (|score|); colour carries the direction, so a
+    // strongly-bearish and strongly-bullish read are equally long but differ
+    // in colour rather than being mistaken for "more/less activity".
+    [["ce", p.cePressure, p.ceDominant], ["pe", p.pePressure, p.peDominant]].forEach(function (t) {
+      var side = t[0], val = t[1], dominant = t[2];
+      setText("dash-" + side + "-pressure", (val >= 0 ? "+" : "") + val.toFixed(0));
+      setText("dash-" + side + "-dominant", dominant ? "(" + dominant + ")" : "");
+      var bar = document.querySelector('[data-live="dash-' + side + '-bar"]');
+      if (bar) {
+        bar.style.width = Math.min(100, Math.abs(val)).toFixed(0) + "%";
+        bar.style.background = val > 5 ? "var(--green)" : val < -5 ? "var(--red)" : "var(--text-muted)";
+      }
+      var valEl = document.querySelector('[data-live="dash-' + side + '-pressure"]');
+      if (valEl) {
+        valEl.classList.remove("text-red", "text-green");
+        if (Math.abs(val) > 5) valEl.classList.add(val > 0 ? "text-green" : "text-red");
+      }
+    });
+
+    setText("dash-pressure-support", p.supportStrike ? Math.round(p.supportStrike).toLocaleString("en-IN") : "—");
+    setText("dash-pressure-resistance", p.resistanceStrike ? Math.round(p.resistanceStrike).toLocaleString("en-IN") : "—");
+    setText("dash-pressure-pcr", p.pcrOi.toFixed(2) + " / " + p.pcrVolume.toFixed(2));
+  }
+
   function applyIvRank(iv) {
     setText("iv-rank-value", iv.ivRank.toFixed(1));
     setText("dash-iv-rank-label", iv.ivRank >= 70 ? "High" : iv.ivRank >= 40 ? "Moderate" : "Low");
@@ -457,56 +553,94 @@
   }
 
   var REFRESH_MS = 2000;
-  var UNDERLYING = "NIFTY50";
-  var hasChainSections = !!document.querySelector('[data-live="dash-oi-resistance"]');
+  var UNDERLYING_LABELS = { NIFTY50: "Nifty 50", NIFTYBANK: "Bank Nifty", SENSEX: "Sensex" };
+  var UNDERLYING_EXCHANGE = { NIFTY50: "NSE", NIFTYBANK: "NSE", SENSEX: "BSE" };
+  var underlyingEl = document.getElementById("dash-underlying");
+  var expiryEl = document.getElementById("dash-expiry");
+  function getUnderlying() { return (underlyingEl && underlyingEl.value) || "NIFTY50"; }
 
-  function load(expiry, expiryLabel) {
+  var hasChainSections = !!document.querySelector('[data-live="dash-oi-resistance"]');
+  var pollTimer = null;
+  var currentExpiry = null, currentExpiryLabel = "";
+
+  // A single failing endpoint used to reject the whole Promise.all below and
+  // blank every panel on the Dashboard (e.g. volume-profile 404s on a
+  // non-trading day, taking down bias, signals, OI and pressure with it).
+  // Each panel now degrades on its own: a failed call resolves to null and
+  // only that panel keeps its previous/placeholder content.
+  function optional(path) {
+    return fetchJSON(path).catch(function () { return null; });
+  }
+
+  function load() {
+    var UNDERLYING = getUnderlying();
+    var expiry = currentExpiry, expiryLabel = currentExpiryLabel;
     var today = new Date().toISOString().slice(0, 10);
     var calls = [
-      fetchJSON("/market/quote?symbols=NIFTY50,INDIAVIX"),
-      fetchJSON("/signals/bias"),
-      fetchJSON("/signals/active"),
-      fetchJSON("/positions/open"),
-      fetchJSON("/positions/margins"),
+      optional("/market/quote?symbols=" + UNDERLYING + ",INDIAVIX"),
+      optional("/signals/bias?underlying=" + UNDERLYING),
+      optional("/signals/active?underlying=" + UNDERLYING),
+      optional("/positions/open"),
+      optional("/positions/margins"),
+      optional("/market/profile?underlying=" + UNDERLYING),
+      optional("/market/cpr?underlying=" + UNDERLYING),
+      optional("/signals/stats?days=30"),
     ];
     if (hasChainSections && expiry) {
       calls.push(
-        fetchJSON("/market/option-chain?underlying=" + UNDERLYING + "&expiry=" + expiry),
-        fetchJSON("/market/oi-buildup?underlying=" + UNDERLYING + "&expiry=" + expiry),
-        fetchJSON("/positions/greeks?underlying=" + UNDERLYING + "&expiry=" + expiry),
-        fetchJSON("/market/volume-profile?underlying=" + UNDERLYING),
-        fetchJSON("/reports/summary?from=" + today + "&to=" + today),
-        fetchJSON("/market/candles?symbol=" + UNDERLYING + "&interval=5m"),
-        fetchJSON("/market/breadth"),
-        fetchJSON("/market/iv-rank?underlying=" + UNDERLYING + "&expiry=" + expiry),
-        fetchJSON("/market/cvd?underlying=" + UNDERLYING)
+        optional("/market/option-chain?underlying=" + UNDERLYING + "&expiry=" + expiry),
+        optional("/market/oi-buildup?underlying=" + UNDERLYING + "&expiry=" + expiry),
+        optional("/positions/greeks?underlying=" + UNDERLYING + "&expiry=" + expiry),
+        optional("/market/volume-profile?underlying=" + UNDERLYING),
+        optional("/reports/summary?from=" + today + "&to=" + today),
+        optional("/market/candles?symbol=" + UNDERLYING + "&interval=5m"),
+        optional("/market/breadth"),
+        optional("/market/iv-rank?underlying=" + UNDERLYING + "&expiry=" + expiry),
+        optional("/market/cvd?underlying=" + UNDERLYING),
+        optional("/market/pressure?underlying=" + UNDERLYING + "&expiry=" + expiry)
       );
+    }
+
+    // Runs an apply function only when its data actually arrived, and never
+    // lets one panel's rendering error take down the rest of the Dashboard.
+    function panel(fn) {
+      var args = Array.prototype.slice.call(arguments, 1);
+      if (args[0] == null) return;
+      try { fn.apply(null, args); } catch (e) { /* one panel failing is not fatal */ }
     }
 
     Promise.all(calls)
       .then(function (results) {
-        applyQuotes(results[0]);
-        applyBias(results[1]);
-        applySignals(results[2]);
-        applyPositions(results[3]);
-        applyMargins(results[4]);
-        applyExposure(results[4]);
+        var quotes = results[0], mpProfile = results[5];
+        panel(applyQuotes, quotes, UNDERLYING);
+        panel(applyBias, results[1]);
+        panel(applySignals, results[2]);
+        panel(applyPositions, results[3]);
+        panel(applyMargins, results[4]);
+        panel(applyExposure, results[4]);
+        panel(applyPriceVsValue, mpProfile, quotes, UNDERLYING);
+        panel(applyLegendProfile, mpProfile);
+        panel(applyLegendCpr, results[6]);
+        panel(applySignalStats, results[7]);
         if (hasChainSections && expiry) {
-          var chain = results[5], buildup = results[6], greeks = results[7], profile = results[8], report = results[9],
-            candles = results[10], breadth = results[11], ivRank = results[12], cvd = results[13];
+          var chain = results[8], buildup = results[9], greeks = results[10], vProfile = results[11], report = results[12],
+            candles = results[13], breadth = results[14], ivRank = results[15], cvd = results[16],
+            pressure = results[17];
           setText("dash-expiry-label", expiryLabel);
-          applyChainTicker(chain);
-          applyOiWalls(chain);
-          applyOptionChainSnapshot(chain, buildup);
-          applyAtmGreeks(chain);
-          applyPortfolioGreeks(greeks);
-          applyVolumeProfilePanel(profile);
-          applyPnlToday(report);
-          applyChartHeader(candles);
-          applyCandleChart(candles);
-          applyBreadth(breadth);
-          applyIvRank(ivRank);
-          applyCvd(cvd);
+          panel(applyChainTicker, chain);
+          panel(applyOiWalls, chain);
+          panel(applyOptionChainSnapshot, chain, buildup);
+          panel(applyAtmGreeks, chain);
+          panel(applyPortfolioGreeks, greeks);
+          panel(applyVolumeProfilePanel, vProfile);
+          panel(applyPnlToday, report);
+          panel(applyChartHeader, candles);
+          panel(applyCandleChart, candles);
+          panel(applyLegendVwap, candles);
+          panel(applyBreadth, breadth);
+          panel(applyIvRank, ivRank);
+          panel(applyCvd, cvd);
+          panel(applyPressure, pressure);
         }
         if (window.NE) window.NE.applyMarketOpenBadges();
         applyMarketHours();
@@ -517,24 +651,61 @@
         // Backend not running / unreachable — keep the static mock numbers as-is.
         markStatus(false);
       });
+
+    // Footer index strip — independent of the selected underlying's option
+    // chain, so it runs alongside rather than inside the Promise.all above.
+    fetchJSON("/market/quote?symbols=NIFTY50,NIFTYBANK,FINNIFTY,SENSEX,INDIAVIX")
+      .then(function (quotes) { if (window.NE) window.NE.applyFooterTicker(quotes); })
+      .catch(function () {});
   }
 
-  if (hasChainSections) {
-    fetchJSON("/market/expiries?underlying=" + UNDERLYING)
-      .then(function (data) {
-        var expiry = (data.expiries || [])[0];
-        var expiryLabel = expiry
-          ? new Date(expiry).toLocaleDateString("en-IN", { day: "2-digit", month: "short" }).toUpperCase()
-          : "";
-        load(expiry, expiryLabel);
-        setInterval(function () { load(expiry, expiryLabel); }, REFRESH_MS);
-      })
-      .catch(function () {
-        load();
-        setInterval(load, REFRESH_MS);
-      });
-  } else {
+  function startPolling() {
+    if (pollTimer) clearInterval(pollTimer);
     load();
-    setInterval(load, REFRESH_MS);
+    pollTimer = setInterval(load, REFRESH_MS);
   }
+
+  // (Re)fetches expiries for the currently-selected underlying, populates the
+  // Expiry dropdown with them, then starts/restarts the 2s poll. Called on
+  // first load and every time the Index dropdown changes, since expiries
+  // differ per underlying.
+  function loadExpiriesAndStart() {
+    if (!hasChainSections) { currentExpiry = null; startPolling(); return; }
+    fetchJSON("/market/expiries?underlying=" + getUnderlying())
+      .then(function (data) {
+        var expiries = data.expiries || [];
+        if (expiryEl) {
+          expiryEl.innerHTML = expiries.map(function (e) {
+            var label = new Date(e).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase();
+            return '<option value="' + e + '">' + label + "</option>";
+          }).join("");
+        }
+        currentExpiry = expiries[0] || null;
+        currentExpiryLabel = currentExpiry
+          ? new Date(currentExpiry).toLocaleDateString("en-IN", { day: "2-digit", month: "short" }).toUpperCase()
+          : "";
+        startPolling();
+      })
+      .catch(function () { currentExpiry = null; startPolling(); });
+  }
+
+  if (underlyingEl) {
+    underlyingEl.addEventListener("change", function () {
+      var u = getUnderlying();
+      setText("dash-primary-label", UNDERLYING_LABELS[u] || u);
+      setText("dash-chart-title", (UNDERLYING_LABELS[u] || u).toUpperCase() + " · 5 · " + (UNDERLYING_EXCHANGE[u] || "NSE"));
+      loadExpiriesAndStart();
+    });
+  }
+  if (expiryEl) {
+    expiryEl.addEventListener("change", function () {
+      currentExpiry = expiryEl.value || null;
+      currentExpiryLabel = currentExpiry
+        ? new Date(currentExpiry).toLocaleDateString("en-IN", { day: "2-digit", month: "short" }).toUpperCase()
+        : "";
+      startPolling();
+    });
+  }
+
+  loadExpiriesAndStart();
 })();
