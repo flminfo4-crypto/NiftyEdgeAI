@@ -114,4 +114,60 @@
 
   load();
   setInterval(load, 2000);
+
+  // -- premium-selling setups ---------------------------------------------
+  // Kept off the 2s loop above on purpose. /signals/sell-setups fans out to
+  // the option chain, the CPR analysis and the IV-rank series; those are all
+  // cached server-side, but the answer changes on the scale of a session, not
+  // seconds, so polling it at 2s would be pure load for no new information
+  // (see the 429 history in backend/app/services/market_data.py).
+
+  var SETUP_BADGE = { ACTIVE: "badge-green", WATCH: "badge-amber", BLOCKED: "badge-gray" };
+  var VERDICT_BADGE = { FAVOURABLE: "badge-green", MIXED: "badge-amber", UNFAVOURABLE: "badge-red" };
+
+  function renderSetups(d) {
+    NE.setHTML("sell-setup-verdict",
+      '<span class="badge ' + (VERDICT_BADGE[d.verdict] || "badge-gray") + '">' + d.verdict + "</span>");
+
+    var c = d.conditions;
+    var bits = [
+      "CPR width: <b>" + (c.widthRegime || "unknown") + "</b>",
+      "Volatility rank: <b>" + (c.ivRank == null ? "unknown" : c.ivRank.toFixed(0)) +
+        "</b> (floor " + c.ivRankThreshold.toFixed(0) + ")",
+      "Gamma regime: <b>" + (c.gammaRegime ? c.gammaRegime.toLowerCase() : "unknown") + "</b>",
+    ];
+    if (c.callWall != null || c.putWall != null) {
+      bits.push("Walls: <b>" + (c.callWall == null ? "—" : NE.fmtNum(c.callWall, 0)) + " / " +
+        (c.putWall == null ? "—" : NE.fmtNum(c.putWall, 0)) + "</b>");
+    }
+    if (c.zeroGammaStrike != null) bits.push("Gamma flip: <b>" + NE.fmtNum(c.zeroGammaStrike, 0) + "</b>");
+    NE.setHTML("sell-setup-conditions", bits.join(" &nbsp;·&nbsp; "));
+
+    NE.setHTML("sell-setup-list", d.setups.map(function (s) {
+      return '<div style="border:1px solid var(--border); border-radius:6px; padding:10px; margin-bottom:8px;">' +
+        '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px;">' +
+          '<b style="font-size:12px;">' + s.name + "</b>" +
+          "<span>" +
+            '<span class="badge ' + (s.definedRisk ? "badge-blue" : "badge-red") + '">' +
+              (s.definedRisk ? "Defined risk" : "Undefined risk") + "</span> " +
+            '<span class="badge ' + (SETUP_BADGE[s.status] || "badge-gray") + '">' + s.status + "</span>" +
+          "</span>" +
+        "</div>" +
+        '<ul style="margin:0; padding-left:16px; font-size:10.5px; line-height:1.6; color:var(--text-secondary);">' +
+          s.reasons.map(function (r) { return "<li>" + r + "</li>"; }).join("") +
+        "</ul></div>";
+    }).join(""));
+  }
+
+  function loadSetups() {
+    NE.fetchJSONLong("/signals/sell-setups", 30000)
+      .then(renderSetups)
+      .catch(function (err) {
+        NE.setHTML("sell-setup-conditions",
+          '<span style="color:var(--red);">Setup conditions unavailable: ' + err.message + "</span>");
+      });
+  }
+
+  loadSetups();
+  setInterval(loadSetups, 60000);
 })();

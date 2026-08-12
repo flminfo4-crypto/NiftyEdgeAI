@@ -61,6 +61,96 @@ _TEMPLATE_META = {
              "label": "Skip NARROW CPR-width days"},
         ],
     },
+    "short_straddle": {
+        "label": "Short Straddle (naked)",
+        "description": (
+            "Sells the ATM call and ATM put together — the largest credit of the four "
+            "premium-selling templates and the only structure here with no protection on "
+            "either side. Profits when the underlying goes nowhere and premium decays; "
+            "loses on any decisive move, with the loss bounded only by the run's stop, "
+            "not by the structure. Fires only when the CPR width isn't NARROW (narrow "
+            "forecasts a trending day) and realised volatility is rich against its own "
+            "trailing range."
+        ),
+        "params": [
+            {"name": "skip_narrow", "type": "bool", "default": True,
+             "label": "Skip NARROW CPR-width days"},
+            {"name": "min_vol_rank", "type": "float", "default": 40.0, "min": 0.0, "max": 100.0,
+             "label": "Min volatility rank (0 = off)"},
+            {"name": "vol_lookback", "type": "int", "default": 120, "min": 30, "max": 500,
+             "label": "Volatility rank lookback (sessions)"},
+            {"name": "target_scale", "type": "float", "default": 10.0, "min": 1.0, "max": 30.0,
+             "label": "Profit-target scale (x the run's target %)"},
+        ],
+    },
+    "short_strangle": {
+        "label": "Short Strangle (naked)",
+        "description": (
+            "Sells an OTM call and an OTM put the same distance either side of ATM. Less "
+            "credit than the straddle in exchange for a much wider zone where the trade "
+            "wins — but still structurally unprotected, so a gap through either leg is "
+            "capped only by the stop. Same entry gate as the straddle."
+        ),
+        "params": [
+            {"name": "wing_offset", "type": "int", "default": 200, "min": 50, "max": 600,
+             "label": "Distance of each short leg from ATM (points)"},
+            {"name": "skip_narrow", "type": "bool", "default": True,
+             "label": "Skip NARROW CPR-width days"},
+            {"name": "min_vol_rank", "type": "float", "default": 40.0, "min": 0.0, "max": 100.0,
+             "label": "Min volatility rank (0 = off)"},
+            {"name": "vol_lookback", "type": "int", "default": 120, "min": 30, "max": 500,
+             "label": "Volatility rank lookback (sessions)"},
+            {"name": "target_scale", "type": "float", "default": 10.0, "min": 1.0, "max": 30.0,
+             "label": "Profit-target scale (x the run's target %)"},
+        ],
+    },
+    "iron_condor": {
+        "label": "Iron Condor (defined risk)",
+        "description": (
+            "The short strangle with a protective long wing bought beyond each short leg — "
+            "four legs, and max loss structurally capped at the wing width minus the net "
+            "credit however far the underlying travels. Collects less than the naked "
+            "strangle; that difference is the price of removing the tail. (Not to be "
+            "confused with the built-in 'IRON CONDOR' strategy, which despite its name "
+            "sells a naked strangle with no wings.) Costs all eight real orders."
+        ),
+        "params": [
+            {"name": "inner_offset", "type": "int", "default": 200, "min": 0, "max": 600,
+             "label": "Short legs' distance from ATM (points)"},
+            {"name": "wing_offset", "type": "int", "default": 100, "min": 50, "max": 400,
+             "label": "Wing width — short leg to protective leg (points)"},
+            {"name": "skip_narrow", "type": "bool", "default": True,
+             "label": "Skip NARROW CPR-width days"},
+            {"name": "min_vol_rank", "type": "float", "default": 40.0, "min": 0.0, "max": 100.0,
+             "label": "Min volatility rank (0 = off)"},
+            {"name": "vol_lookback", "type": "int", "default": 120, "min": 30, "max": 500,
+             "label": "Volatility rank lookback (sessions)"},
+            {"name": "target_scale", "type": "float", "default": 10.0, "min": 1.0, "max": 30.0,
+             "label": "Profit-target scale (x the run's target %)"},
+        ],
+    },
+    "iron_fly": {
+        "label": "Iron Fly (defined risk)",
+        "description": (
+            "The ATM straddle with a protective wing either side — the defined-risk "
+            "counterpart to the short straddle. Largest credit of the two defined-risk "
+            "structures and the narrowest zone in which it wins, so it needs the "
+            "underlying to sit still rather than merely stay in a range. Max loss capped "
+            "at the wing width minus the net credit."
+        ),
+        "params": [
+            {"name": "wing_offset", "type": "int", "default": 200, "min": 50, "max": 600,
+             "label": "Wing width — ATM to protective leg (points)"},
+            {"name": "skip_narrow", "type": "bool", "default": True,
+             "label": "Skip NARROW CPR-width days"},
+            {"name": "min_vol_rank", "type": "float", "default": 40.0, "min": 0.0, "max": 100.0,
+             "label": "Min volatility rank (0 = off)"},
+            {"name": "vol_lookback", "type": "int", "default": 120, "min": 30, "max": 500,
+             "label": "Volatility rank lookback (sessions)"},
+            {"name": "target_scale", "type": "float", "default": 10.0, "min": 1.0, "max": 30.0,
+             "label": "Profit-target scale (x the run's target %)"},
+        ],
+    },
 }
 
 # Snapshot of registered keys taken at import time — before bootstrap() (or

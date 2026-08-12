@@ -60,6 +60,7 @@
   var state = {
     data: null,        // last /strike-greeks payload
     profile: null,     // last /gamma-profile payload
+    sell: null,        // last /sell-candidates payload
     selected: { CE_ATM: true, PE_ATM: true },
   };
 
@@ -820,6 +821,95 @@
     NE.setHTML("gl-legend", html || '<span style="color:var(--text-muted);">No legs selected</span>');
   }
 
+  // -- candidate sell structures -------------------------------------------
+  // Renders what /market/sell-candidates priced, in the order the API returned
+  // it. Deliberately NOT sorted by credit, R:R or any other "best first"
+  // ordering — the comparison between structures is the point, and ranking
+  // them would turn a reference table into a recommendation.
+
+  function legLine(l) {
+    var cls = l.side === "SELL" ? "text-red" : "text-green";
+    return '<span class="' + cls + '" style="font-variant-numeric:tabular-nums;">' +
+      l.side + " " + fmtPrice(l.strike) + " " + l.optionType + "</span>" +
+      '<span style="color:var(--text-muted);"> @ ' + l.ltp.toFixed(2) + "</span>";
+  }
+
+  function candidateCard(c) {
+    var riskBadge = c.definedRisk
+      ? '<span class="badge badge-green">Defined risk</span>'
+      : '<span class="badge badge-red">Undefined risk</span>';
+    var maxLoss = c.maxLoss == null
+      ? '<b class="text-red">No structural cap</b>'
+      : "<b>" + c.maxLoss.toFixed(2) + " pts</b> (" + NE.fmtINR(c.maxLossRupees) + ")";
+
+    var rows = [
+      ["Net credit", "<b class=\"text-green\">" + c.netCredit.toFixed(2) + " pts</b> (" + NE.fmtINR(c.netCreditRupees) + ")"],
+      ["Max loss", maxLoss],
+      ["Risk : reward", c.riskReward == null ? "—" : c.riskReward.toFixed(2) + " : 1"],
+      ["Breakeven" + (c.breakevens.length > 1 ? "s" : ""), c.breakevens.map(fmtPrice).join("  ·  ")],
+      ["Profit zone", c.profitZonePct == null ? "—" : c.profitZonePct.toFixed(2) + "% of spot"],
+    ];
+
+    return '<div style="border:1px solid var(--border); border-radius:6px; padding:12px; margin-bottom:10px;">' +
+      '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;">' +
+        '<b style="font-size:12.5px;">' + c.name + "</b>" + riskBadge +
+      "</div>" +
+      '<div style="font-size:11px; margin-bottom:8px; display:flex; flex-wrap:wrap; gap:12px;">' +
+        c.legs.map(legLine).join("") +
+      "</div>" +
+      '<div style="display:flex; flex-wrap:wrap; gap:16px; font-size:11px; margin-bottom:8px;">' +
+        rows.map(function (r) {
+          return '<span style="color:var(--text-muted);">' + r[0] + ": </span>" + r[1];
+        }).join("") +
+      "</div>" +
+      '<div style="font-size:11px; margin-bottom:8px; color:var(--text-muted);">' +
+        "Net position Greeks &mdash; Δ " + c.netDelta.toFixed(3) +
+        " · Γ " + c.netGamma.toFixed(5) +
+        " · Θ " + c.netTheta.toFixed(2) +
+        " · V " + c.netVega.toFixed(2) +
+        (c.netGamma < 0 && c.netTheta > 0 ? "  (short gamma, long theta — the premium-selling profile)" : "") +
+      "</div>" +
+      '<div style="font-size:10.5px; line-height:1.5; color:var(--text-secondary);">' + c.rationale + "</div>" +
+      "</div>";
+  }
+
+  function renderSellCandidates() {
+    var host = document.querySelector('[data-live="gl-sell-list"]');
+    if (!host) return;
+    var d = state.sell;
+    if (!d) {
+      host.innerHTML = '<div class="empty-state" style="font-size:11.5px; color:var(--text-muted);">' +
+        'Click "Build" to price candidate structures off the live chain.</div>';
+      return;
+    }
+    if (!d.candidates.length) {
+      host.innerHTML = '<div class="empty-state" style="font-size:11.5px; color:var(--text-muted);">' +
+        "No structure could be priced from this chain — every candidate needs real premiums on all of its legs, " +
+        "and at least one leg had no quote.</div>";
+      return;
+    }
+    host.innerHTML = d.candidates.map(candidateCard).join("");
+  }
+
+  function loadSellCandidates() {
+    var underlying = el("gl-underlying").value;
+    var btn = document.querySelector('[data-live="gl-sell-btn"]');
+    if (btn) { btn.disabled = true; btn.textContent = "Building…"; }
+    NE.fetchJSONLong("/market/sell-candidates?underlying=" + underlying + "&width=15", 30000)
+      .then(function (d) {
+        state.sell = d;
+        NE.setText("gl-sell-sub", "Expiry " + d.expiry + " · spot " + fmtPrice(d.spotPrice) +
+          " · lot " + d.lotSize + " · " + d.candidates.length + " structures");
+        renderSellCandidates();
+      })
+      .catch(function (err) {
+        NE.setText("gl-sell-sub", "Build failed: " + err.message);
+      })
+      .then(function () {
+        if (btn) { btn.disabled = false; btn.textContent = "Build"; }
+      });
+  }
+
   // -- render orchestration -------------------------------------------------
 
   /** "Expiry sessions only" is a display filter over what was fetched, so the
@@ -849,6 +939,7 @@
     });
     renderGexTimeline(document.querySelector('[data-live="gl-gex-canvas"]'), { buckets: buckets });
     renderGammaProfile(document.querySelector('[data-live="gl-profile-canvas"]'), state.profile);
+    renderSellCandidates();
 
     if (state.data) {
       var sub = buckets.length + " buckets · " + state.data.interval + " · ATM ±" + state.data.depth +
@@ -934,6 +1025,9 @@
   });
   document.querySelectorAll('[data-live="gl-profile-btn"]').forEach(function (btn) {
     btn.addEventListener("click", loadProfile);
+  });
+  document.querySelectorAll('[data-live="gl-sell-btn"]').forEach(function (btn) {
+    btn.addEventListener("click", loadSellCandidates);
   });
 
   // Canvases are sized off clientWidth at render time, so without this a

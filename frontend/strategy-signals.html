@@ -139,6 +139,26 @@
           </div>
         </div>
 
+        <div class="card" style="margin-bottom:14px;">
+          <div class="card-header" style="flex-wrap:wrap; gap:8px;">
+            <span class="card-title accent">Premium-Selling Setups</span>
+            <span data-live="sell-setup-verdict"></span>
+          </div>
+          <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px;" data-live="sell-setup-conditions">
+            Loading conditions&hellip;
+          </div>
+          <div data-live="sell-setup-list"></div>
+          <div class="mt-8" style="font-size:10.5px; color:var(--text-muted); line-height:1.5;">
+            These are the <b>same two entry gates the short-premium backtest templates apply</b> &mdash; CPR width
+            regime and volatility rank &mdash; evaluated against today's real data, with the live gamma regime overlaid
+            on the undefined-risk builds. A setup showing ACTIVE corresponds to a day those strategies would have
+            entered in a backtest; if the two ever disagree, one of them is wrong. This reports <b>conditions, not
+            instructions</b>: nothing is ranked or recommended, and any input that can't be resolved blocks a setup
+            rather than passing it. Build and backtest any of these on the
+            <a class="card-link" href="strategies.html">Backtest Strategies</a> page.
+          </div>
+        </div>
+
         <div class="card">
           <div class="card-header"><span class="card-title accent">Signal History</span></div>
           <div class="table-wrap">

@@ -20,6 +20,7 @@ from app.models.schemas import (
     OptionChainOut,
     OptionPressureOut,
     QuoteOut,
+    SellCandidatesOut,
     StrikeGreeksOut,
     TopNarrowStocksOut,
     TpoProfileCompositeSessionOut,
@@ -189,6 +190,25 @@ def get_gamma_profile(
     few strikes, this is gamma across the chain right now."""
     try:
         return strike_greeks_service.get_gamma_profile(underlying, expiry, width)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.get("/sell-candidates", response_model=SellCandidatesOut)
+def get_sell_candidates(
+    underlying: str = "NIFTY50",
+    expiry: str | None = Query(None, description="YYYY-MM-DD; defaults to the nearest expiry"),
+    width: int = Query(15, ge=3, le=40, description="strikes either side of ATM"),
+):
+    """Candidate short-premium structures priced from the live chain and
+    anchored on the gamma profile's levels — credit, breakevens, structurally
+    capped loss and net position Greeks for each.
+
+    Returns every construction so they can be compared; nothing is ranked or
+    recommended. Naked builds report `maxLoss: null` because they have no
+    structural cap."""
+    try:
+        return strike_greeks_service.get_sell_candidates(underlying, expiry, width)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
 

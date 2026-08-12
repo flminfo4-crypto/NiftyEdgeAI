@@ -74,6 +74,12 @@ _MAX_DISTINCT_STRIKES = 18
 # How many strikes either side of ATM the live gamma profile spans.
 _PROFILE_WIDTH = 15
 
+# A short leg quoted below this many points is not worth selling: it carries
+# the full risk of the strike while contributing essentially no credit, and on
+# a thin far-OTM strike it usually reflects a stale or one-sided quote rather
+# than a real price. Structure selection skips those strikes outright.
+_MIN_SHORT_PREMIUM = 0.5
+
 
 def _slot_offset(side: str, slot: str) -> int:
     return (_CE_OFFSET if side == "CE" else _PE_OFFSET)[slot]
@@ -296,6 +302,45 @@ def _build_ladder(underlying: str, frm_d: date, to_d: date, expiry_kind: str,
 # -- live full-chain gamma profile -------------------------------------------
 
 
+def _resolve_chain_greeks(chain, spot: float, expiry: str) -> tuple[dict, str]:
+    """Per-leg Greeks for a whole chain, keyed (strike, side).
+
+    Prefers the broker's own published Greeks; falls back to Black-Scholes
+    from each row's REAL implied volatility when it publishes none (Dhan's
+    mock adapter and some live responses omit them). Without this fallback
+    every delta reads 0.0, which doesn't just blank a column — it silently
+    breaks anything selecting strikes BY delta, which is most of the
+    conventional constructions. The label it returns is surfaced so the UI
+    never presents a derived Greek as a broker-published one.
+    """
+    expiry_dt = _expiry_datetime(expiry)
+    now = datetime.now(timezone.utc)
+    t_years = max((expiry_dt - now).total_seconds() / (365 * 86400), 1.0 / (365 * 24)) if expiry_dt else None
+    broker_has = any(r.ce_gamma or r.pe_gamma or r.ce_delta or r.pe_delta for r in chain.rows)
+
+    out: dict[tuple[float, str], dict] = {}
+    for r in chain.rows:
+        for side in ("CE", "PE"):
+            if broker_has:
+                pick = (lambda a, b: getattr(r, a if side == "CE" else b))
+                out[(r.strike, side)] = {
+                    "delta": pick("ce_delta", "pe_delta") or 0.0,
+                    "gamma": pick("ce_gamma", "pe_gamma") or 0.0,
+                    "theta": pick("ce_theta", "pe_theta") or 0.0,
+                    "vega": pick("ce_vega", "pe_vega") or 0.0,
+                }
+                continue
+            iv = (r.ce_iv if side == "CE" else r.pe_iv) or 0.0
+            if not iv or not t_years:
+                continue
+            g = bs_greeks(spot, r.strike, t_years, iv / 100.0, side)
+            out[(r.strike, side)] = {
+                "delta": g.delta, "gamma": g.gamma, "theta": g.theta, "vega": g.vega,
+            }
+    label = "broker" if broker_has else "derived from chain IV (broker publishes no Greeks)"
+    return out, label
+
+
 def get_gamma_profile(underlying: str, expiry: str | None = None, width: int = _PROFILE_WIDTH) -> dict:
     """Gamma exposure by strike across the live chain, plus the flip level.
 
@@ -317,19 +362,10 @@ def get_gamma_profile(underlying: str, expiry: str | None = None, width: int = _
 
     chain = market_data.get_option_chain(underlying, expiry)
     spot = chain.spot_price
-    expiry_dt = _expiry_datetime(expiry)
-    now = datetime.now(timezone.utc)
-    t_years = max((expiry_dt - now).total_seconds() / (365 * 86400), 1.0 / (365 * 24)) if expiry_dt else None
-
-    broker_has_gamma = any(r.ce_gamma or r.pe_gamma for r in chain.rows)
+    greeks, gamma_source = _resolve_chain_greeks(chain, spot, expiry)
 
     def leg_gamma(row, side: str) -> float | None:
-        if broker_has_gamma:
-            return (row.ce_gamma if side == "CE" else row.pe_gamma) or None
-        iv = (row.ce_iv if side == "CE" else row.pe_iv) or 0.0
-        if not iv or not t_years:
-            return None
-        return bs_greeks(spot, row.strike, t_years, iv / 100.0, side).gamma
+        return (greeks.get((row.strike, side)) or {}).get("gamma") or None
 
     rows = sorted(chain.rows, key=lambda r: r.strike)
     if rows and width:
@@ -390,7 +426,278 @@ def get_gamma_profile(underlying: str, expiry: str | None = None, width: int = _
         "zero_gamma_strike": flip,
         "call_wall": call_wall["strike"] if call_wall else None,
         "put_wall": put_wall["strike"] if put_wall else None,
-        "gamma_source": "broker" if broker_has_gamma else "derived from chain IV (broker publishes no Greeks)",
+        "gamma_source": gamma_source,
         "source": "mock" if settings.broker_adapter == "mock" else "broker",
         "strikes": strikes,
+    }
+
+
+# -- premium-selling structure generator -------------------------------------
+# Prices candidate short-premium structures off the LIVE chain — real traded
+# premiums, real OI, real Greeks — anchored on the levels the gamma profile
+# already identifies. This is structure arithmetic (credit, breakevens, capped
+# loss, net Greeks), not a recommendation engine: it says what each structure
+# WOULD be if opened now, and every candidate is returned regardless of
+# whether it looks attractive, so the comparison is the output rather than a
+# pick. Nothing here ranks, scores or suggests a trade.
+
+# Exchange contract sizes, used only to express per-lot rupee figures
+# alongside the unambiguous per-point ones. Exchanges revise these
+# periodically (NIFTY moved 50 -> 75 in Nov 2024); the points columns are
+# authoritative and unaffected if these drift.
+_LOT_SIZE = {"NIFTY50": 75, "NIFTYBANK": 35, "SENSEX": 20}
+
+
+def _leg(side: str, option_type: str, row, strike: float, greeks: dict) -> dict | None:
+    """One structure leg priced from its real chain row. Position Greeks carry
+    the leg's sign: a sold option is short gamma and long theta, which is the
+    entire risk profile of premium selling and has to survive into the totals
+    rather than being reported as the raw contract Greek."""
+    if row is None:
+        return None
+    ltp = row.ce_ltp if option_type == "CE" else row.pe_ltp
+    if not ltp:
+        return None
+    sign = 1.0 if side == "BUY" else -1.0
+    g = (lambda a, b: getattr(row, a if option_type == "CE" else b))
+    lg = greeks.get((strike, option_type)) or {}
+    return {
+        "side": side,
+        "option_type": option_type,
+        "strike": strike,
+        "ltp": round(ltp, 2),
+        "oi": g("ce_oi", "pe_oi"),
+        "iv": g("ce_iv", "pe_iv"),
+        "delta": round(sign * lg.get("delta", 0.0), 4),
+        "gamma": round(sign * lg.get("gamma", 0.0), 6),
+        "theta": round(sign * lg.get("theta", 0.0), 2),
+        "vega": round(sign * lg.get("vega", 0.0), 2),
+    }
+
+
+def _structure(name: str, kind: str, legs: list, spot: float, lot: int,
+               max_loss_points: float | None, breakevens: list, rationale: str) -> dict | None:
+    """Assembles priced legs into a structure summary. Returns None when any
+    leg failed to price — a partially-priced structure would understate its
+    own risk, which is the one error worth refusing to make here."""
+    if not legs or any(l is None for l in legs):
+        return None
+    # Credit is what's received net of what's paid for protection.
+    credit = sum((-1 if l["side"] == "BUY" else 1) * l["ltp"] for l in legs)
+    if credit <= 0:
+        return None  # not a credit structure as configured; don't present it as one
+    defined = max_loss_points is not None
+    return {
+        "name": name,
+        "kind": kind,
+        "defined_risk": defined,
+        "legs": legs,
+        "net_credit": round(credit, 2),
+        "net_credit_rupees": round(credit * lot, 2),
+        "max_profit": round(credit, 2),
+        "max_profit_rupees": round(credit * lot, 2),
+        "max_loss": round(max_loss_points, 2) if defined else None,
+        "max_loss_rupees": round(max_loss_points * lot, 2) if defined else None,
+        "risk_reward": round(max_loss_points / credit, 2) if defined and credit else None,
+        "breakevens": [round(b, 2) for b in breakevens],
+        "profit_zone_pct": round((max(breakevens) - min(breakevens)) / spot * 100, 2)
+        if len(breakevens) > 1 else None,
+        "net_delta": round(sum(l["delta"] for l in legs), 4),
+        "net_gamma": round(sum(l["gamma"] for l in legs), 6),
+        "net_theta": round(sum(l["theta"] for l in legs), 2),
+        "net_vega": round(sum(l["vega"] for l in legs), 2),
+        "rationale": rationale,
+    }
+
+
+def get_sell_candidates(underlying: str, expiry: str | None = None, width: int = _PROFILE_WIDTH) -> dict:
+    """Candidate short-premium structures priced from the live chain, anchored
+    on the gamma profile's own levels.
+
+    Four constructions are always returned so they can be compared against
+    each other: a wall-anchored naked strangle, a delta-anchored defined-risk
+    iron condor, an ATM iron fly, and a one-sided vertical on whichever side
+    of the zero-gamma flip spot is sitting. Undefined-risk structures are
+    flagged as such and report `max_loss: null` rather than a comfortable
+    number, because they genuinely do not have one.
+    """
+    underlying = underlying.upper().replace(" ", "")
+    profile = get_gamma_profile(underlying, expiry, width)
+    expiry = profile["expiry"]
+    chain = market_data.get_option_chain(underlying, expiry)
+    spot = profile["spot_price"]
+    lot = _LOT_SIZE.get(underlying, 1)
+
+    rows = sorted(chain.rows, key=lambda r: r.strike)
+    by_strike = {r.strike: r for r in rows}
+    if not rows:
+        raise ValueError(f"No option chain rows for '{underlying}' {expiry}")
+    strikes = [r.strike for r in rows]
+    step = min((b - a for a, b in zip(strikes, strikes[1:])), default=50) or 50
+    atm = min(strikes, key=lambda s: abs(s - spot))
+    greeks, greeks_source = _resolve_chain_greeks(chain, spot, expiry)
+
+    def _wing_partner(strike: float, option_type: str, wing: float) -> float:
+        return strike + wing if option_type == "CE" else strike - wing
+
+    def _sellable(strike: float, option_type: str) -> bool:
+        """A strike worth SHORTING: it has to actually pay for the risk taken."""
+        row = by_strike.get(strike)
+        if row is None:
+            return False
+        ltp = row.ce_ltp if option_type == "CE" else row.pe_ltp
+        return bool(ltp) and ltp >= _MIN_SHORT_PREMIUM
+
+    def nearest_by_delta(option_type: str, target: float, wing: float = 0.0) -> float | None:
+        """Strike whose |delta| is closest to `target`, on the OTM side only —
+        selling an ITM option is a different trade with different intent.
+
+        `wing` constrains the search to strikes that still leave room for a
+        protective leg inside the chain. Without it the delta-selected short
+        can land on the outermost strike, whose wing simply doesn't exist, and
+        the whole defined-risk structure vanishes from the comparison with no
+        explanation — which is exactly the structure a reader most needs to
+        see next to the naked one.
+
+        Falls back to a fixed offset when no leg has a usable delta at all (a
+        chain with neither published Greeks nor usable IV).
+        """
+        best, err = None, float("inf")
+        for r in rows:
+            if option_type == "CE" and r.strike <= spot:
+                continue
+            if option_type == "PE" and r.strike >= spot:
+                continue
+            if wing and _wing_partner(r.strike, option_type, wing) not in by_strike:
+                continue
+            if not _sellable(r.strike, option_type):
+                continue
+            d = abs((greeks.get((r.strike, option_type)) or {}).get("delta") or 0.0)
+            if not d:
+                continue
+            if abs(d - target) < err:
+                err, best = abs(d - target), r.strike
+        if best is not None:
+            return best
+        fallback = atm + step * 4 if option_type == "CE" else atm - step * 4
+        if fallback in by_strike and (not wing or _wing_partner(fallback, option_type, wing) in by_strike):
+            return fallback
+        return None
+
+    def otm_strike(preferred: float | None, option_type: str, fallback_delta: float) -> float | None:
+        """Use the gamma wall when it actually sits OTM; otherwise fall back to
+        a delta-selected strike. A wall on the wrong side of spot is real
+        information, but it is not a strike you can sell into."""
+        if preferred is not None and _sellable(preferred, option_type):
+            if option_type == "CE" and preferred > spot:
+                return preferred
+            if option_type == "PE" and preferred < spot:
+                return preferred
+        return nearest_by_delta(option_type, fallback_delta)
+
+    candidates = []
+
+    # 1. Wall-anchored naked strangle -- shorts sat on the two strikes carrying
+    #    the most call and put gamma exposure.
+    ce_wall = otm_strike(profile.get("call_wall"), "CE", 0.20)
+    pe_wall = otm_strike(profile.get("put_wall"), "PE", 0.20)
+    if ce_wall and pe_wall:
+        legs = [_leg("SELL", "CE", by_strike.get(ce_wall), ce_wall, greeks),
+                _leg("SELL", "PE", by_strike.get(pe_wall), pe_wall, greeks)]
+        if all(legs):
+            credit = sum(l["ltp"] for l in legs)
+            candidates.append(_structure(
+                "Wall-anchored Short Strangle", "naked_strangle", legs, spot, lot,
+                None, [pe_wall - credit, ce_wall + credit],
+                "Shorts sit on the strikes carrying the most call and put gamma exposure, "
+                "where dealer hedging tends to resist price. Undefined risk on both sides: "
+                "a move past a wing is capped only by whatever stop is applied manually.",
+            ))
+
+    # 2. Delta-anchored iron condor -- the conventional defined-risk build.
+    wing = step * 2
+    ce_short = nearest_by_delta("CE", 0.20, wing)
+    pe_short = nearest_by_delta("PE", 0.20, wing)
+    if ce_short and pe_short:
+        legs = [_leg("SELL", "CE", by_strike.get(ce_short), ce_short, greeks),
+                _leg("BUY", "CE", by_strike.get(ce_short + wing), ce_short + wing, greeks),
+                _leg("SELL", "PE", by_strike.get(pe_short), pe_short, greeks),
+                _leg("BUY", "PE", by_strike.get(pe_short - wing), pe_short - wing, greeks)]
+        if all(legs):
+            credit = sum((-1 if l["side"] == "BUY" else 1) * l["ltp"] for l in legs)
+            candidates.append(_structure(
+                "Iron Condor (~0.20 delta)", "iron_condor", legs, spot, lot,
+                wing - credit, [pe_short - credit, ce_short + credit],
+                "Shorts chosen at roughly 0.20 delta with a protective wing bought beyond "
+                f"each, {int(wing)} points out. Max loss is structurally capped at the wing "
+                "width minus the credit, however far the underlying travels.",
+            ))
+
+    # 3. ATM iron fly -- most credit, narrowest zone.
+    fly_wing = step * 4
+    legs = [_leg("SELL", "CE", by_strike.get(atm), atm, greeks),
+            _leg("SELL", "PE", by_strike.get(atm), atm, greeks),
+            _leg("BUY", "CE", by_strike.get(atm + fly_wing), atm + fly_wing, greeks),
+            _leg("BUY", "PE", by_strike.get(atm - fly_wing), atm - fly_wing, greeks)]
+    if all(legs):
+        credit = sum((-1 if l["side"] == "BUY" else 1) * l["ltp"] for l in legs)
+        candidates.append(_structure(
+            "Iron Fly (ATM)", "iron_fly", legs, spot, lot,
+            fly_wing - credit, [atm - credit, atm + credit],
+            "Sells the ATM straddle with a wing bought either side. Collects the most "
+            "credit of the defined-risk builds for the narrowest zone in which it wins — "
+            "it needs the underlying to sit still, not merely stay in a range.",
+        ))
+
+    # 4. One-sided vertical, chosen by which side of the gamma flip spot sits.
+    #    Above the flip dealers are long gamma and dips get bought, so the put
+    #    side is the one being defended; below it, the reverse.
+    flip = profile.get("zero_gamma_strike")
+    above_flip = flip is None or spot >= flip
+    if above_flip and pe_short:
+        legs = [_leg("SELL", "PE", by_strike.get(pe_short), pe_short, greeks),
+                _leg("BUY", "PE", by_strike.get(pe_short - wing), pe_short - wing, greeks)]
+        if all(legs):
+            credit = sum((-1 if l["side"] == "BUY" else 1) * l["ltp"] for l in legs)
+            where = "no flip level was found in range" if flip is None else f"spot is above the {flip:.0f} gamma flip"
+            candidates.append(_structure(
+                "Bull Put Spread", "bull_put_spread", legs, spot, lot,
+                wing - credit, [pe_short - credit],
+                f"One-sided and defined-risk: {where}, the regime in which hedging flow "
+                "tends to damp downside. Risk is only below the short put.",
+            ))
+    elif ce_short:
+        legs = [_leg("SELL", "CE", by_strike.get(ce_short), ce_short, greeks),
+                _leg("BUY", "CE", by_strike.get(ce_short + wing), ce_short + wing, greeks)]
+        if all(legs):
+            credit = sum((-1 if l["side"] == "BUY" else 1) * l["ltp"] for l in legs)
+            candidates.append(_structure(
+                "Bear Call Spread", "bear_call_spread", legs, spot, lot,
+                wing - credit, [ce_short + credit],
+                f"One-sided and defined-risk: spot is below the {flip:.0f} gamma flip, where "
+                "hedging flow tends to amplify moves rather than damp them, so upside is "
+                "sold rather than downside. Risk is only above the short call.",
+            ))
+
+    return {
+        "underlying": underlying,
+        "expiry": expiry,
+        "as_of": chain.as_of,
+        "spot_price": spot,
+        "atm_strike": atm,
+        "strike_step": step,
+        "lot_size": lot,
+        "call_wall": profile.get("call_wall"),
+        "put_wall": profile.get("put_wall"),
+        "zero_gamma_strike": flip,
+        "gamma_regime": profile["gamma_regime"],
+        "source": profile["source"],
+        "note": (
+            "Structures priced from the live chain's real traded premiums, OI and Greeks. "
+            "These are constructions for comparison, not recommendations — nothing here is "
+            "ranked or suggested, and undefined-risk builds report no max loss because they "
+            "genuinely have none. Premiums move continuously; a quote is stale the moment "
+            "it is drawn."
+        ),
+        "candidates": [c for c in candidates if c],
     }

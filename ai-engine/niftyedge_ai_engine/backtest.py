@@ -150,6 +150,14 @@ class LegShape:
     option and buys a further-OTM option of the same type as protection
     (a vertical credit spread) — max loss is capped at the strike width minus
     the credit received, a structural bound the naked CONDOR doesn't have.
+    IRON is the two-sided version of SPREAD: a short strangle with a
+    protective long wing bought beyond EACH side (four legs), so it is a
+    genuine defined-risk iron condor — max loss capped at the wing width
+    minus the net credit, on whichever side is breached. Note the historical
+    naming wart: the hand-written "iron-condor-weekly" strategy uses kind
+    CONDOR and is therefore NAKED despite its name; IRON is the kind that
+    actually buys the protection. inner_offset 0 makes it an iron fly (short
+    legs at ATM), anything larger an iron condor.
 
     hold controls the exit style on the daily-bar series:
     - SWING: walk day-by-day until stop/target/expiry (_leg_pnl).
@@ -160,7 +168,7 @@ class LegShape:
       value at the close — i.e. actual expiry settlement, which is exact
       rather than modeled.
     """
-    kind: Literal["SINGLE", "CONDOR", "SPREAD"]
+    kind: Literal["SINGLE", "CONDOR", "SPREAD", "IRON"]
     option_type: Optional[Literal["CE", "PE"]] = None
     side: Optional[Literal["BUY", "SELL"]] = None
     # SINGLE: offset of the one leg. SPREAD: offset of the short (sold) leg —
@@ -170,7 +178,11 @@ class LegShape:
     hold: Literal["SWING", "INTRADAY", "EXPIRY_DAY"] = "SWING"
     # CONDOR: each wing's OTM distance from ATM (both legs are naked).
     # SPREAD: extra OTM distance from the short leg to the protective long leg.
+    # IRON: extra OTM distance from each short leg to its protective long leg.
     wing_offset: int = 200
+    # IRON only: how far OTM each SHORT leg sits from ATM. 0 = iron fly
+    # (both shorts at ATM); >0 = iron condor with that much room either side.
+    inner_offset: int = 0
     # Multiplier on the run's target_pct [Ochoa 2010, Ch. 6, ~p.196]: a narrow
     # CPR follows a quiet session and lets price run past the second pivot
     # layer, so a fixed target leaves money behind; a wide CPR rarely clears
@@ -480,12 +492,167 @@ def make_ma_delta_spread_signal(p: MaDeltaSpreadParams) -> SignalFn:
     return _signal
 
 
+# -- premium-selling templates -----------------------------------------------
+# Four configurable short-premium structures, two naked and two defined-risk.
+# They share one entry gate (_sell_entry_ok) so the comparison between them is
+# a comparison of STRUCTURE, not of two different entry rules — the honest way
+# to answer "is the extra protection worth the credit I give up for it".
+
+
+def _iv_proxy_rank(ctx: StrategyContext, lookback: int) -> Optional[float]:
+    """Where today's realized volatility sits within its own trailing range,
+    0-100 — a stand-in for IV rank.
+
+    True IV rank needs an implied-vol history, which no Indian broker API
+    exposes historically (see options_pricing's module docstring). Realized
+    vol computed from the underlying's own real closes is the defensible
+    substitute: it moves with the same regime shifts, it is built entirely
+    from real data, and being a *rank* it cares only about the relative
+    position, which survives the systematic gap between realized and implied.
+    It is NOT an IV rank and the templates that use it say so.
+    """
+    i = ctx.index
+    if i < lookback + 25:
+        return None
+    closes = [c.close for c in ctx.candles[: i + 1]]
+    series = []
+    for j in range(i - lookback, i + 1):
+        window = closes[: j + 1]
+        if len(window) > 21:
+            series.append(realized_volatility(window))
+    if len(series) < 10:
+        return None
+    lo, hi = min(series), max(series)
+    if hi <= lo:
+        return None
+    return (series[-1] - lo) / (hi - lo) * 100
+
+
+def _sell_entry_ok(ctx: StrategyContext, skip_narrow: bool, min_vol_rank: float,
+                   vol_lookback: int) -> bool:
+    """Shared gate for every short-premium template.
+
+    Two filters, both grounded in why selling loses money rather than in
+    curve-fitting: a NARROW CPR forecasts a trending session [Ochoa 2010,
+    Ch. 6] and trend is what runs a short-premium book over, and selling
+    cheap volatility collects too little credit to survive the occasional
+    breach. Either can be switched off by the user (min_vol_rank 0 disables
+    the vol gate) — they are defaults, not doctrine.
+    """
+    if skip_narrow and _percentile_width_regime(ctx) == "NARROW":
+        return False
+    if min_vol_rank > 0:
+        rank = _iv_proxy_rank(ctx, vol_lookback)
+        # None = not enough history yet; don't fire rather than assume cheap
+        # vol is fine, since that is the failure mode this gate exists for.
+        if rank is None or rank < min_vol_rank:
+            return False
+    return True
+
+
+@dataclass
+class ShortStraddleParams:
+    """Sells the ATM call and ATM put, both naked. The maximum credit any of
+    these four structures collects, and the only one with no protection at
+    all on either side — its loss is bounded only by the stop."""
+    skip_narrow: bool = True
+    min_vol_rank: float = 40.0
+    vol_lookback: int = 120
+    target_scale: float = 10.0
+
+
+def make_short_straddle_signal(p: ShortStraddleParams) -> SignalFn:
+    """Factory: naked short straddle. Uses the CONDOR kind with zero wing
+    offset, which places both legs at ATM — CONDOR's P&L model is already
+    'sell a call and a put and track the combined premium', and a straddle is
+    exactly that with the wings collapsed onto ATM."""
+    def _signal(entry_spot: float, levels: DailyLevels, ctx: StrategyContext) -> Optional[LegShape]:
+        if not _sell_entry_ok(ctx, p.skip_narrow, p.min_vol_rank, p.vol_lookback):
+            return None
+        return LegShape(kind="CONDOR", wing_offset=0, target_scale=p.target_scale)
+    return _signal
+
+
+@dataclass
+class ShortStrangleParams:
+    """Sells an OTM call and an OTM put, both naked. Less credit than the
+    straddle for a much wider profit zone; still structurally unprotected."""
+    wing_offset: int = 200
+    skip_narrow: bool = True
+    min_vol_rank: float = 40.0
+    vol_lookback: int = 120
+    target_scale: float = 10.0
+
+
+def make_short_strangle_signal(p: ShortStrangleParams) -> SignalFn:
+    """Factory: naked short strangle at ATM ± wing_offset."""
+    def _signal(entry_spot: float, levels: DailyLevels, ctx: StrategyContext) -> Optional[LegShape]:
+        if not _sell_entry_ok(ctx, p.skip_narrow, p.min_vol_rank, p.vol_lookback):
+            return None
+        return LegShape(kind="CONDOR", wing_offset=p.wing_offset, target_scale=p.target_scale)
+    return _signal
+
+
+@dataclass
+class IronCondorParams:
+    """Sells an OTM strangle and buys a wing beyond each short leg — the
+    defined-risk version of ShortStrangleParams. Max loss is capped at
+    wing_width minus net credit (see _iron_pnl), which is the whole point."""
+    inner_offset: int = 200
+    wing_offset: int = 100
+    skip_narrow: bool = True
+    min_vol_rank: float = 40.0
+    vol_lookback: int = 120
+    target_scale: float = 10.0
+
+
+def make_iron_condor_signal(p: IronCondorParams) -> SignalFn:
+    """Factory: genuine four-leg defined-risk iron condor. Note this is NOT
+    the same as the hand-written "iron-condor-weekly" strategy, which despite
+    its name sells a naked strangle (kind CONDOR) with no wings at all."""
+    def _signal(entry_spot: float, levels: DailyLevels, ctx: StrategyContext) -> Optional[LegShape]:
+        if not _sell_entry_ok(ctx, p.skip_narrow, p.min_vol_rank, p.vol_lookback):
+            return None
+        return LegShape(
+            kind="IRON", inner_offset=p.inner_offset, wing_offset=p.wing_offset,
+            target_scale=p.target_scale,
+        )
+    return _signal
+
+
+@dataclass
+class IronFlyParams:
+    """Sells the ATM straddle and buys a wing either side — the defined-risk
+    version of ShortStraddleParams. Largest credit of the two defined-risk
+    structures, narrowest profit zone."""
+    wing_offset: int = 200
+    skip_narrow: bool = True
+    min_vol_rank: float = 40.0
+    vol_lookback: int = 120
+    target_scale: float = 10.0
+
+
+def make_iron_fly_signal(p: IronFlyParams) -> SignalFn:
+    """Factory: four-leg iron fly — an IRON with both shorts at ATM."""
+    def _signal(entry_spot: float, levels: DailyLevels, ctx: StrategyContext) -> Optional[LegShape]:
+        if not _sell_entry_ok(ctx, p.skip_narrow, p.min_vol_rank, p.vol_lookback):
+            return None
+        return LegShape(
+            kind="IRON", inner_offset=0, wing_offset=p.wing_offset, target_scale=p.target_scale,
+        )
+    return _signal
+
+
 # Templates the Strategies page can instantiate via register_custom_strategy.
 # Keyed by the template id the frontend/backend pass through; each maps to
 # the params dataclass and signal factory that build a runnable strategy
 # from a plain dict of user-supplied values.
 STRATEGY_TEMPLATES: dict[str, tuple[type, Callable[[object], SignalFn]]] = {
     "ma_delta_spread": (MaDeltaSpreadParams, make_ma_delta_spread_signal),
+    "short_straddle": (ShortStraddleParams, make_short_straddle_signal),
+    "short_strangle": (ShortStrangleParams, make_short_strangle_signal),
+    "iron_condor": (IronCondorParams, make_iron_condor_signal),
+    "iron_fly": (IronFlyParams, make_iron_fly_signal),
 }
 
 _CUSTOM_STRATEGY_KEYS: set[str] = set()
@@ -942,6 +1109,92 @@ def _spread_pnl(
     return _SpreadFill(entry_net, exit_net, closed, short_entry, long_entry, short_exit, long_exit)
 
 
+@dataclass
+class _IronFill:
+    """The eight individual leg prices behind an IRON trade's net credit —
+    four legs opened and the same four closed. Kept separate from the
+    aggregate nets so the caller can cost each of the eight real orders with
+    _estimate_leg_charges rather than one blended rate, the same reason
+    _SpreadFill exists. Charges matter disproportionately here: an iron
+    condor places twice the orders of a vertical for a similar credit, and
+    pretending otherwise is how backtests flatter four-leg structures."""
+    entry_net: float
+    exit_net: float
+    closed: date
+    max_loss: float
+    entry_legs: dict
+    exit_legs: dict
+
+
+def _iron_pnl(
+    entry_spot: float, inner_offset: int, wing_offset: int, entry_date: date, expiry: date,
+    path: list[Candle], sigma: float, stop_loss_pct: float, target_pct: float,
+) -> _IronFill:
+    """A genuine defined-risk iron condor: sells a strangle and buys a
+    further-OTM wing beyond EACH short leg, all four the same expiry.
+
+    Unlike _condor_pnl's naked strangle, the two bought legs structurally cap
+    max loss at the wing width minus the net credit received, however far the
+    underlying travels — the naked version's unbounded tail is exactly what
+    the protection is being paid for. Unlike _spread_pnl's one-sided vertical,
+    risk here is two-sided, so the stop is an ABSOLUTE move past stop_loss_pct
+    in either direction (matching _condor_pnl's range-bet logic) rather than a
+    directional one, and the target is decay of the combined credit.
+
+    inner_offset 0 puts both shorts at ATM — an iron fly, which collects a far
+    larger credit for a far narrower profit zone. Returns the fill with every
+    leg price kept so the caller can charge all eight orders.
+    """
+    atm = _round_strike(entry_spot)
+    ce_short = atm + inner_offset
+    pe_short = atm - inner_offset
+    ce_long = ce_short + wing_offset
+    pe_long = pe_short - wing_offset
+
+    def price(spot: float, strike: float, t: float, opt: Literal["CE", "PE"]) -> float:
+        return black_scholes(spot, strike, t, sigma, opt).price
+
+    def legs_at(spot: float, t: float) -> dict:
+        return {
+            "ce_short": price(spot, ce_short, t, "CE"),
+            "pe_short": price(spot, pe_short, t, "PE"),
+            "ce_long": price(spot, ce_long, t, "CE"),
+            "pe_long": price(spot, pe_long, t, "PE"),
+        }
+
+    def net_of(legs: dict) -> float:
+        return (legs["ce_short"] + legs["pe_short"]) - (legs["ce_long"] + legs["pe_long"])
+
+    entry_t = max((expiry - entry_date).days / 365.0, 1.0 / 365.0)
+    entry_legs = legs_at(entry_spot, entry_t)
+    entry_net = net_of(entry_legs)
+    # Structural cap: only one side can be breached at expiry, so the worst
+    # case is one wing's width less whatever credit was taken in.
+    max_loss = max(wing_offset - entry_net, 0.0)
+
+    exit_legs = dict(entry_legs)
+    exit_net = entry_net
+    closed = expiry
+    for c in path:
+        if c.dt <= entry_date:
+            continue
+        t = max((expiry - c.dt).days / 365.0, 1.0 / 365.0)
+        exit_legs = legs_at(c.close, t)
+        exit_net = net_of(exit_legs)
+        closed = c.dt
+        breach_pct = abs(c.close - entry_spot) / entry_spot * 100
+        decay_pct = (entry_net - exit_net) / entry_net * 100 if entry_net else 0.0
+        if breach_pct >= stop_loss_pct or decay_pct >= target_pct or c.dt >= expiry:
+            break
+
+    # Even when the modeled path overshoots it, the bought wings mean the
+    # position cannot lose more than the cap — enforce it rather than letting
+    # Black-Scholes noise report a loss the structure makes impossible.
+    if entry_net - exit_net < -max_loss:
+        exit_net = entry_net + max_loss
+    return _IronFill(entry_net, exit_net, closed, max_loss, entry_legs, exit_legs)
+
+
 def _same_day_pnl(
     entry_spot: float, strike: float, option_type: Literal["CE", "PE"],
     hold: str, today: Candle, sigma: float,
@@ -1034,6 +1287,30 @@ def _simulate_trades(
             pnl = (entry_p - exit_p) * LOT_SIZE * position_size_lots
             if include_costs:
                 costs = (entry_p + exit_p) * LOT_SIZE * position_size_lots * COST_FRACTION
+        elif shape.kind == "IRON":
+            fill = _iron_pnl(
+                entry_spot, shape.inner_offset, shape.wing_offset, today.dt, expiry, path, sigma,
+                stop_loss_pct, eff_target_pct,
+            )
+            entry_p, exit_p, closed_date = fill.entry_net, fill.exit_net, fill.closed
+            pnl = (entry_p - exit_p) * LOT_SIZE * position_size_lots  # net credit convention
+            if include_costs:
+                # Eight real orders, not four: both shorts and both wings are
+                # opened and closed. Costed per leg (see _estimate_leg_charges)
+                # because a four-leg structure's charges are the difference
+                # between a profitable and an unprofitable premium-selling
+                # program, and a blended rate hides that.
+                qty = LOT_SIZE * position_size_lots
+                costs = (
+                    _estimate_leg_charges("SELL", fill.entry_legs["ce_short"] * qty)
+                    + _estimate_leg_charges("SELL", fill.entry_legs["pe_short"] * qty)
+                    + _estimate_leg_charges("BUY", fill.entry_legs["ce_long"] * qty)
+                    + _estimate_leg_charges("BUY", fill.entry_legs["pe_long"] * qty)
+                    + _estimate_leg_charges("BUY", fill.exit_legs["ce_short"] * qty)
+                    + _estimate_leg_charges("BUY", fill.exit_legs["pe_short"] * qty)
+                    + _estimate_leg_charges("SELL", fill.exit_legs["ce_long"] * qty)
+                    + _estimate_leg_charges("SELL", fill.exit_legs["pe_long"] * qty)
+                )
         elif shape.kind == "SPREAD":
             short_strike = _strike_for(entry_spot, shape.option_type, shape.strike_offset)
             long_strike = _strike_for(entry_spot, shape.option_type, shape.strike_offset + shape.wing_offset)
@@ -1104,8 +1381,8 @@ def _simulate_futures_trades(
         levels = daily_levels(prior.high, prior.low, prior.close, before.high, before.low, before.close)
         entry_spot = today.open
         shape = strategy_def.signal_fn(entry_spot, levels, StrategyContext(candles=candles, index=i))
-        if not shape or shape.kind == "CONDOR":
-            continue  # a condor has no directional futures equivalent
+        if not shape or shape.kind in ("CONDOR", "IRON"):
+            continue  # two-sided range structures have no directional futures equivalent
         shape = _apply_hold_mode(shape, hold_mode)
         direction = shape.direction  # bearish setups short the future, bullish setups go long
 

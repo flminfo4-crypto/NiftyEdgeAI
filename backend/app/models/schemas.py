@@ -195,6 +195,40 @@ class ActiveSignalsOut(CamelModel):
     alternative: SignalOut
 
 
+class SellSetupConditionsOut(CamelModel):
+    """The shared entry gate's inputs. A null input means 'unknown', which
+    blocks a setup rather than passing it."""
+    width_regime: Optional[str] = None
+    width_ok: bool = False
+    iv_rank: Optional[float] = None
+    iv_rank_threshold: float = 40.0
+    iv_rank_ok: bool = False
+    gamma_regime: Optional[str] = None
+    zero_gamma_strike: Optional[float] = None
+    call_wall: Optional[float] = None
+    put_wall: Optional[float] = None
+
+
+class SellSetupOut(CamelModel):
+    name: str
+    # matches a STRATEGY_TEMPLATES id, so a setup here can be built and
+    # backtested on the Strategies page under the same entry rule
+    template: str
+    defined_risk: bool
+    status: Literal["ACTIVE", "WATCH", "BLOCKED"]
+    reasons: list[str] = []
+
+
+class SellSetupsOut(CamelModel):
+    underlying: str
+    as_of: datetime
+    source: Literal["mock", "broker"] = "mock"
+    verdict: Literal["FAVOURABLE", "MIXED", "UNFAVOURABLE"]
+    conditions: SellSetupConditionsOut
+    setups: list[SellSetupOut]
+    note: str = ""
+
+
 class StrategyStatOut(CamelModel):
     strategy: str
     hit_rate_pct: float
@@ -826,6 +860,63 @@ class GammaProfileOut(CamelModel):
     gamma_source: str
     source: Literal["mock", "broker"] = "mock"
     strikes: list[GammaProfileStrikeOut]
+
+
+class SellLegOut(CamelModel):
+    """One leg of a candidate structure, priced from its real chain row.
+    Greeks carry the leg's position sign — a sold option reports negative
+    gamma and positive theta, which is the actual risk being taken on."""
+    side: Literal["BUY", "SELL"]
+    option_type: Literal["CE", "PE"]
+    strike: float
+    ltp: float
+    oi: float = 0.0
+    iv: float = 0.0
+    delta: float = 0.0
+    gamma: float = 0.0
+    theta: float = 0.0
+    vega: float = 0.0
+
+
+class SellCandidateOut(CamelModel):
+    name: str
+    kind: str
+    defined_risk: bool
+    legs: list[SellLegOut]
+    net_credit: float
+    net_credit_rupees: float
+    max_profit: float
+    max_profit_rupees: float
+    # null for naked structures — they have no structural cap, and reporting
+    # a comfortable number there would be the single most misleading thing
+    # this payload could do.
+    max_loss: Optional[float] = None
+    max_loss_rupees: Optional[float] = None
+    risk_reward: Optional[float] = None
+    breakevens: list[float] = []
+    profit_zone_pct: Optional[float] = None
+    net_delta: float = 0.0
+    net_gamma: float = 0.0
+    net_theta: float = 0.0
+    net_vega: float = 0.0
+    rationale: str = ""
+
+
+class SellCandidatesOut(CamelModel):
+    underlying: str
+    expiry: str
+    as_of: datetime
+    spot_price: float
+    atm_strike: float
+    strike_step: float
+    lot_size: int
+    call_wall: Optional[float] = None
+    put_wall: Optional[float] = None
+    zero_gamma_strike: Optional[float] = None
+    gamma_regime: Literal["POSITIVE", "NEGATIVE"]
+    source: Literal["mock", "broker"] = "mock"
+    note: str = ""
+    candidates: list[SellCandidateOut]
 
 
 class BiasConfirmationOut(CamelModel):
