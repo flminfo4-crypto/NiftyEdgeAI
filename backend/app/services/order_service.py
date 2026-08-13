@@ -135,7 +135,10 @@ def _estimate_charges(side: str, turnover: float) -> dict:
     "documented approximation" spirit as risk_engine.estimate_margin."""
     brokerage = min(20.0, turnover * 0.0003)
     exchange_charges = round(turnover * 0.0003503, 2)
-    stt = round(turnover * 0.0005, 2) if side == "SELL" else 0.0
+    # Options STT sell-side, raised to 0.15% effective 1 Apr 2026 (Budget
+    # 2026-27). Was still 0.05%, the pre-Oct-2024 rate — two revisions stale,
+    # and this one is shown to the user as an order-preview charge estimate.
+    stt = round(turnover * 0.0015, 2) if side == "SELL" else 0.0
     sebi_stamp_duty = round(turnover * 0.00003, 2) if side == "BUY" else round(turnover * 0.000001, 2)
     gst = round((brokerage + exchange_charges) * 0.18, 2)
     return {

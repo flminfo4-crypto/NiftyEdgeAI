@@ -442,10 +442,13 @@ def get_gamma_profile(underlying: str, expiry: str | None = None, width: int = _
 # pick. Nothing here ranks, scores or suggests a trade.
 
 # Exchange contract sizes, used only to express per-lot rupee figures
-# alongside the unambiguous per-point ones. Exchanges revise these
-# periodically (NIFTY moved 50 -> 75 in Nov 2024); the points columns are
-# authoritative and unaffected if these drift.
-_LOT_SIZE = {"NIFTY50": 75, "NIFTYBANK": 35, "SENSEX": 20}
+# alongside the unambiguous per-point ones. Mirrors ai-engine's contract_spec,
+# which is the source of truth; duplicated rather than imported only because
+# these are the backend's own symbol keys. Exchanges revise these periodically
+# (NIFTY 50 -> 75 in Nov 2024, then 75 -> 65 from the Jan 2026 series;
+# BANKNIFTY 35 -> 30 at the same time) — update both places together. The
+# points columns are authoritative and unaffected if these drift.
+_LOT_SIZE = {"NIFTY50": 65, "NIFTYBANK": 30, "SENSEX": 20}
 
 
 def _leg(side: str, option_type: str, row, strike: float, greeks: dict) -> dict | None:

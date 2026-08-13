@@ -131,6 +131,7 @@ def run_sweep(
             candles=series, strategy=strategy, starting_capital=starting_capital,
             position_size_lots=position_size_lots, stop_loss_pct=stop_loss_pct,
             target_pct=target_pct, include_slippage_and_costs=True, is_futures=is_futures,
+            symbol=underlying,
         )
 
     from app.services import strategy_config_service
