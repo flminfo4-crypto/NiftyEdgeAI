@@ -10,6 +10,7 @@ from app.models.schemas import (
     PeriodReportOut,
     StrategyOut,
     WeeklyStatsOut,
+    _to_camel,
 )
 from app.services import backtest_service
 
@@ -100,6 +101,23 @@ def period_report(
         raise HTTPException(status_code=400, detail=str(exc))
 
 
+def _camelize(value):
+    """Recursively convert snake_case dict keys to camelCase.
+
+    /lab returns a plain dict rather than a Pydantic model, so it never went
+    through CamelModel's alias generator and shipped snake_case while every
+    other endpoint in this app ships camelCase (see docs/API/API.md). The
+    frontend reads camelCase uniformly, so the payload silently arrived as a
+    wall of `undefined`. Converting here keeps the wire contract consistent
+    without forcing a dozen nested response models onto a shape that is still
+    changing."""
+    if isinstance(value, dict):
+        return {_to_camel(k): _camelize(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_camelize(v) for v in value]
+    return value
+
+
 @router.get("/lab")
 def strategy_lab(instrument: str = "NIFTY50_OPTIONS", years: int = 6,
                  capital: float = 100_000.0, lots: int = 1):
@@ -110,10 +128,10 @@ def strategy_lab(instrument: str = "NIFTY50_OPTIONS", years: int = 6,
     from app.services import strategy_lab_service
 
     try:
-        return strategy_lab_service.run_sweep(
+        return _camelize(strategy_lab_service.run_sweep(
             instrument=instrument, years=years,
             starting_capital=capital, position_size_lots=lots,
-        )
+        ))
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 

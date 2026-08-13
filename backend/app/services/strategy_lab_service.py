@@ -27,17 +27,59 @@ import threading
 import time
 from datetime import date, datetime, timedelta, timezone
 
-from niftyedge_ai_engine import STRATEGY_REGISTRY, run_backtest
+from niftyedge_ai_engine import (
+    STRATEGY_REGISTRY,
+    STRATEGY_TEMPLATES,
+    register_custom_strategy,
+    run_backtest,
+)
 
 from app.services.backtest_service import _fetch_candles
+
+# Minimum bars either side of the split for a result to mean anything. Mirrors
+# the guard inside _run; named here because the split logic needs it too.
+_MIN_BARS = 60
 
 _CACHE_LOCK = threading.Lock()
 _CACHE: dict[tuple, tuple[float, object]] = {}
 _CACHE_TTL = 1800.0
 
-# Split point: everything before is used for ranking, everything after is
-# held back to test whether the ranking generalizes.
+# Preferred split point: everything before is used for ranking, everything
+# after is held back to test whether the ranking generalizes. Only a PREFERENCE
+# — _resolve_split falls back when the data doesn't reach it.
 DEFAULT_SPLIT = date(2025, 1, 1)
+
+
+def _resolve_split(candles, preferred: date) -> tuple[date, str | None]:
+    """Pick a split that actually divides the data.
+
+    A fixed calendar split silently destroys the whole sweep whenever the
+    available history doesn't straddle it: every strategy fails the <60-bar
+    out-of-sample guard, gets skipped, and the endpoint returns an empty list
+    with no explanation. That is exactly what happened with a data source
+    ending before the preferred date.
+
+    So: use the preferred date when it leaves enough bars either side;
+    otherwise fall back to a 70/30 split of whatever range exists and say so,
+    because a proportional holdout still answers the question the lab is for
+    ("does this generalize?") while a blank table answers nothing.
+    """
+    if len(candles) < _MIN_BARS * 2:
+        return preferred, (
+            f"Only {len(candles)} sessions available — an out-of-sample test needs at least "
+            f"{_MIN_BARS * 2}. Results below are in-sample only and prove nothing about "
+            f"generalization."
+        )
+    before = sum(1 for c in candles if c.dt < preferred)
+    after = len(candles) - before
+    if before >= _MIN_BARS and after >= _MIN_BARS:
+        return preferred, None
+    idx = int(len(candles) * 0.7)
+    fallback = candles[idx].dt
+    return fallback, (
+        f"Preferred split {preferred} lies outside the available data "
+        f"({candles[0].dt} to {candles[-1].dt}), so a 70/30 split at {fallback} was used instead."
+    )
 
 
 def _cached(key: tuple, fetch):
@@ -106,8 +148,9 @@ def run_sweep(
     position_size_lots: int = 3,
     stop_loss_pct: float = 1.5,
     target_pct: float = 3.0,
+    include_templates: bool = True,
 ) -> dict:
-    split = split or DEFAULT_SPLIT
+    preferred_split = split or DEFAULT_SPLIT
     underlying, is_futures = {
         "NIFTY50_OPTIONS": ("NIFTY50", False),
         "BANKNIFTY_OPTIONS": ("NIFTYBANK", False),
@@ -121,11 +164,27 @@ def run_sweep(
         raise ValueError(f"No historical candles for {underlying}")
 
     full_start, full_end = candles[0].dt, candles[-1].dt
+    split, split_note = _resolve_split(candles, preferred_split)
     in_sample = _slice(candles, full_start, split - timedelta(days=1))
     out_sample = _slice(candles, split, full_end)
 
+    # "Every registered strategy" should mean every strategy the app can run,
+    # including the parameterised templates. Without this the templates are
+    # invisible to the lab until the user hand-creates an instance of each on
+    # the Strategies page, so the one screen meant to compare everything
+    # quietly omitted the newest half of it. Registered in-process at their
+    # documented defaults — nothing is persisted to the user's strategy list.
+    template_keys: dict[str, str] = {}
+    if include_templates:
+        existing = set(STRATEGY_REGISTRY)
+        for tpl in STRATEGY_TEMPLATES:
+            key = f"template::{tpl}"
+            template_keys[key] = tpl
+            if key not in existing:
+                register_custom_strategy(key, f"{tpl} (template defaults)", tpl, {})
+
     def _run(series, strategy):
-        if len(series) < 60:
+        if len(series) < _MIN_BARS:
             return None
         return run_backtest(
             candles=series, strategy=strategy, starting_capital=starting_capital,
@@ -137,19 +196,33 @@ def run_sweep(
     from app.services import strategy_config_service
 
     rows = []
-    for key, sdef in STRATEGY_REGISTRY.items():
-        if not strategy_config_service.is_active(key):
+    skipped = {"inactive": 0, "errored": 0, "too_few_bars": 0}
+    errors: dict[str, str] = {}
+    for key, sdef in list(STRATEGY_REGISTRY.items()):
+        is_template = key in template_keys
+        if not is_template and not strategy_config_service.is_active(key):
+            skipped["inactive"] += 1
             continue
         try:
             r_in = _run(in_sample, key)
             r_out = _run(out_sample, key)
-        except Exception:
+        except Exception as exc:
+            # Record WHY. A sweep that silently drops strategies is worse than
+            # one that fails loudly: the whole point of this screen is "here is
+            # everything the app can run", and an unexplained gap in that list
+            # is indistinguishable from a strategy that simply never fires.
+            skipped["errored"] += 1
+            if len(errors) < 12:
+                errors[key] = f"{type(exc).__name__}: {exc}"
             continue
         if not r_in or not r_out:
+            skipped["too_few_bars"] += 1
             continue
         s_in, s_out = _summarize(r_in), _summarize(r_out)
         rows.append({
             "key": key, "label": sdef.label,
+            "source": "template" if is_template else "strategy",
+            "template": template_keys.get(key),
             "in_sample": s_in, "out_sample": s_out,
             "in_score": _goal_score(s_in), "out_score": _goal_score(s_out),
             # Positive = held up (or improved) on unseen data; strongly
@@ -158,10 +231,26 @@ def run_sweep(
         })
 
     rows.sort(key=lambda r: r["out_score"], reverse=True)
+
+    # An empty table must explain itself. Previously this returned [] with no
+    # indication of whether nothing was registered, everything errored, or the
+    # split left one side too short — three very different problems.
+    notes = [n for n in [split_note] if n]
+    if not rows:
+        notes.append(
+            f"No strategy produced a result: {skipped['too_few_bars']} had too few sessions on one "
+            f"side of the split, {skipped['errored']} errored, {skipped['inactive']} are deactivated. "
+            f"Data spans {full_start} to {full_end} ({len(candles)} sessions)."
+        )
+
     return {
         "instrument": instrument, "underlying": underlying,
         "data_from": str(full_start), "data_to": str(full_end),
         "split_date": str(split),
+        "preferred_split_date": str(preferred_split),
+        "note": " ".join(notes) or None,
+        "skipped": skipped,
+        "errors": errors,
         "in_sample_days": len(in_sample), "out_sample_days": len(out_sample),
         "starting_capital": starting_capital,
         "position_size_lots": position_size_lots,

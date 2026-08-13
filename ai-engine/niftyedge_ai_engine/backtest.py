@@ -1363,7 +1363,14 @@ def _spread_pnl(
         exit_net = short_exit - long_exit
         closed = c.dt
         spot_move_pct = direction * (c.close - entry_spot) / entry_spot * 100
-        decay_pct = (entry_net - exit_net) / entry_net * 100
+        # A spread whose two legs price identically collects no credit at all
+        # (black_scholes floors both at the same minimum when they're far
+        # enough OTM), so entry_net is 0 and the decay ratio is undefined.
+        # Guard it the way _iron_pnl already does: with no credit there is
+        # nothing to decay, so the position can only exit on stop or expiry.
+        # Left unguarded this raised ZeroDivisionError out of run_backtest and
+        # took both credit-spread strategies out of the Strategy Lab entirely.
+        decay_pct = (entry_net - exit_net) / entry_net * 100 if entry_net else 0.0
         if spot_move_pct <= -stop_loss_pct or decay_pct >= target_pct or c.dt >= expiry:
             break
     return _SpreadFill(entry_net, exit_net, closed, short_entry, long_entry, short_exit, long_exit)
