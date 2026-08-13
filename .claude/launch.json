@@ -6,6 +6,12 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "5500", "--directory", "frontend"],
       "port": 5500
+    },
+    {
+      "name": "backend",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "uvicorn", "app.main:app", "--port", "8000", "--app-dir", "backend"],
+      "port": 8000
     }
   ]
 }

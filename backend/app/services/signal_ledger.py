@@ -24,10 +24,11 @@ from datetime import datetime, timedelta, timezone
 from app.config import settings
 from app.services.broker import get_broker
 
-# NIFTY's real, current standard lot size (revised 2023/24) — used only to turn a
-# real point-move into a real 1-lot currency figure for display; no trade is
-# actually implied or placed for these ledger entries.
-_LOT_SIZE = 75
+# NIFTY's current standard lot size (75 -> 65 from the Jan 2026 series) — used
+# only to turn a real point-move into a real 1-lot currency figure for display;
+# no trade is actually implied or placed for these ledger entries. Kept in sync
+# with ai-engine's contract_spec, the source of truth.
+_LOT_SIZE = 65
 
 _STRATEGY_BUCKETS = {
     "SELL CALL (CE WRITING)": "CE Writing",

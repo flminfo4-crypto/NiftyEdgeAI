@@ -195,6 +195,40 @@ class ActiveSignalsOut(CamelModel):
     alternative: SignalOut
 
 
+class SellSetupConditionsOut(CamelModel):
+    """The shared entry gate's inputs. A null input means 'unknown', which
+    blocks a setup rather than passing it."""
+    width_regime: Optional[str] = None
+    width_ok: bool = False
+    iv_rank: Optional[float] = None
+    iv_rank_threshold: float = 40.0
+    iv_rank_ok: bool = False
+    gamma_regime: Optional[str] = None
+    zero_gamma_strike: Optional[float] = None
+    call_wall: Optional[float] = None
+    put_wall: Optional[float] = None
+
+
+class SellSetupOut(CamelModel):
+    name: str
+    # matches a STRATEGY_TEMPLATES id, so a setup here can be built and
+    # backtested on the Strategies page under the same entry rule
+    template: str
+    defined_risk: bool
+    status: Literal["ACTIVE", "WATCH", "BLOCKED"]
+    reasons: list[str] = []
+
+
+class SellSetupsOut(CamelModel):
+    underlying: str
+    as_of: datetime
+    source: Literal["mock", "broker"] = "mock"
+    verdict: Literal["FAVOURABLE", "MIXED", "UNFAVOURABLE"]
+    conditions: SellSetupConditionsOut
+    setups: list[SellSetupOut]
+    note: str = ""
+
+
 class StrategyStatOut(CamelModel):
     strategy: str
     hit_rate_pct: float
@@ -737,6 +771,152 @@ class AtmAnalysisOut(CamelModel):
     source: Literal["mock", "broker"] = "mock"
     note: Optional[str] = None
     rows: list[AtmAnalysisRowOut]
+
+
+class StrikeLegOut(CamelModel):
+    """One contract at one bucket. IV is solved from that bucket's real traded
+    premium and the Greeks derived from it; every field stays null when the
+    contract didn't print rather than being interpolated."""
+    side: Literal["CE", "PE"]
+    slot: Literal["ITM3", "ITM2", "ITM1", "ATM", "OTM1", "OTM2", "OTM3"]
+    strike: float
+    ltp: Optional[float] = None
+    volume: Optional[float] = None
+    oi: Optional[float] = None
+    oi_change: Optional[float] = None
+    iv: Optional[float] = None
+    delta: Optional[float] = None
+    gamma: Optional[float] = None
+    theta: Optional[float] = None
+    vega: Optional[float] = None
+    # Gamma exposure per 1% move, in the broker's own OI units; calls
+    # positive, puts negative. Comparable across strikes, not an exact rupee
+    # figure — see strike_greeks_service._gex.
+    gex: Optional[float] = None
+
+
+class StrikeGreeksBucketOut(CamelModel):
+    time: str
+    ts: str
+    session_date: str
+    is_expiry_day: bool = False
+    dte: Optional[float] = None
+    spot_open: float
+    spot_high: float
+    spot_low: float
+    spot_close: float
+    atm_strike: float
+    # keyed "CE_ATM", "PE_ITM1", … — one entry per side × ladder slot
+    legs: dict[str, StrikeLegOut]
+    call_gex: Optional[float] = None
+    put_gex: Optional[float] = None
+    net_gex: Optional[float] = None
+    peak_gamma_strike: Optional[float] = None
+
+
+class StrikeGreeksOut(CamelModel):
+    underlying: str
+    from_date: str
+    to_date: str
+    expiry_kind: Literal["weekly", "monthly"]
+    expiry_date: Optional[str] = None
+    interval: str
+    strike_step: int
+    depth: int
+    slots: list[str]
+    source: Literal["mock", "broker"] = "mock"
+    note: Optional[str] = None
+    buckets: list[StrikeGreeksBucketOut]
+
+
+class GammaProfileStrikeOut(CamelModel):
+    strike: float
+    ce_gamma: Optional[float] = None
+    pe_gamma: Optional[float] = None
+    ce_oi: float = 0.0
+    pe_oi: float = 0.0
+    ce_oi_change: float = 0.0
+    pe_oi_change: float = 0.0
+    ce_gex: Optional[float] = None
+    pe_gex: Optional[float] = None
+    net_gex: float = 0.0
+    cumulative_gex: float = 0.0
+
+
+class GammaProfileOut(CamelModel):
+    """Live gamma exposure across the chain. The dealer sign convention (calls
+    positive, puts negative) is an industry heuristic — no Indian exchange
+    publishes real dealer inventory — so `zero_gamma_strike` is a well-known
+    approximation, not a measured level."""
+    underlying: str
+    expiry: str
+    as_of: datetime
+    spot_price: float
+    net_gex: float
+    gamma_regime: Literal["POSITIVE", "NEGATIVE"]
+    zero_gamma_strike: Optional[float] = None
+    call_wall: Optional[float] = None
+    put_wall: Optional[float] = None
+    gamma_source: str
+    source: Literal["mock", "broker"] = "mock"
+    strikes: list[GammaProfileStrikeOut]
+
+
+class SellLegOut(CamelModel):
+    """One leg of a candidate structure, priced from its real chain row.
+    Greeks carry the leg's position sign — a sold option reports negative
+    gamma and positive theta, which is the actual risk being taken on."""
+    side: Literal["BUY", "SELL"]
+    option_type: Literal["CE", "PE"]
+    strike: float
+    ltp: float
+    oi: float = 0.0
+    iv: float = 0.0
+    delta: float = 0.0
+    gamma: float = 0.0
+    theta: float = 0.0
+    vega: float = 0.0
+
+
+class SellCandidateOut(CamelModel):
+    name: str
+    kind: str
+    defined_risk: bool
+    legs: list[SellLegOut]
+    net_credit: float
+    net_credit_rupees: float
+    max_profit: float
+    max_profit_rupees: float
+    # null for naked structures — they have no structural cap, and reporting
+    # a comfortable number there would be the single most misleading thing
+    # this payload could do.
+    max_loss: Optional[float] = None
+    max_loss_rupees: Optional[float] = None
+    risk_reward: Optional[float] = None
+    breakevens: list[float] = []
+    profit_zone_pct: Optional[float] = None
+    net_delta: float = 0.0
+    net_gamma: float = 0.0
+    net_theta: float = 0.0
+    net_vega: float = 0.0
+    rationale: str = ""
+
+
+class SellCandidatesOut(CamelModel):
+    underlying: str
+    expiry: str
+    as_of: datetime
+    spot_price: float
+    atm_strike: float
+    strike_step: float
+    lot_size: int
+    call_wall: Optional[float] = None
+    put_wall: Optional[float] = None
+    zero_gamma_strike: Optional[float] = None
+    gamma_regime: Literal["POSITIVE", "NEGATIVE"]
+    source: Literal["mock", "broker"] = "mock"
+    note: str = ""
+    candidates: list[SellCandidateOut]
 
 
 class BiasConfirmationOut(CamelModel):

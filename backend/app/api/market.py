@@ -11,6 +11,7 @@ from app.models.schemas import (
     CprDashboardOut,
     CprLevelsOut,
     CvdOut,
+    GammaProfileOut,
     IvRankOut,
     MarketBreadthOut,
     MarketProfileOut,
@@ -19,6 +20,8 @@ from app.models.schemas import (
     OptionChainOut,
     OptionPressureOut,
     QuoteOut,
+    SellCandidatesOut,
+    StrikeGreeksOut,
     TopNarrowStocksOut,
     TpoProfileCompositeSessionOut,
     TpoProfileOut,
@@ -26,7 +29,7 @@ from app.models.schemas import (
     VolumeProfileCompositeSessionOut,
     VolumeProfileOut,
 )
-from app.services import atm_analysis_service, market_data, pivot_service
+from app.services import atm_analysis_service, market_data, pivot_service, strike_greeks_service
 
 # TPO bracket sizes offered by the timeframe dropdown on market-profile.html:
 # 1/5/15/30/45 min, 1hr, 4hr and a whole session as one bracket.
@@ -154,6 +157,60 @@ def get_atm_analysis(
         return atm_analysis_service.get_atm_analysis(underlying, frm, to, expiry, interval)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.get("/strike-greeks", response_model=StrikeGreeksOut)
+def get_strike_greeks(
+    underlying: str = "NIFTY50",
+    frm: str = Query(..., alias="from", description="YYYY-MM-DD"),
+    to: str = Query(..., description="YYYY-MM-DD"),
+    expiry: str = Query("weekly", description="weekly | monthly"),
+    interval: str = Query("15m", description="1m | 5m | 15m | 30m"),
+    depth: int = Query(2, ge=1, le=3, description="strikes either side of ATM"),
+):
+    """ATM±depth strike ladder over time: per intraday bucket, every CE and PE
+    leg's real premium, OI, solved IV, Greeks and OI-weighted gamma exposure.
+    Moneyness is per side (a call is ITM below spot, a put above it). Ranges
+    are capped tighter than /atm-analysis because one query fans out to roughly
+    five times as many Dhan contract fetches."""
+    try:
+        return strike_greeks_service.get_strike_greeks(underlying, frm, to, expiry, interval, depth)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.get("/gamma-profile", response_model=GammaProfileOut)
+def get_gamma_profile(
+    underlying: str = "NIFTY50",
+    expiry: str | None = Query(None, description="YYYY-MM-DD; defaults to the nearest expiry"),
+    width: int = Query(15, ge=3, le=40, description="strikes either side of ATM"),
+):
+    """Live gamma exposure by strike, with the zero-gamma flip, call wall and
+    put wall. Complements /strike-greeks: that one is gamma through time on a
+    few strikes, this is gamma across the chain right now."""
+    try:
+        return strike_greeks_service.get_gamma_profile(underlying, expiry, width)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.get("/sell-candidates", response_model=SellCandidatesOut)
+def get_sell_candidates(
+    underlying: str = "NIFTY50",
+    expiry: str | None = Query(None, description="YYYY-MM-DD; defaults to the nearest expiry"),
+    width: int = Query(15, ge=3, le=40, description="strikes either side of ATM"),
+):
+    """Candidate short-premium structures priced from the live chain and
+    anchored on the gamma profile's levels — credit, breakevens, structurally
+    capped loss and net position Greeks for each.
+
+    Returns every construction so they can be compared; nothing is ranked or
+    recommended. Naked builds report `maxLoss: null` because they have no
+    structural cap."""
+    try:
+        return strike_greeks_service.get_sell_candidates(underlying, expiry, width)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
 
 
 @router.get("/top-narrow-stocks", response_model=TopNarrowStocksOut)

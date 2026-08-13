@@ -61,6 +61,192 @@ _TEMPLATE_META = {
              "label": "Skip NARROW CPR-width days"},
         ],
     },
+    "short_straddle": {
+        "label": "Short Straddle (naked)",
+        "description": (
+            "Sells the ATM call and ATM put together — the largest credit of the four "
+            "premium-selling templates and the only structure here with no protection on "
+            "either side. Profits when the underlying goes nowhere and premium decays; "
+            "loses on any decisive move, with the loss bounded only by the run's stop, "
+            "not by the structure. Fires only when the CPR width isn't NARROW (narrow "
+            "forecasts a trending day) and realised volatility is rich against its own "
+            "trailing range."
+        ),
+        "params": [
+            {"name": "skip_narrow", "type": "bool", "default": True,
+             "label": "Skip NARROW CPR-width days"},
+            {"name": "min_vol_rank", "type": "float", "default": 40.0, "min": 0.0, "max": 100.0,
+             "label": "Min volatility rank (0 = off)"},
+            {"name": "vol_lookback", "type": "int", "default": 120, "min": 30, "max": 500,
+             "label": "Volatility rank lookback (sessions)"},
+            {"name": "target_scale", "type": "float", "default": 10.0, "min": 1.0, "max": 30.0,
+             "label": "Profit-target scale (x the run's target %)"},
+        ],
+    },
+    "short_strangle": {
+        "label": "Short Strangle (naked)",
+        "description": (
+            "Sells an OTM call and an OTM put the same distance either side of ATM. Less "
+            "credit than the straddle in exchange for a much wider zone where the trade "
+            "wins — but still structurally unprotected, so a gap through either leg is "
+            "capped only by the stop. Same entry gate as the straddle."
+        ),
+        "params": [
+            {"name": "wing_offset", "type": "int", "default": 200, "min": 50, "max": 600,
+             "label": "Distance of each short leg from ATM (points)"},
+            {"name": "skip_narrow", "type": "bool", "default": True,
+             "label": "Skip NARROW CPR-width days"},
+            {"name": "min_vol_rank", "type": "float", "default": 40.0, "min": 0.0, "max": 100.0,
+             "label": "Min volatility rank (0 = off)"},
+            {"name": "vol_lookback", "type": "int", "default": 120, "min": 30, "max": 500,
+             "label": "Volatility rank lookback (sessions)"},
+            {"name": "target_scale", "type": "float", "default": 10.0, "min": 1.0, "max": 30.0,
+             "label": "Profit-target scale (x the run's target %)"},
+        ],
+    },
+    "iron_condor": {
+        "label": "Iron Condor (defined risk)",
+        "description": (
+            "The short strangle with a protective long wing bought beyond each short leg — "
+            "four legs, and max loss structurally capped at the wing width minus the net "
+            "credit however far the underlying travels. Collects less than the naked "
+            "strangle; that difference is the price of removing the tail. (Not to be "
+            "confused with the built-in 'IRON CONDOR' strategy, which despite its name "
+            "sells a naked strangle with no wings.) Costs all eight real orders."
+        ),
+        "params": [
+            {"name": "inner_offset", "type": "int", "default": 200, "min": 0, "max": 600,
+             "label": "Short legs' distance from ATM (points)"},
+            {"name": "wing_offset", "type": "int", "default": 100, "min": 50, "max": 400,
+             "label": "Wing width — short leg to protective leg (points)"},
+            {"name": "skip_narrow", "type": "bool", "default": True,
+             "label": "Skip NARROW CPR-width days"},
+            {"name": "min_vol_rank", "type": "float", "default": 40.0, "min": 0.0, "max": 100.0,
+             "label": "Min volatility rank (0 = off)"},
+            {"name": "vol_lookback", "type": "int", "default": 120, "min": 30, "max": 500,
+             "label": "Volatility rank lookback (sessions)"},
+            {"name": "target_scale", "type": "float", "default": 10.0, "min": 1.0, "max": 30.0,
+             "label": "Profit-target scale (x the run's target %)"},
+        ],
+    },
+    "directional_buy": {
+        "label": "Directional Buy (Trend, Delta-Selected)",
+        "description": (
+            "Buys a delta-selected call in an uptrend or put in a downtrend, and stands aside "
+            "when volatility is already rich by its own trailing standard. Read the PAYOFF and "
+            "EXPECTANCY columns, not the win rate: long premium fights a persistent gap between "
+            "implied and realised volatility plus daily theta, so it is meant to win under half "
+            "its trades and be carried by the size of the winners. Higher delta tracks the index "
+            "more closely and bleeds less theta per rupee, but costs more premium per lot."
+        ),
+        "params": [
+            {"name": "fast_ma", "type": "int", "default": 20, "min": 5, "max": 100,
+             "label": "Fast MA (periods)"},
+            {"name": "slow_ma", "type": "int", "default": 50, "min": 10, "max": 250,
+             "label": "Slow MA (periods)"},
+            {"name": "delta_target", "type": "float", "default": 0.60, "min": 0.25, "max": 0.90,
+             "label": "Target delta (higher = more ITM)"},
+            {"name": "max_vol_rank", "type": "float", "default": 70.0, "min": 0.0, "max": 100.0,
+             "label": "Max volatility rank (100 = off)"},
+            {"name": "vol_lookback", "type": "int", "default": 120, "min": 30, "max": 500,
+             "label": "Volatility rank lookback (sessions)"},
+            {"name": "target_scale", "type": "float", "default": 2.4, "min": 1.0, "max": 8.0,
+             "label": "Profit-target scale (x the run's target %)"},
+            {"name": "stop_scale", "type": "float", "default": 0.6, "min": 0.2, "max": 3.0,
+             "label": "Stop scale (x the run's stop %)"},
+        ],
+    },
+    "long_straddle": {
+        "label": "Long Straddle (Volatility Expansion)",
+        "description": (
+            "Buys the ATM call and put together out of a volatility squeeze — long gamma, long "
+            "vega, SHORT theta. Wins if the market expands in either direction; loses steadily if "
+            "the squeeze simply continues, which is the common outcome. That is why the time stop "
+            "defaults ON: a straddle that hasn't moved is not waiting, it is bleeding. The exact "
+            "opposite position to the Short Straddle template."
+        ),
+        "params": [
+            {"name": "max_vol_rank", "type": "float", "default": 30.0, "min": 0.0, "max": 100.0,
+             "label": "Max volatility rank — buy only when premium is cheap"},
+            {"name": "vol_lookback", "type": "int", "default": 120, "min": 30, "max": 500,
+             "label": "Volatility rank lookback (sessions)"},
+            {"name": "require_squeeze", "type": "bool", "default": True,
+             "label": "Require narrowest range of the window"},
+            {"name": "squeeze_lookback", "type": "int", "default": 7, "min": 3, "max": 30,
+             "label": "Range-compression window (sessions)"},
+            {"name": "time_stop_days", "type": "int", "default": 2, "min": 0, "max": 15,
+             "label": "Abandon after N sessions with no expansion (0 = off)"},
+            {"name": "target_scale", "type": "float", "default": 2.0, "min": 1.0, "max": 8.0,
+             "label": "Profit-target scale (x the run's target %)"},
+            {"name": "stop_scale", "type": "float", "default": 1.0, "min": 0.2, "max": 3.0,
+             "label": "Stop scale (x the run's stop %)"},
+        ],
+    },
+    "expiry_day_buy": {
+        "label": "Expiry-Day Buy (0DTE Gamma)",
+        "description": (
+            "Buys an ATM option on the index's OWN expiry session — Tuesday for NIFTY, Thursday "
+            "for SENSEX, and the monthly for BANK NIFTY, which has no weekly. On expiry an ATM "
+            "option is almost pure gamma, so a decisive session can multiply it and a quiet one "
+            "can take most of it to zero by the close. The highest-variance template here, and "
+            "the one whose backtested edge is most likely to be an artefact of the sample: most "
+            "expiries pin rather than trend."
+        ),
+        "params": [
+            {"name": "require_narrow", "type": "bool", "default": True,
+             "label": "Require a coiled (NARROW) prior session"},
+            {"name": "otm_offset_steps", "type": "int", "default": 0, "min": 0, "max": 4,
+             "label": "Strikes OTM (0 = ATM; higher is cheaper, lower delta)"},
+            {"name": "target_scale", "type": "float", "default": 3.0, "min": 1.0, "max": 10.0,
+             "label": "Profit-target scale (x the run's target %)"},
+        ],
+    },
+    "pivot_reversal_buy": {
+        "label": "Pivot Reversal Buy (Counter-Trend)",
+        "description": (
+            "Buys a reversal after the prior session CLOSED beyond its own S1/R1 floor pivot, "
+            "betting on reversion toward the central pivot. Note what this is not: the textbook "
+            "version triggers on an intraday touch and rejection of the level, which needs "
+            "intraday bars this engine doesn't have — anchoring on a completed daily close is a "
+            "weaker, slower signal and should not be read as a backtest of the intraday one. "
+            "Skips NARROW-width sessions, which forecast the trend days that run counter-trend "
+            "positions over."
+        ),
+        "params": [
+            {"name": "stretch_pct", "type": "float", "default": 0.0, "min": 0.0, "max": 2.0,
+             "label": "Extra % beyond S1/R1 the close must reach"},
+            {"name": "skip_narrow", "type": "bool", "default": True,
+             "label": "Skip NARROW CPR-width days"},
+            {"name": "max_vol_rank", "type": "float", "default": 80.0, "min": 0.0, "max": 100.0,
+             "label": "Max volatility rank (100 = off)"},
+            {"name": "vol_lookback", "type": "int", "default": 120, "min": 30, "max": 500,
+             "label": "Volatility rank lookback (sessions)"},
+            {"name": "target_scale", "type": "float", "default": 2.0, "min": 1.0, "max": 8.0,
+             "label": "Profit-target scale (x the run's target %)"},
+        ],
+    },
+    "iron_fly": {
+        "label": "Iron Fly (defined risk)",
+        "description": (
+            "The ATM straddle with a protective wing either side — the defined-risk "
+            "counterpart to the short straddle. Largest credit of the two defined-risk "
+            "structures and the narrowest zone in which it wins, so it needs the "
+            "underlying to sit still rather than merely stay in a range. Max loss capped "
+            "at the wing width minus the net credit."
+        ),
+        "params": [
+            {"name": "wing_offset", "type": "int", "default": 200, "min": 50, "max": 600,
+             "label": "Wing width — ATM to protective leg (points)"},
+            {"name": "skip_narrow", "type": "bool", "default": True,
+             "label": "Skip NARROW CPR-width days"},
+            {"name": "min_vol_rank", "type": "float", "default": 40.0, "min": 0.0, "max": 100.0,
+             "label": "Min volatility rank (0 = off)"},
+            {"name": "vol_lookback", "type": "int", "default": 120, "min": 30, "max": 500,
+             "label": "Volatility rank lookback (sessions)"},
+            {"name": "target_scale", "type": "float", "default": 10.0, "min": 1.0, "max": 30.0,
+             "label": "Profit-target scale (x the run's target %)"},
+        ],
+    },
 }
 
 # Snapshot of registered keys taken at import time — before bootstrap() (or

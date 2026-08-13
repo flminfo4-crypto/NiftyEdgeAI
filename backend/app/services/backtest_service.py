@@ -95,6 +95,7 @@ def submit_backtest(request: dict) -> dict:
         is_futures=is_futures,
         hold_mode=request.get("hold", "strategy"),
         custom_hold_days=request.get("hold_days", 5),
+        symbol=underlying,
     )
     record = {
         "job_id": job_id,

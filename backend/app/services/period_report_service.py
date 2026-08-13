@@ -106,7 +106,7 @@ def run_period_report(
         candles=candles, strategy=strategy, starting_capital=starting_capital,
         position_size_lots=position_size_lots, stop_loss_pct=stop_loss_pct,
         target_pct=target_pct, include_slippage_and_costs=True, is_futures=is_futures,
-        hold_mode=hold_mode, custom_hold_days=custom_hold_days,
+        hold_mode=hold_mode, custom_hold_days=custom_hold_days, symbol=underlying,
     )
     # Only trades that closed inside the requested window count toward it;
     # the extra leading candles exist purely to warm up CPR/volatility.
