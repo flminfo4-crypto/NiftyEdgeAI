@@ -13,10 +13,16 @@
  * would be pure load. Only the header ticker refreshes.
  */
 (function () {
+  // Live-refresh cadence. Kept deliberately slow: every open tab is its own
+  // polling stream against the broker's rate limit, and Dhan answers a hot
+  // one with 429 plus a warning about blocking the account (see the cache
+  // notes in backend/app/services/market_data.py).
+  var REFRESH_MS = 30000;
+
   var NE = window.NE;
   var state = { data: null };
 
-  // -- ticker/footer refresh, every 2s -------------------------------------
+  // -- ticker/footer refresh, every REFRESH_MS ----------------------------
 
   function loadTicker() {
     NE.fetchJSON("/market/quote?symbols=NIFTY50,INDIAVIX")
@@ -29,7 +35,7 @@
       .catch(function () { NE.markStatus(false); });
   }
   loadTicker();
-  setInterval(loadTicker, 2000);
+  setInterval(loadTicker, REFRESH_MS);
 
   function el(id) { return document.getElementById(id); }
 

@@ -1,9 +1,15 @@
 /**
  * Wires volume-profile.html to the live backend. Unlike market-profile.html's
  * TPO grid (a time-weighted proxy), this is a real volume-by-price histogram —
- * NIFTY50's candles carry a real `volume` field. Refreshes every 2s.
+ * NIFTY50's candles carry a real `volume` field. Refreshes on the shared REFRESH_MS cadence.
  */
 (function () {
+  // Live-refresh cadence. Kept deliberately slow: every open tab is its own
+  // polling stream against the broker's rate limit, and Dhan answers a hot
+  // one with 429 plus a warning about blocking the account (see the cache
+  // notes in backend/app/services/market_data.py).
+  var REFRESH_MS = 30000;
+
   var NE = window.NE;
   var UNDERLYING = "NIFTY50";
   var DISPLAY_WINDOW = 15; // buckets each side of POC
@@ -125,7 +131,7 @@
   });
 
   load();
-  setInterval(load, 2000);
+  setInterval(load, REFRESH_MS);
   loadComposite();
   setInterval(loadComposite, 30000);
 })();

@@ -78,12 +78,17 @@ def _cached(key: tuple, ttl: float, fetch):
         return data
 
 
-# MUST exceed the frontend's ticker poll interval (2000ms in every *-page.js),
-# or the cache does nothing: at TTL 2.0 each poll arrived exactly as the entry
-# expired, so almost every one missed and went to the broker — which is how a
-# "cached" ticker still produced a sustained ~1 request/second and a 429. The
-# margin here is deliberate; do not lower it to match the poll interval again.
-_QUOTE_CACHE_TTL = 6.0
+# This TTL, not the frontend, is what actually bounds the broker call rate: at
+# most one real quote call per TTL no matter how many tabs, pages or widgets
+# are polling. Keep it at or above the frontend's REFRESH_MS (30000ms in
+# frontend/js/*-page.js) so the two reinforce each other.
+#
+# The original pairing was TTL 2.0s against a 2000ms poll, which is the worst
+# possible arrangement: every poll arrived exactly as its entry expired, so
+# almost all of them missed and a "cached" ticker still sustained ~1 request
+# per second — and that is what earned the 429. If the frontend cadence is ever
+# lowered again, lower this with it, never below it.
+_QUOTE_CACHE_TTL = 32.0
 _OPTION_CHAIN_CACHE_TTL = 3.5
 _CANDLE_CACHE_TTL = 2.0
 _CANDLE_BUCKET_SECONDS = 5  # groups frm/to falling in the same few-second window

@@ -2,9 +2,15 @@
  * Wires settings.html to the live backend: real broker connection info (masked
  * client ID, never the access token) and the risk limits actually enforced by
  * risk_engine.py. Data & Refresh / Notification toggles stay static — they're
- * preferences with no persistence backend yet. Refreshes every 2s.
+ * preferences with no persistence backend yet. Refreshes on the shared REFRESH_MS cadence.
  */
 (function () {
+  // Live-refresh cadence. Kept deliberately slow: every open tab is its own
+  // polling stream against the broker's rate limit, and Dhan answers a hot
+  // one with 429 plus a warning about blocking the account (see the cache
+  // notes in backend/app/services/market_data.py).
+  var REFRESH_MS = 30000;
+
   var NE = window.NE;
 
   function load() {
@@ -43,5 +49,5 @@
   }
 
   load();
-  setInterval(load, 2000);
+  setInterval(load, REFRESH_MS);
 })();

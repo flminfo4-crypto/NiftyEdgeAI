@@ -1,9 +1,15 @@
 /**
- * Wires greeks.html to the live backend. Refreshes every 2s — same backend-
+ * Wires greeks.html to the live backend. Refreshes on the shared REFRESH_MS cadence — same backend-
  * side option-chain caching as options-chain.html / open-interest.html keeps
  * this under Dhan's rate limit.
  */
 (function () {
+  // Live-refresh cadence. Kept deliberately slow: every open tab is its own
+  // polling stream against the broker's rate limit, and Dhan answers a hot
+  // one with 429 plus a warning about blocking the account (see the cache
+  // notes in backend/app/services/market_data.py).
+  var REFRESH_MS = 30000;
+
   var NE = window.NE;
   var UNDERLYING = "NIFTY50";
   var STRIKE_RANGE = 4;
@@ -107,7 +113,7 @@
       }
 
       load();
-      setInterval(load, 2000);
+      setInterval(load, REFRESH_MS);
     })
     .catch(function () { NE.markStatus(false); });
 })();
