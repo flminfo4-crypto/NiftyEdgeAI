@@ -2,10 +2,16 @@
  * Wires strategy-signals.html to the live backend: active signals, real
  * signal-attribution history, and real hit-rate/R:R/calibration stats from
  * signal_ledger (recorded when each signal fires, reconciled against real
- * price action since). Refreshes every 2s — signal_ledger.record_signal()
- * debounces repeat signals itself, so this doesn't spam the ledger.
+ * price action since). Refresh cadence is REFRESH_MS below —
+ * signal_ledger.record_signal() debounces repeats, so this can't spam it.
  */
 (function () {
+  // Live-refresh cadence. Kept deliberately slow: every open tab is its own
+  // polling stream against the broker's rate limit, and Dhan answers a hot
+  // one with 429 plus a warning about blocking the account (see the cache
+  // notes in backend/app/services/market_data.py).
+  var REFRESH_MS = 30000;
+
   var NE = window.NE;
   var resultBadge = { "Target Hit": "badge-green", "SL Hit": "badge-red", "Open": "badge-amber", "Expired": "badge-gray" };
 
@@ -113,13 +119,13 @@
   }
 
   load();
-  setInterval(load, 2000);
+  setInterval(load, REFRESH_MS);
 
   // -- premium-selling setups ---------------------------------------------
-  // Kept off the 2s loop above on purpose. /signals/sell-setups fans out to
+  // Kept off the ticker loop above on purpose. /signals/sell-setups fans out to
   // the option chain, the CPR analysis and the IV-rank series; those are all
   // cached server-side, but the answer changes on the scale of a session, not
-  // seconds, so polling it at 2s would be pure load for no new information
+  // seconds, so polling it with the ticker would be load for no new information
   // (see the 429 history in backend/app/services/market_data.py).
 
   var SETUP_BADGE = { ACTIVE: "badge-green", WATCH: "badge-amber", BLOCKED: "badge-gray" };

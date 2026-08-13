@@ -1,8 +1,14 @@
 /**
- * Wires positions.html to the live backend. Refreshes every 2s — see
+ * Wires positions.html to the live backend. Refreshes on the shared REFRESH_MS cadence — see
  * js/ne-common.js for the shared fetch/format helpers.
  */
 (function () {
+  // Live-refresh cadence. Kept deliberately slow: every open tab is its own
+  // polling stream against the broker's rate limit, and Dhan answers a hot
+  // one with 429 plus a warning about blocking the account (see the cache
+  // notes in backend/app/services/market_data.py).
+  var REFRESH_MS = 30000;
+
   var NE = window.NE;
 
   function load() {
@@ -96,5 +102,5 @@
   }
 
   load();
-  setInterval(load, 2000);
+  setInterval(load, REFRESH_MS);
 })();

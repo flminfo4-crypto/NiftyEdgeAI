@@ -1,10 +1,16 @@
 /**
  * Wires reports.html to the live backend (month-to-date real P&L/charges from
- * actual trade history — empty/zero until real trades exist). Refreshes
- * every 2s. "Available Reports" download list stays static — see the
+ * actual trade history — empty/zero until real trades exist). Refreshes on
+ * the shared REFRESH_MS cadence. "Available Reports" list stays static — see the
  * HTML comment next to it (real PDF/XLSX generation is out of scope here).
  */
 (function () {
+  // Live-refresh cadence. Kept deliberately slow: every open tab is its own
+  // polling stream against the broker's rate limit, and Dhan answers a hot
+  // one with 429 plus a warning about blocking the account (see the cache
+  // notes in backend/app/services/market_data.py).
+  var REFRESH_MS = 30000;
+
   var NE = window.NE;
 
   function load() {
@@ -64,5 +70,5 @@
   }
 
   load();
-  setInterval(load, 2000);
+  setInterval(load, REFRESH_MS);
 })();

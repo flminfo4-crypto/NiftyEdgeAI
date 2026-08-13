@@ -6,10 +6,16 @@
  * hardcoded any more. Session (today / previous) and bracket size
  * (15/30/60 min) come from the two selectors above the profile.
  *
- * Refreshes every 2s like the rest of the app; the profile endpoint reads
+ * Refreshes on the shared REFRESH_MS cadence like the rest of the app; the profile endpoint reads
  * cached candles server-side so the poll is cheap.
  */
 (function () {
+  // Live-refresh cadence. Kept deliberately slow: every open tab is its own
+  // polling stream against the broker's rate limit, and Dhan answers a hot
+  // one with 429 plus a warning about blocking the account (see the cache
+  // notes in backend/app/services/market_data.py).
+  var REFRESH_MS = 30000;
+
   var NE = window.NE;
   var UNDERLYING = "NIFTY50";
 
@@ -258,7 +264,7 @@
   });
 
   load();
-  setInterval(load, 2000);
+  setInterval(load, REFRESH_MS);
   loadVirginPocs();
   setInterval(loadVirginPocs, 300000); // 5 min — prior-session POCs barely move
   loadComposite();

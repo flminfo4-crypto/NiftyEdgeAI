@@ -552,7 +552,11 @@
     setText("dash-market-hours-footer", text);
   }
 
-  var REFRESH_MS = 2000;
+    // Live-refresh cadence. Kept slow on purpose: every open tab is its own
+  // polling stream against the broker's rate limit, and Dhan returns 429 with
+  // a warning about blocking the account when this runs hot (see the cache
+  // notes in backend/app/services/market_data.py).
+  var REFRESH_MS = 30000;
   var UNDERLYING_LABELS = { NIFTY50: "Nifty 50", NIFTYBANK: "Bank Nifty", SENSEX: "Sensex" };
   var UNDERLYING_EXCHANGE = { NIFTY50: "NSE", NIFTYBANK: "NSE", SENSEX: "BSE" };
   var underlyingEl = document.getElementById("dash-underlying");

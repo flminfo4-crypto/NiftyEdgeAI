@@ -31,18 +31,64 @@ _CACHE_LOCK = threading.RLock()
 _CACHE: dict[tuple, tuple[float, object]] = {}
 
 
+# When the broker says "429 too many requests", the worst possible response is
+# to try again immediately — Dhan's own message warns that continuing "may
+# result in the user being blocked". So a rate-limit response opens a circuit:
+# for the cooldown window every cached endpoint serves its last known value and
+# NO broker call is made at all. Stale data beats a blocked account.
+_RATE_LIMIT_COOLDOWN = 30.0
+_rate_limited_until = 0.0
+
+
+def _is_rate_limited(exc: Exception) -> bool:
+    text = str(exc)
+    return "429" in text or "Too many requests" in text
+
+
+def rate_limit_state() -> dict:
+    """Whether the broker circuit is currently open, for /system/status and
+    for surfacing 'showing cached data' in the UI instead of pretending the
+    numbers are live."""
+    remaining = max(0.0, _rate_limited_until - time.monotonic())
+    return {"rate_limited": remaining > 0, "cooldown_seconds_remaining": round(remaining, 1)}
+
+
 def _cached(key: tuple, ttl: float, fetch):
+    global _rate_limited_until
     with _CACHE_LOCK:
         cached = _CACHE.get(key)
         now = time.monotonic()
         if cached and now - cached[0] < ttl:
             return cached[1]
-        data = fetch()
+        # Circuit open: serve whatever we last had rather than adding to the
+        # pile of requests that got us rate-limited.
+        if now < _rate_limited_until and cached:
+            return cached[1]
+        try:
+            data = fetch()
+        except Exception as exc:
+            if _is_rate_limited(exc):
+                _rate_limited_until = time.monotonic() + _RATE_LIMIT_COOLDOWN
+            # A stale quote is far more useful than a 500, and refusing to
+            # retry is the whole point of the cooldown.
+            if cached:
+                return cached[1]
+            raise
         _CACHE[key] = (time.monotonic(), data)
         return data
 
 
-_QUOTE_CACHE_TTL = 2.0
+# This TTL, not the frontend, is what actually bounds the broker call rate: at
+# most one real quote call per TTL no matter how many tabs, pages or widgets
+# are polling. Keep it at or above the frontend's REFRESH_MS (30000ms in
+# frontend/js/*-page.js) so the two reinforce each other.
+#
+# The original pairing was TTL 2.0s against a 2000ms poll, which is the worst
+# possible arrangement: every poll arrived exactly as its entry expired, so
+# almost all of them missed and a "cached" ticker still sustained ~1 request
+# per second — and that is what earned the 429. If the frontend cadence is ever
+# lowered again, lower this with it, never below it.
+_QUOTE_CACHE_TTL = 32.0
 _OPTION_CHAIN_CACHE_TTL = 3.5
 _CANDLE_CACHE_TTL = 2.0
 _CANDLE_BUCKET_SECONDS = 5  # groups frm/to falling in the same few-second window
@@ -53,9 +99,34 @@ _CANDLE_BUCKET_SECONDS = 5  # groups frm/to falling in the same few-second windo
 _prev_oi_snapshot: dict[tuple[str, str], dict[float, dict]] = {}
 
 
+# The index tickers any page can ask for. Requests that fall inside this set
+# are widened to the whole set and served from ONE cache entry, then sliced
+# back down to what the caller asked for.
+#
+# Without this, the header ticker on most pages (NIFTY50,INDIAVIX) and the
+# dashboard's own ticker (NIFTY50,NIFTYBANK,FINNIFTY,SENSEX,INDIAVIX) hash to
+# different cache keys and become two independent streams of broker calls, so
+# two open tabs doubled the request rate against a limit that was already
+# being hit. Dhan's quote endpoint is batched — asking for five symbols costs
+# the same one call as asking for two — so widening is free and de-duplicating
+# is pure win.
+_QUOTE_UNIVERSE = ("NIFTY50", "NIFTYBANK", "FINNIFTY", "SENSEX", "INDIAVIX")
+
+
 def get_quotes(symbols: list[str]):
-    key = ("quotes", tuple(sorted(s.upper() for s in symbols)))
-    return _cached(key, _QUOTE_CACHE_TTL, lambda: get_broker().get_quote(symbols))
+    wanted = [s.upper() for s in symbols]
+    if set(wanted) <= set(_QUOTE_UNIVERSE):
+        fetch_symbols = list(_QUOTE_UNIVERSE)
+    else:
+        # Something outside the known universe — fetch exactly what was asked
+        # for rather than silently dropping it.
+        fetch_symbols = wanted
+    key = ("quotes", tuple(sorted(fetch_symbols)))
+    quotes = _cached(key, _QUOTE_CACHE_TTL, lambda: get_broker().get_quote(fetch_symbols))
+    if fetch_symbols == wanted:
+        return quotes
+    by_symbol = {q.symbol: q for q in quotes}
+    return [by_symbol[s] for s in wanted if s in by_symbol]
 
 
 def get_option_chain(underlying: str, expiry: str):

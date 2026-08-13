@@ -8,6 +8,12 @@
  * pickers immediately once active.
  */
 (function () {
+  // Live-refresh cadence. Kept deliberately slow: every open tab is its own
+  // polling stream against the broker's rate limit, and Dhan answers a hot
+  // one with 429 plus a warning about blocking the account (see the cache
+  // notes in backend/app/services/market_data.py).
+  var REFRESH_MS = 30000;
+
   var NE = window.NE;
   var API_BASE = window.NIFTYEDGE_API_BASE || "http://localhost:8000/api/v1";
   var templates = [];
@@ -47,7 +53,7 @@
     });
   }
 
-  // -- ticker/footer, every 2s ------------------------------------------
+  // -- ticker/footer, every REFRESH_MS ----------------------------------
 
   function loadTicker() {
     NE.fetchJSON("/market/quote?symbols=NIFTY50,INDIAVIX")
@@ -284,5 +290,5 @@
   loadTemplates();
   load();
   loadTicker();
-  setInterval(loadTicker, 2000);
+  setInterval(loadTicker, REFRESH_MS);
 })();
