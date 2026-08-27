@@ -897,6 +897,84 @@ def make_pivot_reversal_buy_signal(p: PivotReversalBuyParams) -> SignalFn:
     return _signal
 
 
+@dataclass
+class SmaCrossoverParams:
+    """Classic two-SMA crossover: fast above slow is long, fast below is short.
+
+    `cross_only` is the parameter that decides what is actually being tested,
+    and the two settings are different strategies wearing the same name:
+
+    - True  (default): enter only on the bar where the fast SMA CROSSES the
+      slow one. One entry per swing, which is what "15 breaks 20" means.
+    - False: enter on any bar where fast is above (or below) slow. Since the
+      engine holds one position at a time and re-enters as soon as the last
+      exits, this re-buys the same trend repeatedly after every stop-out —
+      far more trades, and a very different risk profile.
+
+    Defaults are the user-requested 15/20. Nothing about that pair is
+    special; it is a short, fast crossover that will whipsaw in a range.
+    """
+    fast_ma: int = 15
+    slow_ma: int = 20
+    cross_only: bool = True
+    # Strike selection for the options leg. ~0.55 delta is near-ATM: enough
+    # delta to track the move without paying deep-ITM premium.
+    delta_target: float = 0.55
+    stop_scale: float = 1.0
+    target_scale: float = 2.0
+
+
+def make_sma_crossover_signal(p: SmaCrossoverParams) -> SignalFn:
+    """Factory: 15/20-style SMA crossover, long above and short below.
+
+    Works unchanged for futures runs: the engine reads LegShape.direction for
+    those and ignores the option fields, so the same signal expresses "long
+    the index" or "buy a call" depending only on the instrument chosen.
+    """
+    def _signal(entry_spot: float, levels: DailyLevels, ctx: StrategyContext) -> Optional[LegShape]:
+        i = ctx.index
+        closes = [c.close for c in ctx.candles[: i + 1]]
+        fast, slow = _sma(closes, p.fast_ma), _sma(closes, p.slow_ma)
+        if fast is None or slow is None:
+            return None
+
+        up = fast > slow
+        if p.cross_only:
+            # Compare against the PREVIOUS bar's pair to detect the cross
+            # itself. Needs one extra bar of history than the state check.
+            prev_closes = closes[:-1]
+            prev_fast, prev_slow = _sma(prev_closes, p.fast_ma), _sma(prev_closes, p.slow_ma)
+            if prev_fast is None or prev_slow is None:
+                return None
+            crossed_up = prev_fast <= prev_slow and fast > slow
+            crossed_down = prev_fast >= prev_slow and fast < slow
+            if not (crossed_up or crossed_down):
+                return None
+            up = crossed_up
+
+        opt: Literal["CE", "PE"] = "CE" if up else "PE"
+        sigma = realized_volatility(closes)
+        today = ctx.candles[i].dt
+        expiry = next_expiry(ctx.symbol, today)
+        t = max((expiry - today).days / 365.0, 1.0 / 365.0)
+        atm = _round_strike(entry_spot, ctx.symbol)
+        step = ctx.strike_step()
+        best_off, best_err = 0, float("inf")
+        for off in range(-4 * step, 4 * step + 1, step):
+            d = abs(black_scholes(entry_spot, atm + off, t, sigma, opt).delta)
+            if abs(d - p.delta_target) < best_err:
+                best_err, best_off = abs(d - p.delta_target), off
+        # _strike_for reads offset as OTM distance, so mirror the sign for puts
+        shape_off = best_off if opt == "CE" else -best_off
+
+        return LegShape(
+            kind="SINGLE", option_type=opt, side="BUY", strike_offset=shape_off,
+            direction=1 if up else -1,
+            target_scale=p.target_scale, stop_scale=p.stop_scale,
+        )
+    return _signal
+
+
 # Templates the Strategies page can instantiate via register_custom_strategy.
 # Keyed by the template id the frontend/backend pass through; each maps to
 # the params dataclass and signal factory that build a runnable strategy
@@ -912,6 +990,7 @@ STRATEGY_TEMPLATES: dict[str, tuple[type, Callable[[object], SignalFn]]] = {
     "long_straddle": (LongStraddleParams, make_long_straddle_signal),
     "expiry_day_buy": (ExpiryDayBuyParams, make_expiry_day_buy_signal),
     "pivot_reversal_buy": (PivotReversalBuyParams, make_pivot_reversal_buy_signal),
+    "sma_crossover": (SmaCrossoverParams, make_sma_crossover_signal),
 }
 
 _CUSTOM_STRATEGY_KEYS: set[str] = set()
