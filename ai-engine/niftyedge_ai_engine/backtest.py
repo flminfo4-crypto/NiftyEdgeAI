@@ -93,6 +93,12 @@ class Trade:
     result: str  # "WIN" | "LOSS"
     entry_price: float = 0.0
     exit_price: float = 0.0
+    # What was actually traded, so a trade-by-trade grid can show it. `label`
+    # carries the STRATEGY name, which tells a reader nothing about whether a
+    # given row was a long call or a short strangle — and on an ad-hoc run it
+    # is not even a name they chose. Defaulted so older callers are unaffected.
+    side: str = ""      # e.g. "BUY CE", "SELL STRANGLE", "LONG FUT"
+    strike: float = 0.0  # 0.0 for futures and for multi-leg structures
 
 
 @dataclass
@@ -1640,6 +1646,27 @@ def _effective_expiry(entry_dt: date, hold_mode: str, custom_hold_days: int,
     return next_expiry(symbol, entry_dt)
 
 
+def _describe_shape(shape: LegShape, entry_spot: float, symbol: str | None) -> tuple[str, float]:
+    """Human label for what a trade actually was, plus its strike where a
+    single strike identifies it.
+
+    Derives the strike from the shape rather than from whichever loop variable
+    happened to be set, so it stays correct for every kind. Multi-leg
+    structures report 0.0 — no one strike describes an iron condor, and
+    showing one of the four would mislead.
+    """
+    if shape.kind == "CONDOR":
+        return ("SELL STRADDLE" if shape.wing_offset == 0 else "SELL STRANGLE"), 0.0
+    if shape.kind == "IRON":
+        return ("IRON FLY" if shape.inner_offset == 0 else "IRON CONDOR"), 0.0
+    if shape.kind == "LONG_STRADDLE":
+        return "BUY STRADDLE", 0.0
+    strike = _strike_for(entry_spot, shape.option_type, shape.strike_offset, symbol)
+    if shape.kind == "SPREAD":
+        return f"SELL {shape.option_type} SPREAD", strike
+    return f"{shape.side} {shape.option_type}", strike
+
+
 def _simulate_trades(
     candles: list[Candle], strategy: str, position_size_lots: int,
     stop_loss_pct: float, target_pct: float, include_costs: bool, starting_capital: float,
@@ -1767,11 +1794,13 @@ def _simulate_trades(
         pnl -= costs
 
         pnl = round(pnl, 2)
+        trade_side, trade_strike = _describe_shape(shape, entry_spot, symbol)
         trades.append(Trade(
             opened_at=datetime.combine(today.dt, datetime.min.time(), tzinfo=timezone.utc),
             closed_at=datetime.combine(closed_date, datetime.min.time(), tzinfo=timezone.utc),
             label=strategy_def.label, pnl=pnl, result="WIN" if pnl > 0 else "LOSS",
             entry_price=round(entry_p, 2), exit_price=round(exit_p, 2),
+            side=trade_side, strike=trade_strike,
         ))
         last_exit_date = closed_date
         equity += pnl
@@ -1823,6 +1852,7 @@ def _simulate_futures_trades(
             closed_at=datetime.combine(exit_candle.dt, datetime.min.time(), tzinfo=timezone.utc),
             label=("SELL FUTURES" if direction < 0 else "BUY FUTURES"), pnl=pnl, result="WIN" if pnl > 0 else "LOSS",
             entry_price=round(entry_spot, 2), exit_price=round(exit_candle.close, 2),
+            side=("SHORT FUT" if direction < 0 else "LONG FUT"),
         ))
         last_exit_date = exit_candle.dt
         equity += pnl

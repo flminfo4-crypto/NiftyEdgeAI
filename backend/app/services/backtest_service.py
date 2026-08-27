@@ -12,9 +12,16 @@ import itertools
 import uuid
 from datetime import date, datetime, timedelta, timezone
 
-from niftyedge_ai_engine import Candle, run_backtest
+from niftyedge_ai_engine import (
+    STRATEGY_TEMPLATES,
+    Candle,
+    register_custom_strategy,
+    run_backtest,
+    unregister_custom_strategy,
+)
 from niftyedge_ai_engine.options_pricing import realized_volatility
 
+from app.config import settings
 from app.services import market_data
 
 _jobs: dict[str, dict] = {}
@@ -107,6 +114,116 @@ def submit_backtest(request: dict) -> dict:
     }
     _jobs[job_id] = record
     return record
+
+
+def run_template_backtest(request: dict) -> dict:
+    """Backtest a TEMPLATE directly from its parameters, without first saving
+    it as a named strategy.
+
+    The Strategies page flow (create a strategy, then backtest it by key) is
+    right for something you want to keep. It is wrong for exploring — trying
+    six moving-average pairs would leave six entries in the user's saved
+    strategy list and in the Strategy Lab sweep. So this registers the
+    instance under a throwaway key, runs it, and unregisters it in a finally
+    block, leaving STRATEGY_REGISTRY exactly as it was found.
+
+    Returns the full trade list inline rather than a job id: the caller is a
+    grid that wants every row, and paginating a few hundred rows it has
+    already computed would only add round-trips.
+    """
+    template = request.get("template")
+    if template not in STRATEGY_TEMPLATES:
+        raise ValueError(
+            f"Unknown template '{template}'. Valid: {', '.join(sorted(STRATEGY_TEMPLATES))}"
+        )
+
+    underlying, is_futures = _INSTRUMENT_MAP.get(request.get("instrument", ""), ("NIFTY50", False))
+    frm = _parse_date(request.get("from_") or request.get("from") or "2022-01-01")
+    to = _parse_date(request.get("to") or str(date.today()))
+    if frm > to:
+        raise ValueError("'from' must be on or before 'to'")
+
+    candles = _fetch_candles(underlying, frm, to)
+    if not candles:
+        raise ValueError(f"No historical candles for {underlying} in {frm}..{to}")
+
+    # `params` is a free-form dict, so it bypasses CamelModel's alias generator
+    # and arrives camelCase from the browser. Reuse the Strategies page's own
+    # converter rather than growing a second one that can drift from it.
+    from app.services.strategy_config_service import _params_to_snake
+
+    params = _params_to_snake(request.get("params") or {})
+
+    key = f"__adhoc__{uuid.uuid4().hex[:12]}"
+    try:
+        register_custom_strategy(key, f"{template} (ad hoc)", template, params)
+        result = run_backtest(
+            candles=candles,
+            strategy=key,
+            starting_capital=request.get("initial_capital", 100_000.0),
+            position_size_lots=request.get("position_size_lots", 1),
+            stop_loss_pct=request.get("stop_loss_pct", 1.5),
+            target_pct=request.get("target_pct", 3.0),
+            include_slippage_and_costs=request.get("include_slippage_and_costs", True),
+            is_futures=is_futures,
+            hold_mode=request.get("hold", "strategy"),
+            custom_hold_days=request.get("hold_days", 5),
+            symbol=underlying,
+        )
+    finally:
+        unregister_custom_strategy(key)
+
+    # Only trades that closed inside the requested window belong to it; the
+    # extra leading candles exist purely to warm up CPR/volatility.
+    trades = [t for t in result.trades if t.closed_at.date() >= frm]
+
+    equity = result.starting_capital
+    rows = []
+    for i, t in enumerate(trades, start=1):
+        equity += t.pnl
+        rows.append({
+            "n": i,
+            "opened_at": t.opened_at,
+            "closed_at": t.closed_at,
+            "days_held": (t.closed_at.date() - t.opened_at.date()).days,
+            "label": t.label,
+            "side": t.side,
+            "strike": t.strike,
+            "result": t.result,
+            "entry_price": t.entry_price,
+            "exit_price": t.exit_price,
+            "pnl": t.pnl,
+            "equity_after": round(equity, 2),
+        })
+
+    wins = sum(1 for t in trades if t.result == "WIN")
+    gross_win = sum(t.pnl for t in trades if t.pnl > 0)
+    gross_loss = sum(-t.pnl for t in trades if t.pnl < 0)
+    return {
+        "template": template,
+        "params": params,
+        "instrument": request.get("instrument", "NIFTY50_OPTIONS"),
+        "underlying": underlying,
+        "from_date": str(frm),
+        "to_date": str(to),
+        "sessions": len(candles),
+        "starting_capital": result.starting_capital,
+        "net_profit": result.net_profit,
+        "net_profit_pct": result.net_profit_pct,
+        "total_trades": len(trades),
+        "wins": wins,
+        "losses": len(trades) - wins,
+        "win_rate_pct": round(wins / len(trades) * 100, 2) if trades else 0.0,
+        "avg_win": round(gross_win / wins, 2) if wins else 0.0,
+        "avg_loss": round(gross_loss / (len(trades) - wins), 2) if len(trades) - wins else 0.0,
+        "payoff_ratio": round((gross_win / wins) / (gross_loss / (len(trades) - wins)), 2)
+        if wins and (len(trades) - wins) and gross_loss else None,
+        "profit_factor": result.profit_factor if result.profit_factor != float("inf") else None,
+        "max_drawdown_pct": result.max_drawdown_pct,
+        "sharpe_ratio": result.sharpe_ratio,
+        "source": "mock" if settings.broker_adapter == "mock" else "broker",
+        "trades": rows,
+    }
 
 
 def get_job(job_id: str) -> dict | None:

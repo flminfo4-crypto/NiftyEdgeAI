@@ -17,9 +17,26 @@ window.NE = (function () {
   // load can legitimately take tens of seconds server-side — the default 4s
   // abort would kill them mid-flight.
   function fetchJSONLong(path, timeoutMs) {
+    return requestJSON("GET", path, null, timeoutMs);
+  }
+
+  // POST with the same timeout handling and, importantly, the same error
+  // unwrapping: a rejected backtest explains itself in `detail`, and that
+  // message is the whole difference between "Run failed: 400" and something
+  // the user can act on.
+  function postJSON(path, body, timeoutMs) {
+    return requestJSON("POST", path, body, timeoutMs);
+  }
+
+  function requestJSON(method, path, body, timeoutMs) {
     var controller = new AbortController();
     var timer = setTimeout(function () { controller.abort(); }, timeoutMs || 180000);
-    return fetch(API_BASE + path, { signal: controller.signal })
+    var init = { method: method, signal: controller.signal };
+    if (body != null) {
+      init.headers = { "Content-Type": "application/json" };
+      init.body = JSON.stringify(body);
+    }
+    return fetch(API_BASE + path, init)
       .then(function (res) {
         clearTimeout(timer);
         if (res.ok) return res.json();
@@ -158,6 +175,7 @@ window.NE = (function () {
   return {
     fetchJSON: fetchJSON,
     fetchJSONLong: fetchJSONLong,
+    postJSON: postJSON,
     setText: setText,
     setHTML: setHTML,
     setValue: setValue,

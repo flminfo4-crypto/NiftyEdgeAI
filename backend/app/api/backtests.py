@@ -136,6 +136,20 @@ def strategy_lab(instrument: str = "NIFTY50_OPTIONS", years: int = 6,
         raise HTTPException(status_code=400, detail=str(exc))
 
 
+@router.post("/template")
+def backtest_template(body: dict):
+    """Backtest a template straight from its parameters, returning the summary
+    AND every trade inline — what a trade-by-trade grid needs.
+
+    Deliberately does not persist anything: exploring six moving-average pairs
+    should not leave six entries in the user's saved strategy list. The
+    instance is registered under a throwaway key and unregistered afterwards."""
+    try:
+        return _camelize(backtest_service.run_template_backtest(body))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
 @router.get("/strategies", response_model=list[StrategyOut])
 def list_strategies():
     """Every ACTIVE strategy the backtest engine can run — built-in code
