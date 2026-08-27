@@ -93,6 +93,12 @@ class Trade:
     result: str  # "WIN" | "LOSS"
     entry_price: float = 0.0
     exit_price: float = 0.0
+    # What was actually traded, so a trade-by-trade grid can show it. `label`
+    # carries the STRATEGY name, which tells a reader nothing about whether a
+    # given row was a long call or a short strangle — and on an ad-hoc run it
+    # is not even a name they chose. Defaulted so older callers are unaffected.
+    side: str = ""      # e.g. "BUY CE", "SELL STRANGLE", "LONG FUT"
+    strike: float = 0.0  # 0.0 for futures and for multi-leg structures
 
 
 @dataclass
@@ -897,6 +903,84 @@ def make_pivot_reversal_buy_signal(p: PivotReversalBuyParams) -> SignalFn:
     return _signal
 
 
+@dataclass
+class SmaCrossoverParams:
+    """Classic two-SMA crossover: fast above slow is long, fast below is short.
+
+    `cross_only` is the parameter that decides what is actually being tested,
+    and the two settings are different strategies wearing the same name:
+
+    - True  (default): enter only on the bar where the fast SMA CROSSES the
+      slow one. One entry per swing, which is what "15 breaks 20" means.
+    - False: enter on any bar where fast is above (or below) slow. Since the
+      engine holds one position at a time and re-enters as soon as the last
+      exits, this re-buys the same trend repeatedly after every stop-out —
+      far more trades, and a very different risk profile.
+
+    Defaults are the user-requested 15/20. Nothing about that pair is
+    special; it is a short, fast crossover that will whipsaw in a range.
+    """
+    fast_ma: int = 15
+    slow_ma: int = 20
+    cross_only: bool = True
+    # Strike selection for the options leg. ~0.55 delta is near-ATM: enough
+    # delta to track the move without paying deep-ITM premium.
+    delta_target: float = 0.55
+    stop_scale: float = 1.0
+    target_scale: float = 2.0
+
+
+def make_sma_crossover_signal(p: SmaCrossoverParams) -> SignalFn:
+    """Factory: 15/20-style SMA crossover, long above and short below.
+
+    Works unchanged for futures runs: the engine reads LegShape.direction for
+    those and ignores the option fields, so the same signal expresses "long
+    the index" or "buy a call" depending only on the instrument chosen.
+    """
+    def _signal(entry_spot: float, levels: DailyLevels, ctx: StrategyContext) -> Optional[LegShape]:
+        i = ctx.index
+        closes = [c.close for c in ctx.candles[: i + 1]]
+        fast, slow = _sma(closes, p.fast_ma), _sma(closes, p.slow_ma)
+        if fast is None or slow is None:
+            return None
+
+        up = fast > slow
+        if p.cross_only:
+            # Compare against the PREVIOUS bar's pair to detect the cross
+            # itself. Needs one extra bar of history than the state check.
+            prev_closes = closes[:-1]
+            prev_fast, prev_slow = _sma(prev_closes, p.fast_ma), _sma(prev_closes, p.slow_ma)
+            if prev_fast is None or prev_slow is None:
+                return None
+            crossed_up = prev_fast <= prev_slow and fast > slow
+            crossed_down = prev_fast >= prev_slow and fast < slow
+            if not (crossed_up or crossed_down):
+                return None
+            up = crossed_up
+
+        opt: Literal["CE", "PE"] = "CE" if up else "PE"
+        sigma = realized_volatility(closes)
+        today = ctx.candles[i].dt
+        expiry = next_expiry(ctx.symbol, today)
+        t = max((expiry - today).days / 365.0, 1.0 / 365.0)
+        atm = _round_strike(entry_spot, ctx.symbol)
+        step = ctx.strike_step()
+        best_off, best_err = 0, float("inf")
+        for off in range(-4 * step, 4 * step + 1, step):
+            d = abs(black_scholes(entry_spot, atm + off, t, sigma, opt).delta)
+            if abs(d - p.delta_target) < best_err:
+                best_err, best_off = abs(d - p.delta_target), off
+        # _strike_for reads offset as OTM distance, so mirror the sign for puts
+        shape_off = best_off if opt == "CE" else -best_off
+
+        return LegShape(
+            kind="SINGLE", option_type=opt, side="BUY", strike_offset=shape_off,
+            direction=1 if up else -1,
+            target_scale=p.target_scale, stop_scale=p.stop_scale,
+        )
+    return _signal
+
+
 # Templates the Strategies page can instantiate via register_custom_strategy.
 # Keyed by the template id the frontend/backend pass through; each maps to
 # the params dataclass and signal factory that build a runnable strategy
@@ -912,6 +996,7 @@ STRATEGY_TEMPLATES: dict[str, tuple[type, Callable[[object], SignalFn]]] = {
     "long_straddle": (LongStraddleParams, make_long_straddle_signal),
     "expiry_day_buy": (ExpiryDayBuyParams, make_expiry_day_buy_signal),
     "pivot_reversal_buy": (PivotReversalBuyParams, make_pivot_reversal_buy_signal),
+    "sma_crossover": (SmaCrossoverParams, make_sma_crossover_signal),
 }
 
 _CUSTOM_STRATEGY_KEYS: set[str] = set()
@@ -1561,6 +1646,27 @@ def _effective_expiry(entry_dt: date, hold_mode: str, custom_hold_days: int,
     return next_expiry(symbol, entry_dt)
 
 
+def _describe_shape(shape: LegShape, entry_spot: float, symbol: str | None) -> tuple[str, float]:
+    """Human label for what a trade actually was, plus its strike where a
+    single strike identifies it.
+
+    Derives the strike from the shape rather than from whichever loop variable
+    happened to be set, so it stays correct for every kind. Multi-leg
+    structures report 0.0 — no one strike describes an iron condor, and
+    showing one of the four would mislead.
+    """
+    if shape.kind == "CONDOR":
+        return ("SELL STRADDLE" if shape.wing_offset == 0 else "SELL STRANGLE"), 0.0
+    if shape.kind == "IRON":
+        return ("IRON FLY" if shape.inner_offset == 0 else "IRON CONDOR"), 0.0
+    if shape.kind == "LONG_STRADDLE":
+        return "BUY STRADDLE", 0.0
+    strike = _strike_for(entry_spot, shape.option_type, shape.strike_offset, symbol)
+    if shape.kind == "SPREAD":
+        return f"SELL {shape.option_type} SPREAD", strike
+    return f"{shape.side} {shape.option_type}", strike
+
+
 def _simulate_trades(
     candles: list[Candle], strategy: str, position_size_lots: int,
     stop_loss_pct: float, target_pct: float, include_costs: bool, starting_capital: float,
@@ -1688,11 +1794,13 @@ def _simulate_trades(
         pnl -= costs
 
         pnl = round(pnl, 2)
+        trade_side, trade_strike = _describe_shape(shape, entry_spot, symbol)
         trades.append(Trade(
             opened_at=datetime.combine(today.dt, datetime.min.time(), tzinfo=timezone.utc),
             closed_at=datetime.combine(closed_date, datetime.min.time(), tzinfo=timezone.utc),
             label=strategy_def.label, pnl=pnl, result="WIN" if pnl > 0 else "LOSS",
             entry_price=round(entry_p, 2), exit_price=round(exit_p, 2),
+            side=trade_side, strike=trade_strike,
         ))
         last_exit_date = closed_date
         equity += pnl
@@ -1744,6 +1852,7 @@ def _simulate_futures_trades(
             closed_at=datetime.combine(exit_candle.dt, datetime.min.time(), tzinfo=timezone.utc),
             label=("SELL FUTURES" if direction < 0 else "BUY FUTURES"), pnl=pnl, result="WIN" if pnl > 0 else "LOSS",
             entry_price=round(entry_spot, 2), exit_price=round(exit_candle.close, 2),
+            side=("SHORT FUT" if direction < 0 else "LONG FUT"),
         ))
         last_exit_date = exit_candle.dt
         equity += pnl

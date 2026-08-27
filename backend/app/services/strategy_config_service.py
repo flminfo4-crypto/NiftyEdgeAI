@@ -225,6 +225,32 @@ _TEMPLATE_META = {
              "label": "Profit-target scale (x the run's target %)"},
         ],
     },
+    "sma_crossover": {
+        "label": "SMA Crossover (15/20 Break)",
+        "description": (
+            "Two simple moving averages: when the fast one crosses ABOVE the slow one it goes "
+            "long (buys a call), when it crosses BELOW it goes short (buys a put). Defaults are "
+            "15 and 20. Leave 'Enter only on the crossover bar' ticked for a true break — one "
+            "entry per swing; untick it and the strategy re-enters on every bar the trend still "
+            "holds, which is a different and much more frequent strategy. A fast pair like 15/20 "
+            "catches trends early and whipsaws hard in a range, so read the max-drawdown and "
+            "consecutive-loss figures, not just the return."
+        ),
+        "params": [
+            {"name": "fast_ma", "type": "int", "default": 15, "min": 2, "max": 100,
+             "label": "Fast SMA (periods)"},
+            {"name": "slow_ma", "type": "int", "default": 20, "min": 3, "max": 250,
+             "label": "Slow SMA (periods)"},
+            {"name": "cross_only", "type": "bool", "default": True,
+             "label": "Enter only on the crossover bar"},
+            {"name": "delta_target", "type": "float", "default": 0.55, "min": 0.2, "max": 0.9,
+             "label": "Target delta (higher = more ITM)"},
+            {"name": "stop_scale", "type": "float", "default": 1.0, "min": 0.2, "max": 3.0,
+             "label": "Stop scale (x the run's stop %)"},
+            {"name": "target_scale", "type": "float", "default": 2.0, "min": 1.0, "max": 8.0,
+             "label": "Profit-target scale (x the run's target %)"},
+        ],
+    },
     "iron_fly": {
         "label": "Iron Fly (defined risk)",
         "description": (
